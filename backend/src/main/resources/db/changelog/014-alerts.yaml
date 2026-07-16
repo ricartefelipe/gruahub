@@ -1,0 +1,128 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-001-alert
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: alert
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: alert_type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: severity
+                  type: varchar(20)
+                  defaultValue: WARNING
+              - column:
+                  name: machine_id
+                  type: uuid
+              - column:
+                  name: operating_point_id
+                  type: uuid
+              - column:
+                  name: title
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message
+                  type: text
+              - column:
+                  name: metadata
+                  type: jsonb
+                  defaultValue: '{}'
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: OPEN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: acknowledged_by_user_id
+                  type: uuid
+              - column:
+                  name: acknowledged_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: alert
+            baseColumnNames: tenant_id
+            constraintName: fk_alert_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - createIndex:
+            tableName: alert
+            indexName: idx_alert_tenant_status
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: status
+              - column:
+                  name: created_at
+
+  - changeSet:
+      id: 014-002-notification
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: notification
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+              - column:
+                  name: alert_id
+                  type: uuid
+              - column:
+                  name: title
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: text
+              - column:
+                  name: read
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: channel
+                  type: varchar(20)
+                  defaultValue: IN_APP
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: read_at
+                  type: timestamptz

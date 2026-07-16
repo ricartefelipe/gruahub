@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Relatório de Status da Frota — GruaHub</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #1f2937; }
+    .header { background: #1e40af; color: white; padding: 20px; margin-bottom: 24px; }
+    .header h1 { margin: 0; font-size: 22px; }
+    .header p { margin: 4px 0 0; font-size: 13px; opacity: 0.8; }
+    .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+    .summary-card { flex: 1; border: 1px solid #e5e7eb; padding: 12px; border-radius: 6px; text-align: center; }
+    .summary-card .value { font-size: 28px; font-weight: bold; color: #1e40af; }
+    .summary-card .label { font-size: 11px; color: #6b7280; text-transform: uppercase; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f3f4f6; color: #374151; font-size: 11px; text-transform: uppercase; padding: 8px; text-align: left; border-bottom: 2px solid #e5e7eb; }
+    td { padding: 8px; font-size: 12px; border-bottom: 1px solid #f3f4f6; }
+    .badge-online { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+    .badge-offline { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+    .footer { margin-top: 24px; font-size: 10px; color: #9ca3af; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Status da Frota</h1>
+    <p>Gerado em: {generatedAt}</p>
+  </div>
+
+  <div class="summary">
+    <div class="summary-card">
+      <div class="value">{totalMachines}</div>
+      <div class="label">Total</div>
+    </div>
+    <div class="summary-card">
+      <div class="value" style="color:#16a34a">{onlineMachines}</div>
+      <div class="label">Online</div>
+    </div>
+    <div class="summary-card">
+      <div class="value" style="color:#dc2626">{totalMachines - onlineMachines}</div>
+      <div class="label">Offline / Manutenção</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ativo</th>
+        <th>Status</th>
+        <th>Conectividade</th>
+        <th>Último Heartbeat</th>
+      </tr>
+    </thead>
+    <tbody>
+      {#for m in machines}
+      <tr>
+        <td><strong>{m[0]}</strong></td>
+        <td>{m[1]}</td>
+        <td>
+          {#if m[2]}
+            <span class="badge-online">ONLINE</span>
+          {#else}
+            <span class="badge-offline">OFFLINE</span>
+          {/if}
+        </td>
+        <td>{m[3]}</td>
+      </tr>
+      {/for}
+    </tbody>
+  </table>
+
+  <div class="footer">GruaHub — Relatório gerado automaticamente. Documento não tem valor fiscal.</div>
+</body>
+</html>

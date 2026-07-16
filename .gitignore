@@ -1,0 +1,50 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+hs_err_pid*
+
+# Node / npm
+node_modules/
+.npm
+dist/
+.next/
+out/
+build/
+.expo/
+.expo-shared/
+
+# Env secrets — NEVER commit real secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Test outputs
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Docker volumes
+infra/volumes/
+
+# Python
+__pycache__/
+*.pyc
+
+# Misc
+*.log
+*.tmp

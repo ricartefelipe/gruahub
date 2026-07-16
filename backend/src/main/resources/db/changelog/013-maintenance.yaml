@@ -1,0 +1,90 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-001-maintenance-ticket
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: maintenance_ticket
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reported_by_user_id
+                  type: uuid
+              - column:
+                  name: assigned_technician_id
+                  type: uuid
+              - column:
+                  name: symptom
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: severity
+                  type: varchar(20)
+                  defaultValue: MEDIUM
+              - column:
+                  name: status
+                  type: varchar(30)
+                  defaultValue: OPEN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resolution_notes
+                  type: text
+              - column:
+                  name: parts_used
+                  type: jsonb
+                  defaultValue: '[]'
+              - column:
+                  name: sla_deadline_at
+                  type: timestamptz
+              - column:
+                  name: status_history
+                  type: jsonb
+                  defaultValue: '[]'
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: resolved_at
+                  type: timestamptz
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+        - addForeignKeyConstraint:
+            baseTableName: maintenance_ticket
+            baseColumnNames: tenant_id
+            constraintName: fk_maintenance_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - createIndex:
+            tableName: maintenance_ticket
+            indexName: idx_maintenance_machine_status
+            columns:
+              - column:
+                  name: machine_id
+              - column:
+                  name: status

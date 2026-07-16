@@ -1,0 +1,208 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-001-establishment
+      author: gruahub
+      comment: Estabelecimento parceiro
+      changes:
+        - createTable:
+            tableName: establishment
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: trading_name
+                  type: varchar(200)
+              - column:
+                  name: document_number
+                  type: varchar(20)
+              - column:
+                  name: email
+                  type: varchar(255)
+              - column:
+                  name: phone
+                  type: varchar(20)
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: establishment
+            baseColumnNames: tenant_id
+            constraintName: fk_establishment_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - createIndex:
+            tableName: establishment
+            indexName: idx_establishment_tenant
+            columns:
+              - column:
+                  name: tenant_id
+
+  - changeSet:
+      id: 003-002-operating-point
+      author: gruahub
+      comment: Ponto operacional (local onde a máquina fica instalada)
+      changes:
+        - createTable:
+            tableName: operating_point
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: establishment_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address_street
+                  type: varchar(255)
+              - column:
+                  name: address_number
+                  type: varchar(20)
+              - column:
+                  name: address_complement
+                  type: varchar(100)
+              - column:
+                  name: address_neighborhood
+                  type: varchar(100)
+              - column:
+                  name: address_city
+                  type: varchar(100)
+              - column:
+                  name: address_state
+                  type: varchar(2)
+              - column:
+                  name: address_postal_code
+                  type: varchar(10)
+              - column:
+                  name: latitude
+                  type: decimal(10,7)
+              - column:
+                  name: longitude
+                  type: decimal(10,7)
+              - column:
+                  name: contact_name
+                  type: varchar(200)
+              - column:
+                  name: contact_phone
+                  type: varchar(20)
+              - column:
+                  name: contract_type
+                  type: varchar(30)
+                  defaultValue: COMODATO
+              - column:
+                  name: default_commission_pct
+                  type: decimal(5,2)
+                  defaultValueNumeric: 0
+              - column:
+                  name: visit_days_of_week
+                  type: varchar(50)
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority_score
+                  type: decimal(10,2)
+                  defaultValueNumeric: 0
+              - column:
+                  name: priority_explanation
+                  type: jsonb
+              - column:
+                  name: last_visit_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: operating_point
+            baseColumnNames: tenant_id
+            constraintName: fk_operating_point_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: operating_point
+            baseColumnNames: establishment_id
+            constraintName: fk_operating_point_establishment
+            referencedTableName: establishment
+            referencedColumnNames: id
+        - createIndex:
+            tableName: operating_point
+            indexName: idx_operating_point_tenant
+            columns:
+              - column:
+                  name: tenant_id
+        - createIndex:
+            tableName: operating_point
+            indexName: idx_operating_point_establishment
+            columns:
+              - column:
+                  name: establishment_id

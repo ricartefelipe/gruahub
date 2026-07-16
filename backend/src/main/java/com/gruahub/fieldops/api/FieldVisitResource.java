@@ -1,0 +1,301 @@
+package com.gruahub.fieldops.api;
+
+import com.gruahub.shared.domain.TenantContext;
+import com.gruahub.audit.application.AuditService;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
+import org.jboss.logging.Logger;
+
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * REST resource para Visitas de Campo (field_visit).
+ * <p>
+ * Operações são idempotentes: o campo `client_operation_id` (UUID gerado
+ * no mobile) é usado como chave de idempotência no banco (unique constraint).
+ * Retorna 409 Conflict quando a operação já foi processada.
+ */
+@Path("/api/v1/visits")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@RequestScoped
+public class FieldVisitResource {
+
+    private static final Logger LOG = Logger.getLogger(FieldVisitResource.class);
+
+    @Inject
+    EntityManager em;
+
+    @Inject
+    AuditService audit;
+
+    // ── DTOs ────────────────────────────────────────────────────────────────────
+
+    public record StartVisitRequest(
+        @NotNull UUID visitId,
+        @NotNull UUID clientOperationId,
+        @NotNull UUID operatingPointId,
+        @NotBlank String responsibleName,
+        String notes,
+        String checkinAt,
+        Double checkinLatitude,
+        Double checkinLongitude
+    ) {}
+
+    public record CompleteVisitRequest(
+        @NotNull UUID visitId,
+        @NotNull UUID clientOperationId,
+        String checkoutAt,
+        Long cashCollectedCents
+    ) {}
+
+    public record ChecklistRequest(
+        @NotNull UUID visitId,
+        @NotNull UUID clientOperationId,
+        List<ChecklistItem> items,
+        String completedAt
+    ) {}
+
+    public record ChecklistItem(String key, boolean checked) {}
+
+    public record VisitResponse(
+        UUID id,
+        UUID operatingPointId,
+        String operatingPointName,
+        String status,
+        String responsibleName,
+        Instant checkinAt,
+        Instant checkoutAt,
+        Long cashCollectedCents,
+        Instant createdAt
+    ) {}
+
+    // ── Queries ─────────────────────────────────────────────────────────────────
+
+    @GET
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
+    public List<VisitResponse> listVisits(
+        @QueryParam("operatingPointId") UUID pointId,
+        @QueryParam("status") String status,
+        @QueryParam("page") @DefaultValue("0") int page,
+        @QueryParam("size") @DefaultValue("50") int size
+    ) {
+        UUID tenantId = TenantContext.getTenantId();
+        StringBuilder sql = new StringBuilder(
+            "SELECT v.id, v.operating_point_id, op.name, v.status, v.responsible_name, " +
+            "v.checkin_at, v.checkout_at, v.cash_collected_cents, v.created_at " +
+            "FROM field_visit v " +
+            "JOIN operating_point op ON op.id = v.operating_point_id " +
+            "WHERE v.tenant_id = :tid "
+        );
+        if (pointId != null) sql.append("AND v.operating_point_id = :pid ");
+        if (status != null) sql.append("AND v.status = :status ");
+        sql.append("ORDER BY v.checkin_at DESC LIMIT :lim OFFSET :off");
+
+        var q = em.createNativeQuery(sql.toString())
+            .setParameter("tid", tenantId)
+            .setParameter("lim", Math.min(size, 200))
+            .setParameter("off", page * size);
+        if (pointId != null) q.setParameter("pid", pointId);
+        if (status != null) q.setParameter("status", status);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = q.getResultList();
+        return rows.stream().map(this::mapVisitRow).toList();
+    }
+
+    @GET
+    @Path("/{id}")
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
+    public VisitResponse getVisit(@PathParam("id") UUID id) {
+        UUID tenantId = TenantContext.getTenantId();
+        Object[] row = (Object[]) em.createNativeQuery(
+            "SELECT v.id, v.operating_point_id, op.name, v.status, v.responsible_name, " +
+            "v.checkin_at, v.checkout_at, v.cash_collected_cents, v.created_at " +
+            "FROM field_visit v " +
+            "JOIN operating_point op ON op.id = v.operating_point_id " +
+            "WHERE v.id = :id AND v.tenant_id = :tid"
+        )
+            .setParameter("id", id)
+            .setParameter("tid", tenantId)
+            .getSingleResult();
+        return mapVisitRow(row);
+    }
+
+    // ── Mutations ────────────────────────────────────────────────────────────────
+
+    /**
+     * POST /api/v1/visits — início de visita.
+     * Idempotente via client_operation_id.
+     */
+    @POST
+    @Transactional
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR"})
+    public Response startVisit(
+        @Valid StartVisitRequest req,
+        @HeaderParam("Idempotency-Key") String idempotencyKey,
+        @Context UriInfo uriInfo
+    ) {
+        UUID tenantId = TenantContext.getTenantId();
+        UUID clientOpId = req.clientOperationId();
+
+        // Deduplicação offline-first
+        Long existing = (Long) em.createNativeQuery(
+            "SELECT COUNT(*) FROM field_visit WHERE client_operation_id = :coid AND tenant_id = :tid"
+        )
+            .setParameter("coid", clientOpId)
+            .setParameter("tid", tenantId)
+            .getSingleResult();
+
+        if (existing > 0) {
+            LOG.infof("[%s] Duplicate visit start ignored: clientOpId=%s", tenantId, clientOpId);
+            return Response.status(Response.Status.CONFLICT)
+                .entity(Map.of("message", "Operation already processed", "clientOperationId", clientOpId))
+                .build();
+        }
+
+        UUID visitId = req.visitId();
+
+        em.createNativeQuery(
+            "INSERT INTO field_visit " +
+            "(id, tenant_id, client_operation_id, operating_point_id, status, " +
+            " responsible_name, notes, checkin_at, checkin_latitude, checkin_longitude) " +
+            "VALUES (:id, :tid, :coid, :pid, 'IN_PROGRESS', :name, :notes, " +
+            " COALESCE(:checkinAt::timestamptz, NOW()), :lat, :lng)"
+        )
+            .setParameter("id", visitId)
+            .setParameter("tid", tenantId)
+            .setParameter("coid", clientOpId)
+            .setParameter("pid", req.operatingPointId())
+            .setParameter("name", req.responsibleName())
+            .setParameter("notes", req.notes())
+            .setParameter("checkinAt", req.checkinAt())
+            .setParameter("lat", req.checkinLatitude())
+            .setParameter("lng", req.checkinLongitude())
+            .executeUpdate();
+
+        audit.record("FIELD_VISIT_STARTED", "field_visit", visitId.toString(),
+            "pointId=" + req.operatingPointId());
+
+        URI location = uriInfo.getAbsolutePathBuilder().path(visitId.toString()).build();
+        return Response.created(location).entity(Map.of("id", visitId)).build();
+    }
+
+    /**
+     * POST /api/v1/visits/complete — conclusão de visita.
+     */
+    @POST
+    @Path("/complete")
+    @Transactional
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR"})
+    public Response completeVisit(@Valid CompleteVisitRequest req) {
+        UUID tenantId = TenantContext.getTenantId();
+        UUID clientOpId = req.clientOperationId();
+
+        // Idempotência
+        Object[] existing = (Object[]) em.createNativeQuery(
+            "SELECT id, status FROM field_visit WHERE id = :id AND tenant_id = :tid"
+        )
+            .setParameter("id", req.visitId())
+            .setParameter("tid", tenantId)
+            .getSingleResultOrNull();
+
+        if (existing == null) throw new NotFoundException("Visit not found: " + req.visitId());
+        if ("COMPLETED".equals(existing[1])) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(Map.of("message", "Visit already completed"))
+                .build();
+        }
+
+        em.createNativeQuery(
+            "UPDATE field_visit SET status = 'COMPLETED', " +
+            "checkout_at = COALESCE(:co::timestamptz, NOW()), " +
+            "cash_collected_cents = :cash, updated_at = NOW() " +
+            "WHERE id = :id AND tenant_id = :tid"
+        )
+            .setParameter("co", req.checkoutAt())
+            .setParameter("cash", req.cashCollectedCents())
+            .setParameter("id", req.visitId())
+            .setParameter("tid", tenantId)
+            .executeUpdate();
+
+        audit.record("FIELD_VISIT_COMPLETED", "field_visit", req.visitId().toString(),
+            "cashCents=" + req.cashCollectedCents());
+
+        return Response.ok(Map.of("id", req.visitId(), "status", "COMPLETED")).build();
+    }
+
+    /**
+     * POST /api/v1/visits/checklist — salvar resultado do checklist.
+     */
+    @POST
+    @Path("/checklist")
+    @Transactional
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR"})
+    public Response saveChecklist(@Valid ChecklistRequest req) {
+        UUID tenantId = TenantContext.getTenantId();
+        UUID clientOpId = req.clientOperationId();
+
+        // Idempotência
+        Long count = (Long) em.createNativeQuery(
+            "SELECT COUNT(*) FROM visit_checklist_result " +
+            "WHERE client_operation_id = :coid AND tenant_id = :tid"
+        )
+            .setParameter("coid", clientOpId)
+            .setParameter("tid", tenantId)
+            .getSingleResult();
+
+        if (count > 0) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(Map.of("message", "Checklist already submitted"))
+                .build();
+        }
+
+        UUID resultId = UUID.randomUUID();
+        // Converte itens para JSONB
+        String itemsJson = req.items() != null
+            ? req.items().stream()
+                .map(i -> String.format("{\"key\":\"%s\",\"checked\":%b}", i.key(), i.checked()))
+                .collect(java.util.stream.Collectors.joining(",", "[", "]"))
+            : "[]";
+
+        em.createNativeQuery(
+            "INSERT INTO visit_checklist_result " +
+            "(id, tenant_id, visit_id, client_operation_id, items, completed_at) " +
+            "VALUES (:id, :tid, :vid, :coid, :items::jsonb, " +
+            "COALESCE(:completedAt::timestamptz, NOW()))"
+        )
+            .setParameter("id", resultId)
+            .setParameter("tid", tenantId)
+            .setParameter("vid", req.visitId())
+            .setParameter("coid", clientOpId)
+            .setParameter("items", itemsJson)
+            .setParameter("completedAt", req.completedAt())
+            .executeUpdate();
+
+        return Response.ok(Map.of("id", resultId)).build();
+    }
+
+    // ── Helper ──────────────────────────────────────────────────────────────────
+
+    private VisitResponse mapVisitRow(Object[] r) {
+        return new VisitResponse(
+            (UUID) r[0], (UUID) r[1], (String) r[2], (String) r[3], (String) r[4],
+            r[5] != null ? ((java.sql.Timestamp) r[5]).toInstant() : null,
+            r[6] != null ? ((java.sql.Timestamp) r[6]).toInstant() : null,
+            r[7] != null ? ((Number) r[7]).longValue() : null,
+            r[8] != null ? ((java.sql.Timestamp) r[8]).toInstant() : null
+        );
+    }
+}

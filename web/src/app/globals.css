@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Utility: status badges */
+.badge-online  { @apply bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded; }
+.badge-offline { @apply bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded; }
+.badge-maintenance { @apply bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded; }
+.badge-draft   { @apply bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded; }

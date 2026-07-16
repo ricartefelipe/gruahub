@@ -1,0 +1,187 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Backend — Quarkus 3 + Java 21
+  # ─────────────────────────────────────────────────────────────
+  backend:
+    name: Backend (Java 21 / Quarkus 3)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: gruahub_test
+          POSTGRES_USER: gruahub
+          POSTGRES_PASSWORD: gruahub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Run tests
+        working-directory: backend
+        env:
+          QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://localhost:5432/gruahub_test
+          QUARKUS_DATASOURCE_USERNAME: gruahub
+          QUARKUS_DATASOURCE_PASSWORD: gruahub
+          QUARKUS_PROFILE: test
+        run: ./mvnw -B verify -Dquarkus.test.profile=test
+
+      - name: Build (no tests)
+        working-directory: backend
+        run: ./mvnw -B package -DskipTests
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-quarkus-app
+          path: backend/target/quarkus-app/
+          retention-days: 3
+
+  # ─────────────────────────────────────────────────────────────
+  # Frontend Web — Next.js 14
+  # ─────────────────────────────────────────────────────────────
+  web:
+    name: Web (Next.js 14)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Type check
+        working-directory: web
+        run: npx tsc --noEmit
+
+      - name: Lint
+        working-directory: web
+        run: npm run lint
+
+      - name: Build
+        working-directory: web
+        env:
+          NEXTAUTH_SECRET: ci-secret-not-for-production
+          NEXTAUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+          KEYCLOAK_ID: gruahub-web
+          KEYCLOAK_SECRET: ci-placeholder
+          KEYCLOAK_ISSUER: http://localhost:8180/realms/gruahub
+        run: npm run build
+
+  # ─────────────────────────────────────────────────────────────
+  # Mobile — Expo 51 / React Native
+  # ─────────────────────────────────────────────────────────────
+  mobile:
+    name: Mobile (Expo 51)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Type check
+        working-directory: mobile
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        working-directory: mobile
+        run: npm test -- --passWithNoTests --watchAll=false
+
+  # ─────────────────────────────────────────────────────────────
+  # Simulators — TypeScript
+  # ─────────────────────────────────────────────────────────────
+  simulators:
+    name: Simulators (TypeScript)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Type check machine simulator
+        working-directory: simulators/machine-simulator
+        run: |
+          npm ci
+          npx tsc --noEmit
+
+      - name: Type check payment simulator
+        working-directory: simulators/payment-simulator
+        run: |
+          npm ci
+          npx tsc --noEmit
+
+  # ─────────────────────────────────────────────────────────────
+  # Docker Compose smoke test
+  # ─────────────────────────────────────────────────────────────
+  docker-compose:
+    name: Docker Compose (infrastructure only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose files
+        working-directory: infra
+        run: docker compose config --quiet
+
+      - name: Start infrastructure services
+        working-directory: infra
+        run: |
+          docker compose up -d postgres keycloak emqx minio
+          docker compose wait postgres --timeout 60
+
+      - name: Health check PostgreSQL
+        run: |
+          timeout 30 bash -c 'until docker compose -f infra/docker-compose.yml exec -T postgres pg_isready -U gruahub; do sleep 2; done'
+
+      - name: Teardown
+        if: always()
+        working-directory: infra
+        run: docker compose down -v

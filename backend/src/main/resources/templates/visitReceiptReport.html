@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Comprovante de Visita — GruaHub</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #1f2937; }
+    .header { border-bottom: 3px solid #1e40af; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { color: #1e40af; margin: 0; font-size: 20px; }
+    .header .subtitle { color: #6b7280; font-size: 12px; margin-top: 4px; }
+    .field-grid { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 24px; }
+    .field { flex: 0 0 50%; padding: 8px 0; }
+    .field .label { font-size: 10px; color: #6b7280; text-transform: uppercase; }
+    .field .value { font-size: 14px; color: #111827; font-weight: 500; margin-top: 2px; }
+    .highlight-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px; margin-bottom: 20px; }
+    .highlight-box .label { font-size: 11px; color: #166534; text-transform: uppercase; }
+    .highlight-box .amount { font-size: 28px; font-weight: bold; color: #15803d; }
+    .notes-section { background: #f9fafb; border-radius: 6px; padding: 12px; margin-bottom: 20px; }
+    .footer { margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 10px; color: #9ca3af; text-align: center; }
+    .id-badge { font-family: monospace; background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Comprovante de Visita de Campo</h1>
+    <div class="subtitle">GruaHub — Gestão de Gruas</div>
+  </div>
+
+  <div class="field-grid">
+    <div class="field">
+      <div class="label">ID da Visita</div>
+      <div class="value"><span class="id-badge">{visitId}</span></div>
+    </div>
+    <div class="field">
+      <div class="label">Ponto de Operação</div>
+      <div class="value">{pointName}</div>
+    </div>
+    <div class="field">
+      <div class="label">Responsável no Local</div>
+      <div class="value">{responsibleName}</div>
+    </div>
+    <div class="field">
+      <div class="label">Check-in</div>
+      <div class="value">{checkinAt}</div>
+    </div>
+    <div class="field">
+      <div class="label">Check-out</div>
+      <div class="value">{checkoutAt}</div>
+    </div>
+    <div class="field">
+      <div class="label">Gerado em</div>
+      <div class="value">{generatedAt}</div>
+    </div>
+  </div>
+
+  {#if cashCollectedCents}
+  <div class="highlight-box">
+    <div class="label">Valor Coletado (Sangria)</div>
+    <div class="amount">R$ {cashCollectedCents / 100.0}</div>
+  </div>
+  {/if}
+
+  {#if notes}
+  <div class="notes-section">
+    <strong>Observações:</strong>
+    <p style="margin:4px 0 0;font-size:13px">{notes}</p>
+  </div>
+  {/if}
+
+  <div class="footer">
+    Este comprovante foi gerado automaticamente pelo GruaHub. Não tem valor fiscal.<br/>
+    Qualquer divergência deve ser reportada ao gestor de operações.
+  </div>
+</body>
+</html>

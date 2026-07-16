@@ -1,0 +1,139 @@
+databaseChangeLog:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 017 — Schema alignment: adiciona apenas colunas genuinamente ausentes.
+  # Não toca colunas que já existem nas migrações anteriores.
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # ── settlement ───────────────────────────────────────────────────────────────
+  # status, gross_revenue_cents, commission_cents, net_amount_cents,
+  # approved_at, commission_policy_id já existem em 011-002.
+  # Adicionamos apenas: net_revenue_cents (alias), commission_pct, paid_at, updated_at
+  - changeSet:
+      id: 017-001-settlement-extra-columns
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: settlement
+            columns:
+              - column:
+                  name: net_revenue_cents
+                  type: bigint
+                  remarks: "Alias de net_amount_cents para REST resource"
+              - column:
+                  name: commission_pct
+                  type: decimal(5,2)
+                  remarks: "Percentual de comissão calculado (referência)"
+              - column:
+                  name: paid_at
+                  type: timestamptz
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+
+  # ── route_plan ──────────────────────────────────────────────────────────────
+  # operator_user_id, scheduled_date, status, created_at, updated_at
+  # já existem em 012-001. Adicionamos apenas: planned_date (alias).
+  - changeSet:
+      id: 017-002-route-plan-planned-date
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: route_plan
+            columns:
+              - column:
+                  name: planned_date
+                  type: date
+                  remarks: "Alias de scheduled_date para REST resource"
+
+  # ── route_stop ───────────────────────────────────────────────────────────────
+  # sequence_order, priority_score, priority_explanation já existem em 012-002.
+  # Adicionamos apenas: stop_order (alias).
+  - changeSet:
+      id: 017-003-route-stop-stop-order
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: route_stop
+            columns:
+              - column:
+                  name: stop_order
+                  type: integer
+                  defaultValueNumeric: 1
+                  remarks: "Alias de sequence_order para REST resource"
+
+  # ── maintenance_ticket ────────────────────────────────────────────────────────
+  # symptom, severity, assigned_technician_id, updated_at, client_operation_id
+  # já existem em 013-001 e 016-003. Adicionamos colunas semânticas extras:
+  # title, description, priority, symptom_code, assigned_to
+  - changeSet:
+      id: 017-004-maintenance-ticket-extra-columns
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: maintenance_ticket
+            columns:
+              - column:
+                  name: title
+                  type: varchar(200)
+                  remarks: "Título curto do chamado"
+              - column:
+                  name: description
+                  type: text
+                  remarks: "Descrição detalhada do problema"
+              - column:
+                  name: priority
+                  type: varchar(20)
+                  defaultValue: MEDIUM
+                  remarks: "LOW | MEDIUM | HIGH | CRITICAL (alias de severity para REST)"
+              - column:
+                  name: symptom_code
+                  type: varchar(100)
+                  remarks: "Código de sintoma estruturado (alias/extensão de symptom)"
+              - column:
+                  name: assigned_to
+                  type: varchar(200)
+                  remarks: "Nome ou email do técnico atribuído (string livre)"
+
+  # ── alert ─────────────────────────────────────────────────────────────────────
+  # acknowledged_by_user_id (UUID), acknowledged_at, created_at, status
+  # já existem em 014-001. Adicionamos:
+  # acknowledged_by (string email/nome), note, occurred_at, updated_at
+  - changeSet:
+      id: 017-005-alert-extra-columns
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: alert
+            columns:
+              - column:
+                  name: acknowledged_by
+                  type: varchar(200)
+                  remarks: "Email ou nome do usuário que reconheceu o alerta"
+              - column:
+                  name: note
+                  type: text
+                  remarks: "Nota inserida ao reconhecer o alerta"
+              - column:
+                  name: occurred_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  remarks: "Timestamp do evento que originou o alerta"
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+
+  # ── establishment ─────────────────────────────────────────────────────────────
+  # updated_at já existe em 003-001. Adicionamos apenas: external_code
+  - changeSet:
+      id: 017-006-establishment-external-code
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: establishment
+            columns:
+              - column:
+                  name: external_code
+                  type: varchar(40)
+                  remarks: "Código externo do estabelecimento (ERP, PDV, etc)"

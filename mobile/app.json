@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "GruaHub",
+    "slug": "gruahub",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1e40af"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-camera",
+        { "cameraPermission": "GruaHub precisa da câmera para ler QR codes das máquinas." }
+      ],
+      [
+        "expo-location",
+        { "locationWhenInUsePermission": "GruaHub usa a localização para registrar check-in nas visitas." }
+      ]
+    ],
+    "scheme": "gruahub",
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1e40af"
+      },
+      "package": "com.gruahub.mobile"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.gruahub.mobile"
+    },
+    "extra": {
+      "apiUrl": "http://localhost:8080",
+      "keycloakIssuer": "http://localhost:8180/realms/gruahub",
+      "keycloakClientId": "gruahub-mobile",
+      "eas": {
+        "projectId": "gruahub-local-dev"
+      }
+    }
+  }
+}

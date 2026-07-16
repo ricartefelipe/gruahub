@@ -1,0 +1,106 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-001-route-plan
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: route_plan
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operator_user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scheduled_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PLANNED
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+        - addForeignKeyConstraint:
+            baseTableName: route_plan
+            baseColumnNames: tenant_id
+            constraintName: fk_route_plan_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 012-002-route-stop
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: route_stop
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: route_plan_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operating_point_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sequence_order
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority_score
+                  type: decimal(10,2)
+              - column:
+                  name: priority_explanation
+                  type: jsonb
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PENDING
+              - column:
+                  name: field_visit_id
+                  type: uuid
+              - column:
+                  name: estimated_duration_minutes
+                  type: int
+        - addForeignKeyConstraint:
+            baseTableName: route_stop
+            baseColumnNames: route_plan_id
+            constraintName: fk_route_stop_route
+            referencedTableName: route_plan
+            referencedColumnNames: id

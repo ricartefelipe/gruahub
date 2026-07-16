@@ -1,0 +1,272 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-001-field-visit
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: field_visit
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operating_point_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operator_user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: route_stop_id
+                  type: uuid
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: OPEN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: checkin_at
+                  type: timestamptz
+              - column:
+                  name: checkout_at
+                  type: timestamptz
+              - column:
+                  name: checkin_latitude
+                  type: decimal(10,7)
+              - column:
+                  name: checkin_longitude
+                  type: decimal(10,7)
+              - column:
+                  name: responsible_name
+                  type: varchar(200)
+              - column:
+                  name: responsible_confirmed
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: receipt_url
+                  type: varchar(500)
+              - column:
+                  name: client_operation_id
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+        - addForeignKeyConstraint:
+            baseTableName: field_visit
+            baseColumnNames: tenant_id
+            constraintName: fk_field_visit_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: field_visit
+            constraintName: uq_field_visit_client_op
+            columnNames: client_operation_id, tenant_id
+        - createIndex:
+            tableName: field_visit
+            indexName: idx_field_visit_point_status
+            columns:
+              - column:
+                  name: operating_point_id
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 010-002-visit-checklist-item
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: visit_checklist_item
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: field_visit_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+              - column:
+                  name: item_key
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: item_label
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: checked
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: checked_at
+                  type: timestamptz
+        - addForeignKeyConstraint:
+            baseTableName: visit_checklist_item
+            baseColumnNames: field_visit_id
+            constraintName: fk_checklist_item_visit
+            referencedTableName: field_visit
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 010-003-visit-attachment
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: visit_attachment
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_visit_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+              - column:
+                  name: attachment_type
+                  type: varchar(30)
+                  defaultValue: PHOTO
+              - column:
+                  name: s3_key
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: original_filename
+                  type: varchar(255)
+              - column:
+                  name: content_type
+                  type: varchar(100)
+              - column:
+                  name: size_bytes
+                  type: bigint
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+        - addForeignKeyConstraint:
+            baseTableName: visit_attachment
+            baseColumnNames: field_visit_id
+            constraintName: fk_visit_attachment_visit
+            referencedTableName: field_visit
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 010-004-cash-collection
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: cash_collection
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_visit_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount_cents
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  defaultValue: BRL
+              - column:
+                  name: payment_method
+                  type: varchar(30)
+                  defaultValue: CASH
+              - column:
+                  name: expected_amount_cents
+                  type: bigint
+              - column:
+                  name: divergence_cents
+                  type: bigint
+                  defaultValueNumeric: 0
+              - column:
+                  name: divergence_justification
+                  type: text
+              - column:
+                  name: client_operation_id
+                  type: varchar(100)
+              - column:
+                  name: occurred_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+        - addForeignKeyConstraint:
+            baseTableName: cash_collection
+            baseColumnNames: field_visit_id
+            constraintName: fk_cash_collection_visit
+            referencedTableName: field_visit
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: cash_collection
+            constraintName: uq_cash_collection_client_op
+            columnNames: client_operation_id, tenant_id

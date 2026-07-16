@@ -1,0 +1,496 @@
+databaseChangeLog:
+  - changeSet:
+      id: 099-001-seed-demo-tenant
+      author: gruahub
+      context: demo
+      comment: Seed idempotente — Diversão Nordeste Demo
+      changes:
+        - insert:
+            tableName: tenant
+            columns:
+              - column:
+                  name: id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: name
+                  value: Diversão Nordeste Demo
+              - column:
+                  name: slug
+                  value: diversao-nordeste-demo
+              - column:
+                  name: document_number
+                  value: '12.345.678/0001-90'
+              - column:
+                  name: email
+                  value: contato@diversaonordeste.demo
+              - column:
+                  name: status
+                  value: ACTIVE
+
+  - changeSet:
+      id: 099-002-seed-demo-establishments
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: establishment
+            columns:
+              - column:
+                  name: id
+                  value: 22222222-0000-0000-0000-000000000001
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: name
+                  value: Shopping Boa Vista
+              - column:
+                  name: trading_name
+                  value: Shopping BV
+              - column:
+                  name: document_number
+                  value: '98.765.432/0001-10'
+              - column:
+                  name: email
+                  value: gerencia@shoppingboavista.demo
+              - column:
+                  name: status
+                  value: ACTIVE
+        - insert:
+            tableName: establishment
+            columns:
+              - column:
+                  name: id
+                  value: 22222222-0000-0000-0000-000000000002
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: name
+                  value: Supermercado Fortaleza
+              - column:
+                  name: status
+                  value: ACTIVE
+        - insert:
+            tableName: establishment
+            columns:
+              - column:
+                  name: id
+                  value: 22222222-0000-0000-0000-000000000003
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: name
+                  value: Parque de Diversões Natal
+              - column:
+                  name: status
+                  value: ACTIVE
+
+  - changeSet:
+      id: 099-003-seed-demo-operating-points
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: operating_point
+            columns:
+              - column:
+                  name: id
+                  value: 33333333-0000-0000-0000-000000000001
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: establishment_id
+                  value: 22222222-0000-0000-0000-000000000001
+              - column:
+                  name: name
+                  value: Shopping BV - Piso L1 - Setor A
+              - column:
+                  name: address_city
+                  value: Recife
+              - column:
+                  name: address_state
+                  value: PE
+              - column:
+                  name: default_commission_pct
+                  valueNumeric: 15.00
+              - column:
+                  name: status
+                  value: ACTIVE
+        - insert:
+            tableName: operating_point
+            columns:
+              - column:
+                  name: id
+                  value: 33333333-0000-0000-0000-000000000002
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: establishment_id
+                  value: 22222222-0000-0000-0000-000000000002
+              - column:
+                  name: name
+                  value: Supermercado Fortaleza - Entrada Principal
+              - column:
+                  name: address_city
+                  value: Fortaleza
+              - column:
+                  name: address_state
+                  value: CE
+              - column:
+                  name: default_commission_pct
+                  valueNumeric: 12.00
+              - column:
+                  name: status
+                  value: ACTIVE
+
+  - changeSet:
+      id: 099-004-seed-demo-machine-model
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: machine_model
+            columns:
+              - column:
+                  name: id
+                  value: 44444444-0000-0000-0000-000000000001
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: name
+                  value: GruaMaster Pro 300
+              - column:
+                  name: manufacturer
+                  value: GruaMaster
+              - column:
+                  name: prize_capacity
+                  valueNumeric: 80
+
+  - changeSet:
+      id: 099-005-seed-demo-controllers
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: controller
+            columns:
+              - column:
+                  name: id
+                  value: 55555555-0000-0000-0000-000000000001
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: serial_number
+                  value: CTRL-DEMO-001
+              - column:
+                  name: model_type
+                  value: GENERIC
+              - column:
+                  name: mqtt_client_id
+                  value: sim-machine-MAQUINA-001
+              - column:
+                  name: status
+                  value: ACTIVE
+        - insert:
+            tableName: controller
+            columns:
+              - column:
+                  name: id
+                  value: 55555555-0000-0000-0000-000000000002
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: serial_number
+                  value: CTRL-DEMO-002
+              - column:
+                  name: model_type
+                  value: GENERIC
+              - column:
+                  name: mqtt_client_id
+                  value: sim-machine-MAQUINA-002
+              - column:
+                  name: status
+                  value: ACTIVE
+        - insert:
+            tableName: controller
+            columns:
+              - column:
+                  name: id
+                  value: 55555555-0000-0000-0000-000000000003
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: serial_number
+                  value: CTRL-DEMO-003
+              - column:
+                  name: model_type
+                  value: GENERIC
+              - column:
+                  name: mqtt_client_id
+                  value: sim-machine-MAQUINA-003
+              - column:
+                  name: status
+                  value: ACTIVE
+
+  - changeSet:
+      id: 099-006-seed-demo-machines
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: machine
+            columns:
+              - column:
+                  name: id
+                  value: 66666666-0000-0000-0000-000000000001
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_model_id
+                  value: 44444444-0000-0000-0000-000000000001
+              - column:
+                  name: controller_id
+                  value: 55555555-0000-0000-0000-000000000001
+              - column:
+                  name: operating_point_id
+                  value: 33333333-0000-0000-0000-000000000001
+              - column:
+                  name: asset_number
+                  value: MAQUINA-001
+              - column:
+                  name: qr_code
+                  value: GH-MAQUINA-001
+              - column:
+                  name: name
+                  value: Grua #001 - Shopping BV
+              - column:
+                  name: status
+                  value: ACTIVE
+              - column:
+                  name: play_price_cents
+                  valueNumeric: 200
+        - insert:
+            tableName: machine
+            columns:
+              - column:
+                  name: id
+                  value: 66666666-0000-0000-0000-000000000002
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_model_id
+                  value: 44444444-0000-0000-0000-000000000001
+              - column:
+                  name: controller_id
+                  value: 55555555-0000-0000-0000-000000000002
+              - column:
+                  name: operating_point_id
+                  value: 33333333-0000-0000-0000-000000000001
+              - column:
+                  name: asset_number
+                  value: MAQUINA-002
+              - column:
+                  name: qr_code
+                  value: GH-MAQUINA-002
+              - column:
+                  name: name
+                  value: Grua #002 - Shopping BV
+              - column:
+                  name: status
+                  value: OFFLINE
+              - column:
+                  name: play_price_cents
+                  valueNumeric: 200
+        - insert:
+            tableName: machine
+            columns:
+              - column:
+                  name: id
+                  value: 66666666-0000-0000-0000-000000000003
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_model_id
+                  value: 44444444-0000-0000-0000-000000000001
+              - column:
+                  name: controller_id
+                  value: 55555555-0000-0000-0000-000000000003
+              - column:
+                  name: operating_point_id
+                  value: 33333333-0000-0000-0000-000000000002
+              - column:
+                  name: asset_number
+                  value: MAQUINA-003
+              - column:
+                  name: qr_code
+                  value: GH-MAQUINA-003
+              - column:
+                  name: name
+                  value: Grua #003 - Supermercado Fortaleza
+              - column:
+                  name: status
+                  value: ACTIVE
+              - column:
+                  name: play_price_cents
+                  valueNumeric: 300
+        - insert:
+            tableName: machine
+            columns:
+              - column:
+                  name: id
+                  value: 66666666-0000-0000-0000-000000000004
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_model_id
+                  value: 44444444-0000-0000-0000-000000000001
+              - column:
+                  name: asset_number
+                  value: MAQUINA-004
+              - column:
+                  name: qr_code
+                  value: GH-MAQUINA-004
+              - column:
+                  name: name
+                  value: Grua #004 - Em Manutenção
+              - column:
+                  name: status
+                  value: MAINTENANCE
+              - column:
+                  name: play_price_cents
+                  valueNumeric: 200
+        - insert:
+            tableName: machine
+            columns:
+              - column:
+                  name: id
+                  value: 66666666-0000-0000-0000-000000000005
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_model_id
+                  value: 44444444-0000-0000-0000-000000000001
+              - column:
+                  name: asset_number
+                  value: MAQUINA-005
+              - column:
+                  name: qr_code
+                  value: GH-MAQUINA-005
+              - column:
+                  name: name
+                  value: Grua #005 - Reserva
+              - column:
+                  name: status
+                  value: DRAFT
+              - column:
+                  name: play_price_cents
+                  valueNumeric: 200
+
+  - changeSet:
+      id: 099-007-seed-demo-prizes
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: prize
+            columns:
+              - column:
+                  name: id
+                  value: 77777777-0000-0000-0000-000000000001
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: sku
+                  value: PELUCIA-URSO-P
+              - column:
+                  name: name
+                  value: Urso de Pelúcia Pequeno
+              - column:
+                  name: cost_cents
+                  valueNumeric: 800
+              - column:
+                  name: size_category
+                  value: SMALL
+        - insert:
+            tableName: prize
+            columns:
+              - column:
+                  name: id
+                  value: 77777777-0000-0000-0000-000000000002
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: sku
+                  value: PELUCIA-GATO-M
+              - column:
+                  name: name
+                  value: Gato de Pelúcia Médio
+              - column:
+                  name: cost_cents
+                  valueNumeric: 1500
+              - column:
+                  name: size_category
+                  value: MEDIUM
+        - insert:
+            tableName: prize
+            columns:
+              - column:
+                  name: id
+                  value: 77777777-0000-0000-0000-000000000003
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: sku
+                  value: PELUCIA-COELHO-G
+              - column:
+                  name: name
+                  value: Coelho de Pelúcia Grande
+              - column:
+                  name: cost_cents
+                  valueNumeric: 2500
+              - column:
+                  name: size_category
+                  value: LARGE
+
+  - changeSet:
+      id: 099-008-seed-demo-maintenance
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: maintenance_ticket
+            columns:
+              - column:
+                  name: id
+                  value: 88888888-0000-0000-0000-000000000001
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_id
+                  value: 66666666-0000-0000-0000-000000000004
+              - column:
+                  name: symptom
+                  value: Garra não fecha corretamente. Falha mecânica intermitente observada durante visita de rotina.
+              - column:
+                  name: severity
+                  value: HIGH
+              - column:
+                  name: status
+                  value: OPEN

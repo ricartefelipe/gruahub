@@ -1,0 +1,145 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-001-commission-policy
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: commission_policy
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operating_point_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: policy_type
+                  type: varchar(20)
+                  defaultValue: PERCENTAGE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: percentage
+                  type: decimal(5,2)
+              - column:
+                  name: fixed_amount_cents
+                  type: bigint
+              - column:
+                  name: effective_from
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: effective_to
+                  type: date
+              - column:
+                  name: version_number
+                  type: int
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: created_by_user_id
+                  type: uuid
+        - addForeignKeyConstraint:
+            baseTableName: commission_policy
+            baseColumnNames: tenant_id
+            constraintName: fk_commission_policy_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 011-002-settlement
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: settlement
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operating_point_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_visit_id
+                  type: uuid
+              - column:
+                  name: commission_policy_id
+                  type: uuid
+              - column:
+                  name: period_start
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: period_end
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gross_revenue_cents
+                  type: bigint
+                  defaultValueNumeric: 0
+              - column:
+                  name: commission_cents
+                  type: bigint
+                  defaultValueNumeric: 0
+              - column:
+                  name: net_amount_cents
+                  type: bigint
+                  defaultValueNumeric: 0
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  defaultValue: BRL
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: DRAFT
+              - column:
+                  name: calculation_snapshot
+                  type: jsonb
+              - column:
+                  name: receipt_url
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: approved_at
+                  type: timestamptz
+              - column:
+                  name: approved_by_user_id
+                  type: uuid
+        - addForeignKeyConstraint:
+            baseTableName: settlement
+            baseColumnNames: tenant_id
+            constraintName: fk_settlement_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id

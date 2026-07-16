@@ -1,0 +1,177 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-001-credit-grant
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: credit_grant
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_transaction_id
+                  type: uuid
+              - column:
+                  name: amount_cents
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: plays_granted
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: varchar(50)
+                  defaultValue: PAYMENT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: manual_justification
+                  type: text
+              - column:
+                  name: manual_authorized_by
+                  type: uuid
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: command_id
+                  type: varchar(100)
+              - column:
+                  name: status_history
+                  type: jsonb
+                  defaultValue: '[]'
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sent_at
+                  type: timestamptz
+              - column:
+                  name: acked_at
+                  type: timestamptz
+              - column:
+                  name: consumed_at
+                  type: timestamptz
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+        - addForeignKeyConstraint:
+            baseTableName: credit_grant
+            baseColumnNames: tenant_id
+            constraintName: fk_credit_grant_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: credit_grant
+            baseColumnNames: payment_transaction_id
+            constraintName: fk_credit_grant_payment
+            referencedTableName: payment_transaction
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: credit_grant
+            constraintName: uq_credit_grant_payment
+            columnNames: payment_transaction_id
+        - createIndex:
+            tableName: credit_grant
+            indexName: idx_credit_grant_machine_status
+            columns:
+              - column:
+                  name: machine_id
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 007-002-play-session
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: play_session
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: credit_grant_id
+                  type: uuid
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: STARTED
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prize_delivered
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: prize_id
+                  type: uuid
+              - column:
+                  name: started_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completed_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+        - addForeignKeyConstraint:
+            baseTableName: play_session
+            baseColumnNames: tenant_id
+            constraintName: fk_play_session_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: play_session
+            baseColumnNames: credit_grant_id
+            constraintName: fk_play_session_credit
+            referencedTableName: credit_grant
+            referencedColumnNames: id
+        - createIndex:
+            tableName: play_session
+            indexName: idx_play_session_machine_time
+            columns:
+              - column:
+                  name: machine_id
+              - column:
+                  name: started_at

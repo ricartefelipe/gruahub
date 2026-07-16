@@ -1,0 +1,186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gruahub.com/contracts/mqtt/schema-v1.json",
+  "title": "GruaHub MQTT Message Contract v1",
+  "description": "Schema de mensagens trocadas entre controladores de máquina e o backend via EMQX.",
+
+  "definitions": {
+    "envelope": {
+      "type": "object",
+      "required": ["messageId", "schemaVersion", "tenantId", "machineId", "type", "occurredAt"],
+      "properties": {
+        "messageId":     { "type": "string", "format": "uuid",   "description": "UUID único da mensagem — usado para deduplicação (inbox)" },
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "tenantId":      { "type": "string", "format": "uuid" },
+        "machineId":     { "type": "string", "format": "uuid" },
+        "sequence":      { "type": "integer", "minimum": 0, "description": "Contador auto-incremental por dispositivo — detecta gaps" },
+        "occurredAt":    { "type": "string", "format": "date-time", "description": "Timestamp no dispositivo (ISO 8601 UTC)" },
+        "type":          { "type": "string", "enum": ["heartbeat", "play_started", "play_completed", "error_report", "command_ack"] }
+      }
+    },
+
+    "heartbeat": {
+      "allOf": [
+        { "$ref": "#/definitions/envelope" },
+        {
+          "type": "object",
+          "required": ["payload"],
+          "properties": {
+            "type": { "const": "heartbeat" },
+            "payload": {
+              "type": "object",
+              "properties": {
+                "online":       { "type": "boolean" },
+                "doorOpen":     { "type": "boolean" },
+                "motorFault":   { "type": "boolean" },
+                "creditsAvailable": { "type": "integer", "minimum": 0 },
+                "uptimeSeconds":    { "type": "integer", "minimum": 0 },
+                "firmwareVersion":  { "type": "string" }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "play_started": {
+      "allOf": [
+        { "$ref": "#/definitions/envelope" },
+        {
+          "type": "object",
+          "required": ["payload"],
+          "properties": {
+            "type": { "const": "play_started" },
+            "payload": {
+              "type": "object",
+              "required": ["creditGrantId", "playSessionId"],
+              "properties": {
+                "creditGrantId":  { "type": "string", "format": "uuid" },
+                "playSessionId":  { "type": "string", "format": "uuid" }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "play_completed": {
+      "allOf": [
+        { "$ref": "#/definitions/envelope" },
+        {
+          "type": "object",
+          "required": ["payload"],
+          "properties": {
+            "type": { "const": "play_completed" },
+            "payload": {
+              "type": "object",
+              "required": ["playSessionId", "prizeDelivered"],
+              "properties": {
+                "playSessionId":  { "type": "string", "format": "uuid" },
+                "creditGrantId":  { "type": "string", "format": "uuid" },
+                "prizeDelivered": { "type": "boolean" },
+                "durationSeconds":{ "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "error_report": {
+      "allOf": [
+        { "$ref": "#/definitions/envelope" },
+        {
+          "type": "object",
+          "required": ["payload"],
+          "properties": {
+            "type": { "const": "error_report" },
+            "payload": {
+              "type": "object",
+              "required": ["errorCode"],
+              "properties": {
+                "errorCode":     { "type": "string" },
+                "errorMessage":  { "type": "string" },
+                "doorOpen":      { "type": "boolean" },
+                "motorFault":    { "type": "boolean" }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "command_ack": {
+      "allOf": [
+        { "$ref": "#/definitions/envelope" },
+        {
+          "type": "object",
+          "required": ["payload"],
+          "properties": {
+            "type": { "const": "command_ack" },
+            "payload": {
+              "type": "object",
+              "required": ["commandId", "commandType", "success"],
+              "properties": {
+                "commandId":    { "type": "string", "format": "uuid" },
+                "commandType":  { "type": "string", "enum": ["GRANT_CREDIT", "REBOOT", "LOCK", "UPDATE_CONFIG"] },
+                "creditGrantId":{ "type": "string", "format": "uuid" },
+                "success":      { "type": "boolean" },
+                "failureReason":{ "type": "string" }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "grant_credit_command": {
+      "type": "object",
+      "required": ["commandId", "commandType", "creditGrantId", "playsGranted", "ttlSeconds"],
+      "properties": {
+        "commandId":    { "type": "string", "format": "uuid" },
+        "commandType":  { "const": "GRANT_CREDIT" },
+        "creditGrantId":{ "type": "string", "format": "uuid" },
+        "playsGranted": { "type": "integer", "minimum": 1 },
+        "ttlSeconds":   { "type": "integer", "minimum": 1, "maximum": 300, "description": "TTL de expiração do crédito no dispositivo" }
+      }
+    }
+  },
+
+  "topic_patterns": {
+    "device_to_backend": "v1/{tenantId}/machines/{machineId}/{type}",
+    "backend_to_device": "v1/{tenantId}/machines/{machineId}/commands",
+    "type_values": ["telemetry", "events", "status", "command-acks"],
+    "qos": {
+      "commands": 1,
+      "financial_events": 1,
+      "heartbeat": 0
+    }
+  },
+
+  "security": {
+    "acl": {
+      "backend_client": {
+        "clientId": "gruahub-backend",
+        "subscribe": ["v1/#"],
+        "publish": ["v1/#"]
+      },
+      "device_client": {
+        "clientId": "sim-machine (pattern: machine-{machineId})",
+        "subscribe": ["v1/{tenantId}/machines/{machineId}/commands"],
+        "publish": [
+          "v1/{tenantId}/machines/{machineId}/telemetry",
+          "v1/{tenantId}/machines/{machineId}/events",
+          "v1/{tenantId}/machines/{machineId}/status",
+          "v1/{tenantId}/machines/{machineId}/command-acks"
+        ]
+      }
+    },
+    "notes": [
+      "Dispositivos NÃO podem publicar em tópicos de outros dispositivos",
+      "Dispositivos NÃO podem subscrever em tópicos de outros dispositivos",
+      "Autenticação via username/password na conexão MQTT",
+      "TLS obrigatório em produção (não configurado no MVP sandbox)"
+    ]
+  }
+}

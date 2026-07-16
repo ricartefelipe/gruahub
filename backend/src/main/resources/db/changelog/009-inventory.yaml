@@ -1,0 +1,233 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-001-prize
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: prize
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sku
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+              - column:
+                  name: cost_cents
+                  type: bigint
+                  defaultValueNumeric: 0
+              - column:
+                  name: size_category
+                  type: varchar(20)
+              - column:
+                  name: photo_url
+                  type: varchar(500)
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+        - addForeignKeyConstraint:
+            baseTableName: prize
+            baseColumnNames: tenant_id
+            constraintName: fk_prize_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: prize
+            constraintName: uq_prize_sku_tenant
+            columnNames: sku, tenant_id
+
+  - changeSet:
+      id: 009-002-stock-location
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: stock_location
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+              - column:
+                  name: operator_user_id
+                  type: uuid
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+
+  - changeSet:
+      id: 009-003-stock-movement
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: stock_movement
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prize_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: from_location_id
+                  type: uuid
+              - column:
+                  name: to_location_id
+                  type: uuid
+              - column:
+                  name: quantity
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: movement_type
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reference_id
+                  type: uuid
+              - column:
+                  name: reference_type
+                  type: varchar(50)
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: performed_by_user_id
+                  type: uuid
+              - column:
+                  name: client_operation_id
+                  type: varchar(100)
+              - column:
+                  name: occurred_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: stock_movement
+            baseColumnNames: tenant_id
+            constraintName: fk_stock_movement_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: stock_movement
+            constraintName: uq_stock_movement_client_op
+            columnNames: client_operation_id, tenant_id
+        - createIndex:
+            tableName: stock_movement
+            indexName: idx_stock_movement_prize_tenant
+            columns:
+              - column:
+                  name: prize_id
+              - column:
+                  name: tenant_id
+
+  - changeSet:
+      id: 009-004-machine-stock-balance
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: machine_stock_balance
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prize_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: minimum_quantity
+                  type: int
+                  defaultValueNumeric: 5
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+        - addUniqueConstraint:
+            tableName: machine_stock_balance
+            constraintName: uq_machine_stock_machine_prize
+            columnNames: machine_id, prize_id

@@ -1,0 +1,136 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-001-extensions
+      author: gruahub
+      comment: Enable PostgreSQL extensions
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+            endDelimiter: ;
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+            endDelimiter: ;
+
+  - changeSet:
+      id: 001-002-outbox-event
+      author: gruahub
+      comment: Outbox transacional para eventos de domínio
+      changes:
+        - createTable:
+            tableName: outbox_event
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: aggregate_type
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aggregate_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: timestamptz
+              - column:
+                  name: error_message
+                  type: text
+              - column:
+                  name: retry_count
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: outbox_event
+            indexName: idx_outbox_status_created
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: created_at
+
+  - changeSet:
+      id: 001-003-idempotency-record
+      author: gruahub
+      comment: Registro de idempotência para operações externas
+      changes:
+        - createTable:
+            tableName: idempotency_record
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: idempotency_key
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: context
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PROCESSING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: response_payload
+                  type: jsonb
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: timestamptz
+        - addUniqueConstraint:
+            tableName: idempotency_record
+            constraintName: uq_idempotency_key_context_tenant
+            columnNames: idempotency_key, context, tenant_id

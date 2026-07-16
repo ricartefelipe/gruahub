@@ -1,0 +1,45 @@
+# ================================================================
+# GruaHub Backend — Multi-stage Dockerfile
+# ================================================================
+
+# Stage 1: Build
+FROM eclipse-temurin:21-jdk-alpine AS builder
+
+WORKDIR /build
+
+# Copiar wrapper e pom.xml primeiro (cache de dependências)
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+
+# Baixar dependências (cache layer)
+RUN ./mvnw dependency:go-offline -B --no-transfer-progress
+
+# Copiar código fonte e compilar
+COPY src/ src/
+RUN ./mvnw package -DskipTests -B --no-transfer-progress
+
+# ================================================================
+# Stage 2: Runtime
+FROM eclipse-temurin:21-jre-alpine AS runtime
+
+# Usuário não-root
+RUN addgroup -S gruahub && adduser -S gruahub -G gruahub
+USER gruahub
+
+WORKDIR /app
+
+# Copiar artefato Quarkus
+COPY --from=builder --chown=gruahub:gruahub \
+     /build/target/quarkus-app/ ./
+
+EXPOSE 8080
+
+# Graceful shutdown via SIGTERM
+STOPSIGNAL SIGTERM
+
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+
+ENTRYPOINT ["sh", "-c", \
+    "java $JAVA_OPTS \
+     -Djava.util.logging.manager=org.jboss.logmanager.LogManager \
+     -jar quarkus-run.jar"]

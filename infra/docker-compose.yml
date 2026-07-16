@@ -1,0 +1,271 @@
+version: "3.9"
+
+# ================================================================
+# GruaHub — Docker Compose local
+# Portas documentadas:
+#   5432 → PostgreSQL
+#   8180 → Keycloak (admin: admin/admin)
+#   1883 → EMQX MQTT
+#   18083→ EMQX Dashboard (admin/public)
+#   9000 → MinIO S3 API
+#   9001 → MinIO Console (minioadmin/minioadmin)
+#   8080 → Backend API + OpenAPI UI em /q/swagger-ui
+#   3000 → Frontend Web
+# ================================================================
+
+networks:
+  gruahub:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  keycloak_data:
+  emqx_data:
+  emqx_log:
+  minio_data:
+
+services:
+
+  # ================================================================
+  # PostgreSQL 16
+  # ================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: gruahub-postgres
+    restart: unless-stopped
+    networks: [gruahub]
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: gruahub
+      POSTGRES_USER: gruahub
+      POSTGRES_PASSWORD: gruahub
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gruahub -d gruahub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ================================================================
+  # Keycloak 24
+  # ================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: gruahub-keycloak
+    restart: unless-stopped
+    networks: [gruahub]
+    ports:
+      - "8180:8080"
+    command:
+      - start-dev
+      - --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/gruahub
+      KC_DB_USERNAME: gruahub
+      KC_DB_PASSWORD: gruahub
+      KC_DB_SCHEMA: keycloak
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-gruahub.json:/opt/keycloak/data/import/realm-gruahub.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ================================================================
+  # EMQX 5 — Broker MQTT
+  # ================================================================
+  emqx:
+    image: emqx/emqx:5.7.2
+    container_name: gruahub-emqx
+    restart: unless-stopped
+    networks: [gruahub]
+    ports:
+      - "1883:1883"    # MQTT
+      - "8883:8883"    # MQTT TLS (futuro)
+      - "18083:18083"  # Dashboard
+    environment:
+      EMQX_NAME: gruahub-emqx
+      EMQX_LOG__CONSOLE__LEVEL: warning
+      EMQX_AUTHENTICATION__1__MECHANISM: password_based
+      EMQX_AUTHENTICATION__1__BACKEND: built_in_database
+      EMQX_AUTHENTICATION__1__PASSWORD_HASH_ALGORITHM__NAME: sha256
+      EMQX_DASHBOARD__DEFAULT_USERNAME: admin
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: public
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+      - ./emqx/acl.conf:/opt/emqx/etc/acl.conf:ro
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ================================================================
+  # MinIO — S3-compatible storage
+  # ================================================================
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: gruahub-minio
+    restart: unless-stopped
+    networks: [gruahub]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ================================================================
+  # MinIO Setup — cria bucket inicial
+  # ================================================================
+  minio-setup:
+    image: minio/mc:RELEASE.2024-05-09T17-04-24Z
+    container_name: gruahub-minio-setup
+    networks: [gruahub]
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set gruahub http://minio:9000 minioadmin minioadmin &&
+        mc mb --ignore-existing gruahub/gruahub &&
+        mc anonymous set none gruahub/gruahub &&
+        echo 'MinIO bucket gruahub created'
+      "
+    restart: "no"
+
+  # ================================================================
+  # Backend Quarkus
+  # ================================================================
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../infra/Dockerfile.backend
+    container_name: gruahub-backend
+    restart: unless-stopped
+    networks: [gruahub]
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: gruahub
+      DB_USER: gruahub
+      DB_PASSWORD: gruahub
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: gruahub
+      KEYCLOAK_CLIENT_ID: gruahub-backend
+      KEYCLOAK_CLIENT_SECRET: gruahub-backend-secret
+      MQTT_BROKER_URL: tcp://emqx:1883
+      MQTT_USERNAME: gruahub-backend
+      MQTT_PASSWORD: gruahub-backend-pass
+      MINIO_HOST: minio
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: gruahub
+      LOG_JSON: "true"
+      QUARKUS_LIQUIBASE_CONTEXTS: demo
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      emqx:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+  # ================================================================
+  # Frontend Next.js
+  # ================================================================
+  web:
+    build:
+      context: ../web
+      dockerfile: ../infra/Dockerfile.web
+    container_name: gruahub-web
+    restart: unless-stopped
+    networks: [gruahub]
+    ports:
+      - "3000:3000"
+    environment:
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: gruahub-nextauth-secret-local-only
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      KEYCLOAK_ISSUER: http://localhost:8180/realms/gruahub
+      KEYCLOAK_CLIENT_ID: gruahub-web
+      KEYCLOAK_CLIENT_SECRET: gruahub-web-secret
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ================================================================
+  # Simuladores (profile: simulators)
+  # ================================================================
+  machine-simulator:
+    build:
+      context: ../simulators/machine-simulator
+    container_name: gruahub-machine-sim
+    restart: unless-stopped
+    networks: [gruahub]
+    profiles: [simulators]
+    environment:
+      MQTT_BROKER_URL: tcp://emqx:1883
+      MQTT_USERNAME: sim-machine
+      MQTT_PASSWORD: sim-machine-pass
+      TENANT_ID: "11111111-0000-0000-0000-000000000001"
+      MACHINE_IDS: "66666666-0000-0000-0000-000000000001,66666666-0000-0000-0000-000000000003"
+      HEARTBEAT_INTERVAL_MS: "30000"
+    depends_on:
+      emqx:
+        condition: service_healthy
+
+  payment-simulator:
+    build:
+      context: ../simulators/payment-simulator
+    container_name: gruahub-payment-sim
+    restart: unless-stopped
+    networks: [gruahub]
+    profiles: [simulators]
+    environment:
+      BACKEND_URL: http://backend:8080
+      SANDBOX_SECRET: sandbox-webhook-secret-gruahub-demo
+    depends_on:
+      backend:
+        condition: service_healthy

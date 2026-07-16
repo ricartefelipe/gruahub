@@ -1,0 +1,197 @@
+{
+  "realm": "gruahub",
+  "enabled": true,
+  "displayName": "GruaHub",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "resetPasswordAllowed": true,
+  "accessTokenLifespan": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "PLATFORM_ADMIN", "description": "Administrador da plataforma" },
+      { "name": "TENANT_ADMIN", "description": "Administrador da empresa operadora" },
+      { "name": "OPERATIONS_MANAGER", "description": "Gestor de operações" },
+      { "name": "FIELD_OPERATOR", "description": "Operador de campo" },
+      { "name": "TECHNICIAN", "description": "Técnico de manutenção" },
+      { "name": "FINANCE", "description": "Financeiro" },
+      { "name": "ESTABLISHMENT_VIEWER", "description": "Visualizador do estabelecimento parceiro" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "gruahub-backend",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "gruahub-backend-secret",
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "gruahub-web",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "gruahub-web-secret",
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:3001/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3001"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "tenant_slug",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_slug",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "tenant_slug",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "gruahub-mobile",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "gruahub://auth*",
+        "exp://localhost:8081*",
+        "http://localhost:8081*"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@gruahub.local",
+      "email": "admin@gruahub.local",
+      "firstName": "Admin",
+      "lastName": "GruaHub",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
+      "realmRoles": ["PLATFORM_ADMIN"],
+      "attributes": {
+        "tenant_id": ["11111111-0000-0000-0000-000000000001"],
+        "tenant_slug": ["diversao-nordeste-demo"]
+      }
+    },
+    {
+      "username": "gestor@diversao.demo",
+      "email": "gestor@diversao.demo",
+      "firstName": "João",
+      "lastName": "Gestor",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
+      "realmRoles": ["TENANT_ADMIN"],
+      "attributes": {
+        "tenant_id": ["11111111-0000-0000-0000-000000000001"],
+        "tenant_slug": ["diversao-nordeste-demo"]
+      }
+    },
+    {
+      "username": "operador@diversao.demo",
+      "email": "operador@diversao.demo",
+      "firstName": "Maria",
+      "lastName": "Operadora",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
+      "realmRoles": ["FIELD_OPERATOR"],
+      "attributes": {
+        "tenant_id": ["11111111-0000-0000-0000-000000000001"],
+        "tenant_slug": ["diversao-nordeste-demo"]
+      }
+    },
+    {
+      "username": "tecnico@diversao.demo",
+      "email": "tecnico@diversao.demo",
+      "firstName": "Carlos",
+      "lastName": "Técnico",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
+      "realmRoles": ["TECHNICIAN"],
+      "attributes": {
+        "tenant_id": ["11111111-0000-0000-0000-000000000001"],
+        "tenant_slug": ["diversao-nordeste-demo"]
+      }
+    },
+    {
+      "username": "financeiro@diversao.demo",
+      "email": "financeiro@diversao.demo",
+      "firstName": "Ana",
+      "lastName": "Financeiro",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
+      "realmRoles": ["FINANCE"],
+      "attributes": {
+        "tenant_id": ["11111111-0000-0000-0000-000000000001"],
+        "tenant_slug": ["diversao-nordeste-demo"]
+      }
+    },
+    {
+      "username": "parceiro@shoppingbv.demo",
+      "email": "parceiro@shoppingbv.demo",
+      "firstName": "Pedro",
+      "lastName": "Parceiro",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
+      "realmRoles": ["ESTABLISHMENT_VIEWER"],
+      "attributes": {
+        "tenant_id": ["11111111-0000-0000-0000-000000000001"],
+        "tenant_slug": ["diversao-nordeste-demo"]
+      }
+    }
+  ]
+}

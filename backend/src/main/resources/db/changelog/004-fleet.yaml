@@ -1,0 +1,237 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-001-machine-model
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: machine_model
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: manufacturer
+                  type: varchar(100)
+              - column:
+                  name: prize_capacity
+                  type: int
+                  defaultValueNumeric: 0
+              - column:
+                  name: description
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: machine_model
+            baseColumnNames: tenant_id
+            constraintName: fk_machine_model_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 004-002-controller
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: controller
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: serial_number
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: firmware_version
+                  type: varchar(50)
+              - column:
+                  name: model_type
+                  type: varchar(100)
+                  defaultValue: GENERIC
+              - column:
+                  name: mqtt_client_id
+                  type: varchar(200)
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: ACTIVE
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: controller
+            baseColumnNames: tenant_id
+            constraintName: fk_controller_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: controller
+            constraintName: uq_controller_serial_tenant
+            columnNames: serial_number, tenant_id
+
+  - changeSet:
+      id: 004-003-machine
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: machine
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_model_id
+                  type: uuid
+              - column:
+                  name: controller_id
+                  type: uuid
+              - column:
+                  name: operating_point_id
+                  type: uuid
+              - column:
+                  name: asset_number
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: qr_code
+                  type: varchar(200)
+              - column:
+                  name: name
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(30)
+                  defaultValue: DRAFT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: play_price_cents
+                  type: bigint
+                  defaultValueNumeric: 200
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  defaultValue: BRL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bonus_plays
+                  type: int
+                  defaultValueNumeric: 0
+              - column:
+                  name: prize_capacity
+                  type: int
+                  defaultValueNumeric: 0
+              - column:
+                  name: installed_at
+                  type: date
+              - column:
+                  name: retired_at
+                  type: date
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: last_seen_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: machine
+            baseColumnNames: tenant_id
+            constraintName: fk_machine_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: machine
+            baseColumnNames: machine_model_id
+            constraintName: fk_machine_model
+            referencedTableName: machine_model
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: machine
+            baseColumnNames: controller_id
+            constraintName: fk_machine_controller
+            referencedTableName: controller
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: machine
+            baseColumnNames: operating_point_id
+            constraintName: fk_machine_operating_point
+            referencedTableName: operating_point
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: machine
+            constraintName: uq_machine_asset_tenant
+            columnNames: asset_number, tenant_id
+        - addUniqueConstraint:
+            tableName: machine
+            constraintName: uq_machine_qr_tenant
+            columnNames: qr_code, tenant_id
+        - createIndex:
+            tableName: machine
+            indexName: idx_machine_tenant_status
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: status

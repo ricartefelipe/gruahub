@@ -1,0 +1,232 @@
+package com.gruahub.routing.api;
+
+import com.gruahub.shared.domain.TenantContext;
+import com.gruahub.audit.application.AuditService;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
+import org.jboss.logging.Logger;
+
+import java.net.URI;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * REST resource para planos de rota.
+ * Rotas são geradas pelo RoutePlanScheduler (ordenadas por priority_score)
+ * ou manualmente pelo TENANT_ADMIN.
+ *
+ * Notas de schema:
+ *  - route_plan.operator_user_id  → UUID NOT NULL (migração 012)
+ *  - route_plan.scheduled_date    → date NOT NULL  (migração 012)
+ *  - route_plan.planned_date      → date nullable  (migração 017, alias)
+ *  - route_stop.sequence_order    → int  NOT NULL  (migração 012)
+ *  - route_stop.stop_order        → int  nullable  (migração 017, alias)
+ */
+@Path("/api/v1/routes")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@RequestScoped
+public class RoutingResource {
+
+    private static final Logger LOG = Logger.getLogger(RoutingResource.class);
+
+    @Inject
+    EntityManager em;
+
+    @Inject
+    AuditService audit;
+
+    // ── DTOs ────────────────────────────────────────────────────────────────────
+
+    public record RoutePlanResponse(
+        UUID id,
+        String operatorUserId,
+        String plannedDate,
+        String status,
+        int totalStops,
+        int completedStops,
+        String createdAt
+    ) {}
+
+    public record RouteStopResponse(
+        UUID id,
+        UUID routePlanId,
+        UUID operatingPointId,
+        String operatingPointName,
+        String address,
+        int stopOrder,
+        int priorityScore,
+        String priorityExplanation,
+        String status
+    ) {}
+
+    // ── Plans ─────────────────────────────────────────────────────────────────────
+
+    @GET
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
+    public List<RoutePlanResponse> listPlans(
+        @QueryParam("page") @DefaultValue("0") int page,
+        @QueryParam("size") @DefaultValue("30") int size
+    ) {
+        UUID tenantId = TenantContext.getTenantId();
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(
+            "SELECT rp.id, rp.operator_user_id, " +
+            // planned_date (017) tem prioridade; fallback para scheduled_date (012)
+            "COALESCE(rp.planned_date, rp.scheduled_date), " +
+            "rp.status, " +
+            "COUNT(rs.id) as total, " +
+            "COUNT(rs.id) FILTER (WHERE rs.status = 'COMPLETED') as completed, " +
+            "rp.created_at " +
+            "FROM route_plan rp " +
+            "LEFT JOIN route_stop rs ON rs.route_plan_id = rp.id " +
+            "WHERE rp.tenant_id = :tid " +
+            "GROUP BY rp.id, rp.operator_user_id, rp.planned_date, rp.scheduled_date, " +
+            "rp.status, rp.created_at " +
+            "ORDER BY COALESCE(rp.planned_date, rp.scheduled_date) DESC " +
+            "LIMIT :lim OFFSET :off"
+        )
+            .setParameter("tid", tenantId)
+            .setParameter("lim", Math.min(size, 100))
+            .setParameter("off", page * size)
+            .getResultList();
+
+        return rows.stream().map(r -> new RoutePlanResponse(
+            (UUID) r[0],
+            r[1] != null ? r[1].toString() : null,
+            r[2] != null ? r[2].toString() : null,
+            (String) r[3],
+            ((Number) r[4]).intValue(),
+            ((Number) r[5]).intValue(),
+            r[6] != null ? r[6].toString() : null
+        )).toList();
+    }
+
+    @GET
+    @Path("/{id}/stops")
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
+    public List<RouteStopResponse> listStops(@PathParam("id") UUID routePlanId) {
+        UUID tenantId = TenantContext.getTenantId();
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(
+            "SELECT rs.id, rs.route_plan_id, rs.operating_point_id, op.name, " +
+            "CONCAT(op.address_street, ', ', op.address_city, '/', op.address_state), " +
+            // stop_order (017) tem prioridade; fallback para sequence_order (012)
+            "COALESCE(rs.stop_order, rs.sequence_order), " +
+            "rs.priority_score, rs.priority_explanation::text, rs.status " +
+            "FROM route_stop rs " +
+            "JOIN operating_point op ON op.id = rs.operating_point_id " +
+            "JOIN route_plan rp ON rp.id = rs.route_plan_id " +
+            "WHERE rs.route_plan_id = :planId AND rp.tenant_id = :tid " +
+            "ORDER BY COALESCE(rs.stop_order, rs.sequence_order) ASC"
+        )
+            .setParameter("planId", routePlanId)
+            .setParameter("tid", tenantId)
+            .getResultList();
+
+        return rows.stream().map(r -> new RouteStopResponse(
+            (UUID) r[0], (UUID) r[1], (UUID) r[2], (String) r[3], (String) r[4],
+            ((Number) r[5]).intValue(),
+            r[6] != null ? ((Number) r[6]).intValue() : 0,
+            (String) r[7], (String) r[8]
+        )).toList();
+    }
+
+    /**
+     * Gera rota para hoje com base nos priority_scores dos pontos ativos.
+     * MVP: ordena por priority_score DESC, limita aos top-N pontos do tenant.
+     */
+    @POST
+    @Path("/generate")
+    @Transactional
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN"})
+    public Response generateRoute(
+        @QueryParam("maxStops") @DefaultValue("10") int maxStops,
+        @Context SecurityContext secCtx,
+        @Context UriInfo uriInfo
+    ) {
+        UUID tenantId = TenantContext.getTenantId();
+        LocalDate today = LocalDate.now();
+        UUID planId = UUID.randomUUID();
+
+        // Obtém UUID do operador a partir do subject OIDC; gera aleatório se ausente
+        UUID operatorId;
+        try {
+            String sub = secCtx.getUserPrincipal() != null
+                ? secCtx.getUserPrincipal().getName() : null;
+            operatorId = (sub != null) ? UUID.fromString(sub) : UUID.randomUUID();
+        } catch (IllegalArgumentException e) {
+            operatorId = UUID.randomUUID();
+        }
+
+        // Insere nas duas colunas de data: scheduled_date (NOT NULL, 012) e
+        // planned_date (nullable alias, 017)
+        em.createNativeQuery(
+            "INSERT INTO route_plan " +
+            "(id, tenant_id, operator_user_id, scheduled_date, planned_date, status) " +
+            "VALUES (:id, :tid, :opId, :date, :date, 'PLANNED')"
+        )
+            .setParameter("id", planId)
+            .setParameter("tid", tenantId)
+            .setParameter("opId", operatorId)
+            .setParameter("date", today.toString())
+            .executeUpdate();
+
+        // Busca pontos ordenados por priority_score
+        @SuppressWarnings("unchecked")
+        List<Object[]> points = em.createNativeQuery(
+            "SELECT id, priority_score, " +
+            "COALESCE(priority_explanation::text, 'Score automático') " +
+            "FROM operating_point " +
+            "WHERE tenant_id = :tid AND status = 'ACTIVE' " +
+            "ORDER BY priority_score DESC NULLS LAST " +
+            "LIMIT :max"
+        )
+            .setParameter("tid", tenantId)
+            .setParameter("max", Math.min(maxStops, 50))
+            .getResultList();
+
+        for (int i = 0; i < points.size(); i++) {
+            Object[] p = points.get(i);
+            int order = i + 1;
+            // Insere em sequence_order (NOT NULL, 012) e stop_order (alias, 017)
+            em.createNativeQuery(
+                "INSERT INTO route_stop " +
+                "(id, route_plan_id, tenant_id, operating_point_id, " +
+                " sequence_order, stop_order, " +
+                " priority_score, priority_explanation, status) " +
+                "VALUES (:id, :planId, :tid, :pointId, :order, :order, :score, :explain, 'PENDING')"
+            )
+                .setParameter("id", UUID.randomUUID())
+                .setParameter("planId", planId)
+                .setParameter("tid", tenantId)
+                .setParameter("pointId", p[0])
+                .setParameter("order", order)
+                .setParameter("score", p[1])
+                .setParameter("explain", p[2])
+                .executeUpdate();
+        }
+
+        audit.record("ROUTE_GENERATED", "route_plan", planId.toString(),
+            "stops=" + points.size() + " date=" + today);
+
+        URI location = uriInfo.getAbsolutePathBuilder()
+            .replacePath("/api/v1/routes/{id}/stops").build(planId);
+        return Response.created(location)
+            .entity(Map.of(
+                "id", planId,
+                "totalStops", points.size(),
+                "plannedDate", today.toString()
+            ))
+            .build();
+    }
+}

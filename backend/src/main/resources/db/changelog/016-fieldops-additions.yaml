@@ -1,0 +1,83 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-001-field-visit-extras
+      author: gruahub
+      comment: "Make operator_user_id nullable and add cash_collected_cents to field_visit"
+      changes:
+        - addColumn:
+            tableName: field_visit
+            columns:
+              - column:
+                  name: cash_collected_cents
+                  type: bigint
+        - sql:
+            sql: "ALTER TABLE field_visit ALTER COLUMN operator_user_id DROP NOT NULL"
+
+  - changeSet:
+      id: 016-002-visit-checklist-result
+      author: gruahub
+      comment: "Bulk checklist result from mobile (JSON blob, one row per visit)"
+      changes:
+        - createTable:
+            tableName: visit_checklist_result
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: visit_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_operation_id
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: items
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completed_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+        - addUniqueConstraint:
+            tableName: visit_checklist_result
+            constraintName: uq_checklist_result_client_op
+            columnNames: client_operation_id, tenant_id
+        - addForeignKeyConstraint:
+            baseTableName: visit_checklist_result
+            baseColumnNames: visit_id
+            constraintName: fk_checklist_result_visit
+            referencedTableName: field_visit
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 016-003-maintenance-ticket-client-op
+      author: gruahub
+      comment: "Add client_operation_id to maintenance_ticket for offline idempotency"
+      changes:
+        - addColumn:
+            tableName: maintenance_ticket
+            columns:
+              - column:
+                  name: client_operation_id
+                  type: varchar(100)
+        - addUniqueConstraint:
+            tableName: maintenance_ticket
+            constraintName: uq_maintenance_ticket_client_op
+            columnNames: client_operation_id, tenant_id

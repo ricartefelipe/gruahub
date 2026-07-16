@@ -1,0 +1,77 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-001-reconciliation-case
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: reconciliation_case
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: machine_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_transaction_id
+                  type: uuid
+              - column:
+                  name: credit_grant_id
+                  type: uuid
+              - column:
+                  name: play_session_id
+                  type: uuid
+              - column:
+                  name: status
+                  type: varchar(40)
+                  defaultValue: PAYMENT_WITHOUT_CREDIT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resolution
+                  type: varchar(40)
+              - column:
+                  name: resolution_notes
+                  type: text
+              - column:
+                  name: resolved_by_user_id
+                  type: uuid
+              - column:
+                  name: resolved_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: reconciliation_case
+            baseColumnNames: tenant_id
+            constraintName: fk_recon_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - createIndex:
+            tableName: reconciliation_case
+            indexName: idx_recon_tenant_status
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: status
