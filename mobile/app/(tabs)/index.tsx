@@ -1,30 +1,118 @@
 /**
  * Rota do Dia — tela inicial do app mobile.
+ * Conecta ao endpoint real /api/v1/routing/plans para buscar a rota de hoje.
  */
 
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
-import { useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
+import Constants from 'expo-constants';
 
-// Dados mock enquanto integração com API está sendo conectada
-const MOCK_ROUTE = [
-  { id: '1', pointName: 'Shopping BV - L1', address: 'Recife, PE', score: 87, machines: 2, reason: 'Estoque crítico + 5 dias sem visita' },
-  { id: '2', pointName: 'Supermercado Fortaleza', address: 'Fortaleza, CE', score: 62, reason: 'Receita em queda' },
-  { id: '3', pointName: 'Parque Natal', address: 'Natal, RN', score: 41, reason: 'Visita preventiva' },
-];
+const API_BASE = (Constants.expoConfig?.extra?.apiUrl as string) ?? 'http://localhost:8080';
+
+interface RouteStop {
+  id: string;
+  pointName: string;
+  address: string;
+  score: number;
+  machines?: number;
+  reason: string;
+}
+
+async function fetchTodayRoute(accessToken: string): Promise<RouteStop[]> {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  // 1. Buscar o plano de rota do dia
+  const planRes = await fetch(
+    `${API_BASE}/api/v1/routing/plans?date=${today}&page=0&size=1`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!planRes.ok) {
+    if (planRes.status === 401) throw new Error('Sessão expirada. Faça login novamente.');
+    throw new Error(`Erro ao buscar plano de rota: ${planRes.status}`);
+  }
+
+  const planData = await planRes.json();
+  const plans: Array<{ id: string }> = planData.content ?? planData.items ?? planData ?? [];
+  if (plans.length === 0) return [];
+
+  const planId = plans[0].id;
+
+  // 2. Buscar as paradas do plano
+  const stopsRes = await fetch(
+    `${API_BASE}/api/v1/routing/plans/${planId}/stops`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!stopsRes.ok) {
+    throw new Error(`Erro ao buscar paradas: ${stopsRes.status}`);
+  }
+
+  const stops: Array<{
+    id: string;
+    pointName?: string;
+    locationName?: string;
+    address?: string;
+    priorityScore?: number;
+    score?: number;
+    machineCount?: number;
+    visitReason?: string;
+    reason?: string;
+  }> = await stopsRes.json();
+
+  return stops.map((s) => ({
+    id: s.id,
+    pointName: s.pointName ?? s.locationName ?? 'Ponto',
+    address: s.address ?? '',
+    score: s.priorityScore ?? s.score ?? 0,
+    machines: s.machineCount,
+    reason: s.visitReason ?? s.reason ?? '',
+  }));
+}
 
 export default function RouteScreen() {
-  const { userEmail } = useAuthStore();
+  const { userEmail, accessToken } = useAuthStore();
   const { sync } = useSyncQueue();
+  const [route, setRoute] = useState<RouteStop[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const loadRoute = useCallback(async () => {
+    if (!accessToken) {
+      setError('Não autenticado.');
+      setLoading(false);
+      return;
+    }
+    try {
+      setError(null);
+      const stops = await fetchTodayRoute(accessToken);
+      setRoute(stops);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erro desconhecido ao carregar rota.');
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
+  useEffect(() => { loadRoute(); }, [loadRoute]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await sync();
+    await loadRoute();
     setRefreshing(false);
-  }, [sync]);
+  }, [sync, loadRoute]);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#1e40af" />
+        <Text style={styles.loadingText}>Carregando rota...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -33,8 +121,14 @@ export default function RouteScreen() {
         <Text style={styles.subtitle}>{userEmail || 'Operador'}</Text>
       </View>
 
+      {error && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
       <FlatList
-        data={MOCK_ROUTE}
+        data={route}
         keyExtractor={item => item.id}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -84,6 +178,10 @@ export default function RouteScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
+  centered: { justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, color: '#6b7280', fontSize: 14 },
+  errorBanner: { backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#ef4444', padding: 12, margin: 16, borderRadius: 6 },
+  errorText: { color: '#b91c1c', fontSize: 13 },
   header: { backgroundColor: '#1e40af', padding: 20, paddingTop: 60 },
   title: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
   subtitle: { fontSize: 13, color: '#bfdbfe', marginTop: 2 },

@@ -1,7 +1,6 @@
 package com.gruahub;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
@@ -10,26 +9,25 @@ import static org.hamcrest.Matchers.*;
 
 /**
  * Testes de integração de isolamento multi-tenant.
- * <p>
- * Roda contra o Quarkus em modo test com Testcontainers (PostgreSQL auto-provisionado).
- * Estes testes verificam que dados de um tenant NUNCA vazam para outro.
- * <p>
- * IMPORTANTE: Os testes de autenticação real requerem Keycloak rodando.
- * No CI, usamos um token JWT assinado com chave de teste (JWKS stub).
- * Em modo dev local, os testes de isolamento podem ser validados manualmente
- * com dois usuários distintos.
+ *
+ * Convenções:
+ *  - Roda como @QuarkusIntegrationTest (aplicação empacotada, perfil test).
+ *  - %test.quarkus.oidc.enabled=false desativa verificação de token,
+ *    mas o Quarkus Security mantém a camada de autenticação: endpoints
+ *    @Authenticated retornam 401 para requisições anônimas.
+ *  - Cada asserção tem contrato HTTP exato — sem anyOf.
  */
 @QuarkusIntegrationTest
 class TenantIsolationIT {
 
-    private static final String TENANT_A = "11111111-0000-0000-0000-000000000001";
-    private static final String TENANT_B = "22222222-0000-0000-0000-000000000002";
-
     /**
-     * Verifica que o endpoint de status retorna 401 sem token.
+     * GET /api/v1/machines sem token → 401.
+     *
+     * MachineResource é anotado @Authenticated em nível de classe.
+     * Requisição anônima → Quarkus Security retorna 401 antes de qualquer lógica.
      */
     @Test
-    void should_return_401_without_auth_token() {
+    void machines_list_without_auth_returns_401() {
         given()
             .contentType(ContentType.JSON)
         .when()
@@ -39,10 +37,10 @@ class TenantIsolationIT {
     }
 
     /**
-     * Verifica que o health check está disponível sem autenticação.
+     * Health liveness acessível sem autenticação.
      */
     @Test
-    void health_check_should_be_accessible_without_auth() {
+    void health_live_is_accessible_without_auth() {
         given()
         .when()
             .get("/q/health/live")
@@ -52,10 +50,10 @@ class TenantIsolationIT {
     }
 
     /**
-     * Verifica que o endpoint de métricas está disponível.
+     * Endpoint de métricas Prometheus acessível sem autenticação.
      */
     @Test
-    void metrics_endpoint_should_be_accessible() {
+    void metrics_endpoint_is_accessible() {
         given()
         .when()
             .get("/q/metrics")
@@ -64,31 +62,35 @@ class TenantIsolationIT {
     }
 
     /**
-     * Verifica que a API responde com problem+json para recurso não encontrado.
+     * GET /api/v1/machines/{id} sem token → 401.
+     *
+     * @Authenticated em MachineResource: autenticação verificada antes de
+     * qualquer lookup de banco. O status é 401, nunca 404, para requisições
+     * anônimas — mesmo que o ID não exista.
      */
     @Test
-    void should_return_problem_json_for_not_found() {
-        // Endpoint público de verificação de saúde
+    void machine_get_by_id_without_auth_returns_401() {
         given()
         .when()
             .get("/api/v1/machines/00000000-0000-0000-0000-000000000000")
         .then()
-            .statusCode(anyOf(is(401), is(404)));
+            .statusCode(401);
     }
 
     /**
-     * Verifica que o endpoint de OpenAPI está disponível.
+     * Spec OpenAPI disponível e retorna JSON quando solicitado via Accept header.
+     *
+     * Sem Accept header o Quarkus smallrye-openapi retorna YAML por padrão.
+     * Com Accept: application/json o contrato é exatamente application/json.
      */
     @Test
-    void openapi_spec_should_be_available() {
+    void openapi_spec_returns_json_when_requested() {
         given()
+            .accept("application/json")
         .when()
             .get("/q/openapi")
         .then()
             .statusCode(200)
-            .contentType(anyOf(
-                containsString("application/json"),
-                containsString("application/yaml")
-            ));
+            .contentType(containsString("application/json"));
     }
 }

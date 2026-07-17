@@ -9,7 +9,7 @@
     "build": "expo export",
     "lint": "eslint app/**/*.{ts,tsx}",
     "typecheck": "tsc --noEmit",
-    "test": "jest --passWithNoTests"
+    "test": "jest --watchAll=false"
   },
   "dependencies": {
     "expo": "~51.0.17",
@@ -47,6 +47,10 @@
     "jest": "^29.7.0",
     "jest-expo": "~51.0.3",
     "@testing-library/react-native": "^12.5.1",
-    "@types/uuid": "^9.0.7"
+    "@types/uuid": "^9.0.7",
+    "react-test-renderer": "18.2.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

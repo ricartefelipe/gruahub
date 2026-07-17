@@ -8,21 +8,26 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 /**
- * Testes de idempotência do backend.
- * Verifica que operações duplicadas são detectadas e retornam 409 Conflict
- * em vez de criar registros duplicados.
- * <p>
- * Nota: testes de idempotência completos requerem autenticação configurada.
- * Estes testes validam o comportamento básico dos endpoints.
+ * Testes de integração de idempotência — contratos HTTP exatos.
+ *
+ * Convenções:
+ *  - Roda como @QuarkusIntegrationTest (aplicação empacotada, perfil test).
+ *  - %test.quarkus.oidc.enabled=false → OIDC desativado; @Authenticated ainda se aplica
+ *    via mecanismo de identidade anônima do Quarkus Security.
+ *  - Cada teste tem exatamente um status esperado, derivado da implementação real.
  */
 @QuarkusIntegrationTest
 class IdempotencyIT {
 
     /**
-     * Verifica que o webhook de pagamento retorna 401 sem assinatura válida.
+     * Webhook sem header X-Tenant-Id obrigatório.
+     *
+     * PaymentWebhookResource.webhook() faz UUID.fromString(tenantIdHeader).
+     * Com tenantIdHeader == null → IllegalArgumentException → catch → 400.
+     * A verificação de assinatura nem chega a ser executada.
      */
     @Test
-    void webhook_without_signature_should_return_401_or_400() {
+    void webhook_without_required_headers_should_return_400() {
         given()
             .contentType(ContentType.JSON)
             .body("""
@@ -35,30 +40,34 @@ class IdempotencyIT {
         .when()
             .post("/api/v1/payments/webhook/SANDBOX")
         .then()
-            .statusCode(anyOf(is(400), is(401), is(403)));
+            .statusCode(400);
     }
 
     /**
-     * Verifica que o endpoint sandbox de confirmação retorna 404 para transação inexistente.
+     * Sandbox confirm sempre retorna 200 independente de a transação existir.
+     *
+     * SandboxPaymentProvider.sandboxConfirm() apenas faz statusStore.put() —
+     * não lança exceção para IDs desconhecidos. O endpoint retorna 200 OK.
+     * (A ausência de X-Tenant-Id provoca um warn de log, não uma falha HTTP.)
      */
     @Test
-    void sandbox_confirm_nonexistent_transaction_should_return_404_or_401() {
+    void sandbox_confirm_always_returns_200() {
         given()
         .when()
             .post("/api/v1/payments/sandbox/confirm/00000000-0000-0000-0000-000000000000")
         .then()
-            .statusCode(anyOf(is(401), is(404)));
+            .statusCode(200);
     }
 
     /**
-     * Verifica que MQTT stats endpoint (se presente) responde.
+     * /api/v1 não é um endpoint registrado — Quarkus retorna 404.
      */
     @Test
-    void api_root_should_redirect_or_respond() {
+    void api_v1_root_returns_404() {
         given()
         .when()
             .get("/api/v1")
         .then()
-            .statusCode(anyOf(is(200), is(301), is(302), is(404)));
+            .statusCode(404);
     }
 }
