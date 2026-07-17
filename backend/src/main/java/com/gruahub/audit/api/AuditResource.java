@@ -27,12 +27,12 @@ public class AuditResource {
     public record AuditEventResponse(
         UUID id,
         UUID tenantId,
-        String actorId,
+        String actorUserId,
         String actorEmail,
         String action,
         String resourceType,
         String resourceId,
-        String details,
+        String metadata,
         String correlationId,
         String ipAddress,
         Instant occurredAt
@@ -50,13 +50,13 @@ public class AuditResource {
         UUID tenantId = TenantContext.getTenantId();
 
         StringBuilder sql = new StringBuilder(
-            "SELECT id, tenant_id, actor_id, actor_email, action, resource_type, " +
-            "resource_id, details, correlation_id, ip_address, occurred_at " +
+            "SELECT id, tenant_id, actor_user_id, actor_email, action, resource_type, " +
+            "resource_id, metadata, correlation_id, ip_address, occurred_at " +
             "FROM audit_event WHERE tenant_id = :tid "
         );
         if (action != null) sql.append("AND action LIKE :action ");
         if (resourceType != null) sql.append("AND resource_type = :rt ");
-        if (actorId != null) sql.append("AND actor_id = :aid ");
+        if (actorId != null) sql.append("AND actor_user_id = :aid ");
         sql.append("ORDER BY occurred_at DESC LIMIT :lim OFFSET :off");
 
         var q = em.createNativeQuery(sql.toString())

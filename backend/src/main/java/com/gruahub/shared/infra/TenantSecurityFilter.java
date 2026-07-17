@@ -1,9 +1,7 @@
 package com.gruahub.shared.infra;
 
-import com.gruahub.identity.domain.UserRole;
-import com.gruahub.identity.infra.UserRepository;
+import com.gruahub.shared.api.ProblemResponse;
 import com.gruahub.shared.domain.TenantContext;
-import io.quarkus.oidc.runtime.OidcJwtCallerPrincipal;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -40,29 +38,55 @@ public class TenantSecurityFilter implements ContainerRequestFilter, ContainerRe
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        // Skip para endpoints públicos
+        // Skip para endpoints públicos (health, metrics, openapi)
         if (identity == null || identity.isAnonymous()) {
             return;
         }
 
+        String subject = null;
+        String email = null;
+        String tenantIdStr = null;
+        String tenantSlug = null;
+
         try {
-            String subject = jwt.getSubject(); // Keycloak UUID
-            String email = jwt.getClaim("email");
+            subject = jwt.getSubject();
+            email = jwt.getClaim("email");
+            tenantIdStr = jwt.getClaim("tenant_id");
+            tenantSlug = jwt.getClaim("tenant_slug");
+        } catch (Exception e) {
+            // JWT não disponível (modo test com @TestSecurity sem OIDC real).
+            // Tenta ler tenant de atributos da SecurityIdentity (injetado por TestSecurity).
+            try {
+                Object attr = identity.getAttribute("tenant_id");
+                if (attr != null) tenantIdStr = attr.toString();
+                Object slugAttr = identity.getAttribute("tenant_slug");
+                if (slugAttr != null) tenantSlug = slugAttr.toString();
+                subject = identity.getPrincipal() != null ? identity.getPrincipal().getName() : null;
+            } catch (Exception ignored) {
+                LOG.debugf("Could not read SecurityIdentity attributes: %s", ignored.getMessage());
+            }
+        }
 
-            // Claim customizado configurado no Keycloak
-            String tenantIdStr = jwt.getClaim("tenant_id");
-            String tenantSlug = jwt.getClaim("tenant_slug");
-
-            if (tenantIdStr != null && !tenantIdStr.isBlank()) {
+        if (tenantIdStr != null && !tenantIdStr.isBlank()) {
+            try {
                 UUID tenantId = UUID.fromString(tenantIdStr);
                 TenantContext.set(tenantId, tenantSlug, subject, email);
-            } else {
-                // PLATFORM_ADMIN pode não ter tenant_id no token
-                // Será validado nos recursos individualmente
-                LOG.debugf("No tenant_id claim for user %s — may be PLATFORM_ADMIN", email);
+            } catch (IllegalArgumentException e) {
+                LOG.warnf("Invalid tenant_id claim format for user %s: %s", email, tenantIdStr);
+                // ProblemResponse.forbidden() retorna um Response completo
+                requestContext.abortWith(ProblemResponse.forbidden(null));
             }
-        } catch (Exception e) {
-            LOG.warnf("Failed to initialize TenantContext: %s", e.getMessage());
+        } else {
+            // Usuário autenticado sem tenant_id. Apenas PLATFORM_ADMIN é permitido.
+            // Demais perfis obteriam IllegalStateException de TenantContext.getTenantId()
+            // e receberiam um 500 inesperado — rejeitamos com 403 aqui.
+            boolean isPlatformAdmin = identity.hasRole("PLATFORM_ADMIN");
+            if (!isPlatformAdmin) {
+                LOG.warnf("Authenticated user %s has no tenant_id claim and is not PLATFORM_ADMIN", email);
+                requestContext.abortWith(ProblemResponse.forbidden(null));
+            } else {
+                LOG.debugf("PLATFORM_ADMIN %s without tenant_id — cross-tenant access", email);
+            }
         }
     }
 

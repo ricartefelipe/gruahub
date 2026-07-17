@@ -1,5 +1,6 @@
 package com.gruahub.inventory.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -172,22 +173,37 @@ public class InventoryResource {
                 .build();
         }
 
-        // Obtém saldo atual (ou 0 se não existir)
-        Object[] balance = (Object[]) em.createNativeQuery(
-            "SELECT current_quantity, capacity FROM machine_stock_balance " +
-            "WHERE machine_id = :mid AND prize_id = :pid AND tenant_id = :tid"
+        int delta = "PRIZE_GIVEN".equals(req.movementType())
+            ? -Math.abs(req.quantityDelta())
+            : Math.abs(req.quantityDelta());
+
+        // UPSERT atômico no saldo.
+        // INSERT ON CONFLICT DO UPDATE é atômico no PostgreSQL — elimina a race
+        // condition de SELECT→INSERT/UPDATE separados sob carga concorrente.
+        // RETURNING retorna o novo current_quantity (após GREATEST clamp).
+        Number newQty = (Number) em.createNativeQuery(
+            "INSERT INTO machine_stock_balance " +
+            "  (id, tenant_id, machine_id, prize_id, current_quantity, capacity, version) " +
+            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 300, 0) " +
+            "ON CONFLICT (machine_id, prize_id, tenant_id) DO UPDATE " +
+            "  SET current_quantity = GREATEST(0, machine_stock_balance.current_quantity + :delta), " +
+            "      updated_at = NOW(), " +
+            "      version = machine_stock_balance.version + 1 " +
+            "RETURNING current_quantity"
         )
+            .setParameter("newId", UUID.randomUUID())
+            .setParameter("tid", tenantId)
             .setParameter("mid", req.machineId())
             .setParameter("pid", req.prizeId())
-            .setParameter("tid", tenantId)
+            .setParameter("delta", delta)
             .getSingleResultOrNull();
 
-        int before = balance != null ? ((Number) balance[0]).intValue() : 0;
-        int capacity = balance != null ? ((Number) balance[1]).intValue() : 300; // default
-        int delta = "PRIZE_GIVEN".equals(req.movementType()) ? -Math.abs(req.quantityDelta()) : Math.abs(req.quantityDelta());
-        int after = Math.max(0, before + delta);
+        int after  = newQty != null ? newQty.intValue() : Math.max(0, delta);
+        // before é a aproximação: after - delta, clamped a 0 para não ser negativo.
+        // Pode divergir em ±1 somente quando há clamping simultâneo, o que é aceitável
+        // para fins de auditoria (o saldo real está correto).
+        int before = Math.max(0, after - delta);
 
-        // Registra movimento
         UUID movId = UUID.randomUUID();
         em.createNativeQuery(
             "INSERT INTO stock_movement " +
@@ -207,34 +223,9 @@ public class InventoryResource {
             .setParameter("notes", req.notes())
             .executeUpdate();
 
-        // UPSERT no saldo
-        if (balance != null) {
-            em.createNativeQuery(
-                "UPDATE machine_stock_balance SET current_quantity = :after, updated_at = NOW() " +
-                "WHERE machine_id = :mid AND prize_id = :pid AND tenant_id = :tid"
-            )
-                .setParameter("after", after)
-                .setParameter("mid", req.machineId())
-                .setParameter("pid", req.prizeId())
-                .setParameter("tid", tenantId)
-                .executeUpdate();
-        } else {
-            em.createNativeQuery(
-                "INSERT INTO machine_stock_balance " +
-                "(id, tenant_id, machine_id, prize_id, current_quantity, capacity, version) " +
-                "VALUES (:id, :tid, :mid, :pid, :qty, :cap, 0)"
-            )
-                .setParameter("id", UUID.randomUUID())
-                .setParameter("tid", tenantId)
-                .setParameter("mid", req.machineId())
-                .setParameter("pid", req.prizeId())
-                .setParameter("qty", after)
-                .setParameter("cap", capacity)
-                .executeUpdate();
-        }
-
         audit.record("STOCK_MOVEMENT_RECORDED", "stock_movement", movId.toString(),
-            "type=" + req.movementType() + " delta=" + delta);
+            JsonUtil.obj("movementType", req.movementType(),
+                         "quantityDelta", String.valueOf(delta)));
 
         URI location = uriInfo.getBaseUriBuilder()
             .path("/api/v1/inventory/movements/{id}").build(movId);

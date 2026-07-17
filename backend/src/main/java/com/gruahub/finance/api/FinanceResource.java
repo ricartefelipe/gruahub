@@ -1,5 +1,6 @@
 package com.gruahub.finance.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -118,7 +119,7 @@ public class FinanceResource {
             .executeUpdate();
 
         if (updated == 0) throw new NotFoundException("Settlement not found or not PENDING: " + id);
-        audit.record("SETTLEMENT_APPROVED", "settlement", id.toString(), null);
+        audit.record("SETTLEMENT_APPROVED", "settlement", id.toString(), "{}");
         return getSettlement(id, tenantId);
     }
 
@@ -137,7 +138,7 @@ public class FinanceResource {
             .executeUpdate();
 
         if (updated == 0) throw new NotFoundException("Settlement not found or not APPROVED: " + id);
-        audit.record("SETTLEMENT_PAID", "settlement", id.toString(), null);
+        audit.record("SETTLEMENT_PAID", "settlement", id.toString(), "{}");
         return getSettlement(id, tenantId);
     }
 
@@ -184,7 +185,7 @@ public class FinanceResource {
             .executeUpdate();
 
         audit.record("CASH_COLLECTION_RECORDED", "cash_collection", id.toString(),
-            "amountCents=" + req.amountCents());
+            JsonUtil.obj("amountCents", String.valueOf(req.amountCents())));
 
         URI location = uriInfo.getBaseUriBuilder()
             .path("/api/v1/finance/cash-collections/{id}").build(id);
@@ -205,7 +206,8 @@ public class FinanceResource {
             "FROM settlement s " +
             "JOIN operating_point op ON op.id = s.operating_point_id " +
             "WHERE s.id = :id AND s.tenant_id = :tid"
-        ).setParameter("id", id).setParameter("tid", tenantId).getSingleResult();
+        ).setParameter("id", id).setParameter("tid", tenantId).getSingleResultOrNull();
+        if (r == null) throw new NotFoundException("Settlement not found: " + id);
         return mapSettlementRow(r);
     }
 

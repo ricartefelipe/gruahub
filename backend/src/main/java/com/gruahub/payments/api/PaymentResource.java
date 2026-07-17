@@ -94,7 +94,8 @@ public class PaymentResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResultOrNull();
+        if (r == null) throw new NotFoundException("Payment not found: " + id);
 
         return new PaymentResponse(
             (UUID) r[0], (String) r[1], (String) r[2],

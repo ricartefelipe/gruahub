@@ -1,5 +1,6 @@
 package com.gruahub.locations.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -119,7 +120,8 @@ public class OperatingPointResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResultOrNull();
+        if (row == null) throw new NotFoundException("Operating point not found: " + id);
         return mapRow(row);
     }
 
@@ -163,7 +165,7 @@ public class OperatingPointResource {
             .executeUpdate();
 
         audit.record("OPERATING_POINT_CREATED", "operating_point", id.toString(),
-            "name=" + req.name() + " estId=" + req.establishmentId());
+            JsonUtil.obj("name", req.name(), "establishmentId", req.establishmentId() != null ? req.establishmentId().toString() : null));
 
         URI location = uriInfo.getAbsolutePathBuilder().path(id.toString()).build();
         return Response.created(location).entity(Map.of("id", id)).build();
@@ -199,7 +201,7 @@ public class OperatingPointResource {
             .executeUpdate();
 
         if (updated == 0) throw new NotFoundException("Operating point not found: " + id);
-        audit.record("OPERATING_POINT_UPDATED", "operating_point", id.toString(), "name=" + req.name());
+        audit.record("OPERATING_POINT_UPDATED", "operating_point", id.toString(), JsonUtil.obj("name", req.name()));
         return getPoint(id);
     }
 
