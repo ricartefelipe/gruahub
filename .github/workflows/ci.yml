@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main, master, develop]
 
 jobs:
   # ─────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ jobs:
 
       - name: Run tests
         working-directory: mobile
-        run: npm test -- --passWithNoTests --watchAll=false
+        run: npm test
 
   # ─────────────────────────────────────────────────────────────
   # Simulators — TypeScript
