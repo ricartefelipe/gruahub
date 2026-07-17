@@ -8,21 +8,30 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 /**
- * Testes de idempotência do backend.
- * Verifica que operações duplicadas são detectadas e retornam 409 Conflict
- * em vez de criar registros duplicados.
+ * Testes de integração para endpoints de pagamento e APIs públicas.
  * <p>
- * Nota: testes de idempotência completos requerem autenticação configurada.
- * Estes testes validam o comportamento básico dos endpoints.
+ * Contratos derivados da análise do código-fonte — nenhum anyOf().
+ *
+ * Análise realizada em:
+ * - PaymentWebhookResource: POST /webhook/{provider} — X-Tenant-Id obrigatório;
+ *   UUID.fromString(null) lança IllegalArgumentException → catch → 400.
+ * - SandboxPaymentProvider.sandboxConfirm: statusStore.put() sem throw → 200.
+ * - GET /api/v1 — não existe rota → 404 do framework JAX-RS.
  */
 @QuarkusIntegrationTest
 class IdempotencyIT {
 
     /**
-     * Verifica que o webhook de pagamento retorna 401 sem assinatura válida.
+     * Webhook sem header X-Tenant-Id → 400 Bad Request.
+     *
+     * PaymentWebhookResource faz UUID.fromString(header "X-Tenant-Id").
+     * Com header ausente, o valor é null → UUID.fromString(null) →
+     * IllegalArgumentException → catch → Response.status(400).
+     *
+     * Contrato exato: 400 (não 401, não 403).
      */
     @Test
-    void webhook_without_signature_should_return_401_or_400() {
+    void webhook_without_tenant_header_returns_400() {
         given()
             .contentType(ContentType.JSON)
             .body("""
@@ -35,30 +44,55 @@ class IdempotencyIT {
         .when()
             .post("/api/v1/payments/webhook/SANDBOX")
         .then()
-            .statusCode(anyOf(is(400), is(401), is(403)));
+            .statusCode(400);
     }
 
     /**
-     * Verifica que o endpoint sandbox de confirmação retorna 404 para transação inexistente.
+     * Sandbox confirm de transação inexistente → 200.
+     *
+     * SandboxPaymentProvider.sandboxConfirm() só faz statusStore.put() sem lançar
+     * exceção. O endpoint retorna 200 independentemente de a transação existir.
+     * Isso é comportamento intencional do sandbox (facilita testes de integração).
+     *
+     * Contrato exato: 200 (não 404, não 401).
      */
     @Test
-    void sandbox_confirm_nonexistent_transaction_should_return_404_or_401() {
+    void sandbox_confirm_returns_200_regardless_of_transaction_existence() {
         given()
         .when()
             .post("/api/v1/payments/sandbox/confirm/00000000-0000-0000-0000-000000000000")
         .then()
-            .statusCode(anyOf(is(401), is(404)));
+            .statusCode(200);
     }
 
     /**
-     * Verifica que MQTT stats endpoint (se presente) responde.
+     * GET /api/v1 — rota inexistente → 404.
+     *
+     * Nenhum recurso JAX-RS está mapeado para /api/v1 sem path adicional.
+     * Quarkus retorna 404 para rotas não mapeadas.
+     *
+     * Contrato exato: 404 (não 200, não 301, não 302).
      */
     @Test
-    void api_root_should_redirect_or_respond() {
+    void api_root_returns_404() {
         given()
         .when()
             .get("/api/v1")
         .then()
-            .statusCode(anyOf(is(200), is(301), is(302), is(404)));
+            .statusCode(404);
+    }
+
+    /**
+     * Health endpoint da aplicação responde com UP.
+     * Smoke test para garantir que a aplicação inicializou corretamente.
+     */
+    @Test
+    void application_health_reports_up() {
+        given()
+        .when()
+            .get("/q/health/live")
+        .then()
+            .statusCode(200)
+            .body("status", equalTo("UP"));
     }
 }

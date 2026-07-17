@@ -1,5 +1,6 @@
 package com.gruahub.maintenance.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -124,7 +125,8 @@ public class MaintenanceResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResultOrNull();
+        if (row == null) throw new NotFoundException("Ticket not found: " + id);
         return mapRow(row);
     }
 
@@ -192,7 +194,7 @@ public class MaintenanceResource {
         }
 
         audit.record("MAINTENANCE_TICKET_CREATED", "maintenance_ticket", ticketId.toString(),
-            "machineId=" + req.machineId() + " priority=" + req.priority());
+            JsonUtil.obj("machineId", req.machineId().toString(), "priority", req.priority()));
 
         URI location = uriInfo.getAbsolutePathBuilder().path(ticketId.toString()).build();
         return Response.created(location).entity(Map.of("id", ticketId)).build();
@@ -227,7 +229,7 @@ public class MaintenanceResource {
         if (updated == 0) throw new NotFoundException("Ticket not found: " + id);
 
         audit.record("MAINTENANCE_TICKET_UPDATED", "maintenance_ticket", id.toString(),
-            "status=" + req.status());
+            JsonUtil.obj("status", req.status()));
         return getTicket(id);
     }
 

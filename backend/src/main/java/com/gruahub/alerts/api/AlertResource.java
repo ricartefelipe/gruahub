@@ -1,5 +1,6 @@
 package com.gruahub.alerts.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -8,6 +9,8 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
@@ -108,7 +111,8 @@ public class AlertResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResultOrNull();
+        if (row == null) throw new NotFoundException("Alert not found: " + id);
         return mapRow(row);
     }
 
@@ -118,12 +122,10 @@ public class AlertResource {
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "TECHNICIAN"})
     public AlertResponse acknowledge(
         @PathParam("id") UUID id,
-        AcknowledgeRequest req
+        AcknowledgeRequest req,
+        @Context SecurityContext secCtx
     ) {
         UUID tenantId = TenantContext.getTenantId();
-        // Extrair usuário do contexto de segurança
-        var secCtx = jakarta.enterprise.inject.spi.CDI.current()
-            .select(jakarta.ws.rs.core.SecurityContext.class).get();
         String acknowledgedBy = secCtx != null && secCtx.getUserPrincipal() != null
             ? secCtx.getUserPrincipal().getName() : "unknown";
 
@@ -142,7 +144,7 @@ public class AlertResource {
         if (updated == 0) throw new NotFoundException("Alert not found or not OPEN: " + id);
 
         audit.record("ALERT_ACKNOWLEDGED", "alert", id.toString(),
-            "by=" + acknowledgedBy);
+            JsonUtil.obj("acknowledgedBy", acknowledgedBy));
 
         return getAlert(id);
     }

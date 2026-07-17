@@ -1,5 +1,6 @@
 package com.gruahub.routing.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -217,7 +218,7 @@ public class RoutingResource {
         }
 
         audit.record("ROUTE_GENERATED", "route_plan", planId.toString(),
-            "stops=" + points.size() + " date=" + today);
+            JsonUtil.obj("stops", String.valueOf(points.size()), "date", String.valueOf(today)));
 
         URI location = uriInfo.getAbsolutePathBuilder()
             .replacePath("/api/v1/routes/{id}/stops").build(planId);

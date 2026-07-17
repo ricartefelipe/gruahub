@@ -1,5 +1,6 @@
 package com.gruahub.reports.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import io.quarkus.qute.Template;
@@ -81,7 +82,7 @@ public class ReportResource {
             byte[] pdfBytes = htmlToPdf(html);
 
             audit.record("REPORT_GENERATED", "report", null,
-                "type=" + req.reportType());
+                JsonUtil.obj("reportType", req.reportType()));
 
             String filename = "gruahub-" + req.reportType().toLowerCase() + "-"
                 + Instant.now().getEpochSecond() + ".pdf";
@@ -146,7 +147,8 @@ public class ReportResource {
             "WHERE v.id = :id AND v.tenant_id = :tid"
         ).setParameter("id", UUID.fromString(visitId))
          .setParameter("tid", tenantId)
-         .getSingleResult();
+         .getSingleResultOrNull();
+        if (visit == null) throw new NotFoundException("Visit not found: " + visitId);
 
         return visitReceiptReport
             .data("visitId", visit[0])

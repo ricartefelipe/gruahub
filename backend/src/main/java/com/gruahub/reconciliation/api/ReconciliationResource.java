@@ -1,5 +1,6 @@
 package com.gruahub.reconciliation.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -103,7 +104,8 @@ public class ReconciliationResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResultOrNull();
+        if (row == null) throw new NotFoundException("Reconciliation case not found: " + id);
         return mapRow(row);
     }
 
@@ -138,7 +140,7 @@ public class ReconciliationResource {
             "Case not found or already resolved: " + id);
 
         audit.record("RECONCILIATION_MANUALLY_RESOLVED", "reconciliation_case",
-            id.toString(), "by=" + resolvedBy + " resolution=" + req.resolution());
+            id.toString(), JsonUtil.obj("resolvedBy", resolvedBy, "resolution", req.resolution()));
 
         return getCase(id);
     }

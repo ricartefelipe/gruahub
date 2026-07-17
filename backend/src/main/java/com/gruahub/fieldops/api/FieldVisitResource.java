@@ -1,5 +1,6 @@
 package com.gruahub.fieldops.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -67,7 +68,7 @@ public class FieldVisitResource {
         String completedAt
     ) {}
 
-    public record ChecklistItem(String key, boolean checked) {}
+    public record ChecklistItem(String key, boolean checked) implements JsonUtil.ChecklistEntry {}
 
     public record VisitResponse(
         UUID id,
@@ -129,7 +130,8 @@ public class FieldVisitResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResultOrNull();
+        if (row == null) throw new NotFoundException("Visit not found: " + id);
         return mapVisitRow(row);
     }
 
@@ -186,7 +188,7 @@ public class FieldVisitResource {
             .executeUpdate();
 
         audit.record("FIELD_VISIT_STARTED", "field_visit", visitId.toString(),
-            "pointId=" + req.operatingPointId());
+            JsonUtil.obj("operatingPointId", req.operatingPointId().toString()));
 
         URI location = uriInfo.getAbsolutePathBuilder().path(visitId.toString()).build();
         return Response.created(location).entity(Map.of("id", visitId)).build();
@@ -231,7 +233,8 @@ public class FieldVisitResource {
             .executeUpdate();
 
         audit.record("FIELD_VISIT_COMPLETED", "field_visit", req.visitId().toString(),
-            "cashCents=" + req.cashCollectedCents());
+            JsonUtil.obj("cashCollectedCents",
+                req.cashCollectedCents() != null ? String.valueOf(req.cashCollectedCents()) : "0"));
 
         return Response.ok(Map.of("id", req.visitId(), "status", "COMPLETED")).build();
     }
@@ -263,12 +266,9 @@ public class FieldVisitResource {
         }
 
         UUID resultId = UUID.randomUUID();
-        // Converte itens para JSONB
-        String itemsJson = req.items() != null
-            ? req.items().stream()
-                .map(i -> String.format("{\"key\":\"%s\",\"checked\":%b}", i.key(), i.checked()))
-                .collect(java.util.stream.Collectors.joining(",", "[", "]"))
-            : "[]";
+        // Converte itens para JSONB usando JsonUtil para escapar chaves corretamente.
+        // String.format com dados não escapados poderia injetar JSON se o key contiver aspas.
+        String itemsJson = JsonUtil.checklistArray(req.items());
 
         em.createNativeQuery(
             "INSERT INTO visit_checklist_result " +

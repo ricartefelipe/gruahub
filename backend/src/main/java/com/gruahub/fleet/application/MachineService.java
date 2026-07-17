@@ -8,10 +8,13 @@ import com.gruahub.fleet.domain.Machine;
 import com.gruahub.fleet.domain.MachineStatus;
 import com.gruahub.fleet.infra.MachineRepository;
 import com.gruahub.shared.api.PageResponse;
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -27,6 +30,9 @@ public class MachineService {
 
     @Inject
     AuditService auditService;
+
+    @Inject
+    EntityManager em;
 
     @Transactional
     public MachineResponse create(CreateMachineRequest req) {
@@ -53,13 +59,19 @@ public class MachineService {
         if (req.prizeCapacity() != null) machine.setPrizeCapacity(req.prizeCapacity());
         if (req.bonusPlays() != null) machine.setBonusPlays(req.bonusPlays());
         if (req.notes() != null) machine.setNotes(req.notes());
-        if (req.operatingPointId() != null) machine.assignToPoint(req.operatingPointId());
-        if (req.controllerId() != null) machine.assignController(req.controllerId());
+        if (req.operatingPointId() != null) {
+            validateOperatingPointBelongsToTenant(req.operatingPointId(), tenantId);
+            machine.assignToPoint(req.operatingPointId());
+        }
+        if (req.controllerId() != null) {
+            validateControllerBelongsToTenant(req.controllerId(), tenantId);
+            machine.assignController(req.controllerId());
+        }
 
         machineRepository.persist(machine);
 
         auditService.record(tenantId, "MACHINE_CREATED", "MACHINE", machine.getId().toString(),
-                "{\"assetNumber\":\"" + machine.getAssetNumber() + "\"}");
+                JsonUtil.obj("assetNumber", machine.getAssetNumber()));
 
         return MachineResponse.from(machine);
     }
@@ -89,8 +101,14 @@ public class MachineService {
         if (req.playPriceCents() != null) machine.setPlayPriceCents(req.playPriceCents());
         if (req.bonusPlays() != null) machine.setBonusPlays(req.bonusPlays());
         if (req.prizeCapacity() != null) machine.setPrizeCapacity(req.prizeCapacity());
-        if (req.operatingPointId() != null) machine.assignToPoint(req.operatingPointId());
-        if (req.controllerId() != null) machine.assignController(req.controllerId());
+        if (req.operatingPointId() != null) {
+            validateOperatingPointBelongsToTenant(req.operatingPointId(), tenantId);
+            machine.assignToPoint(req.operatingPointId());
+        }
+        if (req.controllerId() != null) {
+            validateControllerBelongsToTenant(req.controllerId(), tenantId);
+            machine.assignController(req.controllerId());
+        }
 
         auditService.record(tenantId, "MACHINE_UPDATED", "MACHINE", id.toString(), "{}");
 
@@ -114,7 +132,7 @@ public class MachineService {
         }
 
         auditService.record(tenantId, "MACHINE_STATUS_CHANGED", "MACHINE", id.toString(),
-                "{\"newStatus\":\"" + targetStatus + "\"}");
+                JsonUtil.obj("newStatus", targetStatus.name()));
 
         return MachineResponse.from(machine);
     }
@@ -129,4 +147,30 @@ public class MachineService {
     }
 
     public record MachineStatusSummary(long online, long offline, long maintenance) {}
+
+    // ── Cross-tenant FK validation ────────────────────────────────────────────────
+
+    private void validateOperatingPointBelongsToTenant(UUID operatingPointId, UUID tenantId) {
+        Long count = (Long) em.createNativeQuery(
+            "SELECT COUNT(*) FROM operating_point WHERE id = :id AND tenant_id = :tid"
+        )
+            .setParameter("id", operatingPointId)
+            .setParameter("tid", tenantId)
+            .getSingleResult();
+        if (count == 0) {
+            throw new BadRequestException("Operating point not found in tenant: " + operatingPointId);
+        }
+    }
+
+    private void validateControllerBelongsToTenant(UUID controllerId, UUID tenantId) {
+        Long count = (Long) em.createNativeQuery(
+            "SELECT COUNT(*) FROM controller WHERE id = :id AND tenant_id = :tid"
+        )
+            .setParameter("id", controllerId)
+            .setParameter("tid", tenantId)
+            .getSingleResult();
+        if (count == 0) {
+            throw new BadRequestException("Controller not found in tenant: " + controllerId);
+        }
+    }
 }
