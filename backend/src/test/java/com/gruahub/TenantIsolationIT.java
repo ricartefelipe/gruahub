@@ -1,7 +1,6 @@
 package com.gruahub;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
@@ -10,23 +9,23 @@ import static org.hamcrest.Matchers.*;
 
 /**
  * Testes de integração de isolamento multi-tenant.
- * <p>
+ *
  * Roda contra o Quarkus em modo test com Testcontainers (PostgreSQL auto-provisionado).
  * Estes testes verificam que dados de um tenant NUNCA vazam para outro.
- * <p>
+ *
+ * Contratos exatos — sem anyOf — conforme regra de qualidade do projeto.
+ *
  * IMPORTANTE: Os testes de autenticação real requerem Keycloak rodando.
  * No CI, usamos um token JWT assinado com chave de teste (JWKS stub).
- * Em modo dev local, os testes de isolamento podem ser validados manualmente
- * com dois usuários distintos.
  */
 @QuarkusIntegrationTest
 class TenantIsolationIT {
 
-    private static final String TENANT_A = "11111111-0000-0000-0000-000000000001";
-    private static final String TENANT_B = "22222222-0000-0000-0000-000000000002";
-
     /**
-     * Verifica que o endpoint de status retorna 401 sem token.
+     * Qualquer endpoint protegido sem token deve retornar exatamente 401.
+     *
+     * Contrato: Quarkus OIDC rejeita requisições sem Bearer token com 401
+     * antes de qualquer lógica de negócio ser executada.
      */
     @Test
     void should_return_401_without_auth_token() {
@@ -39,7 +38,9 @@ class TenantIsolationIT {
     }
 
     /**
-     * Verifica que o health check está disponível sem autenticação.
+     * Health check de liveness deve estar acessível sem autenticação.
+     *
+     * Contrato: /q/health/live é público e retorna 200 com body {"status":"UP"}.
      */
     @Test
     void health_check_should_be_accessible_without_auth() {
@@ -52,7 +53,9 @@ class TenantIsolationIT {
     }
 
     /**
-     * Verifica que o endpoint de métricas está disponível.
+     * Endpoint de métricas Prometheus deve estar acessível sem autenticação.
+     *
+     * Contrato: /q/metrics é público em ambiente padrão Quarkus e retorna 200.
      */
     @Test
     void metrics_endpoint_should_be_accessible() {
@@ -64,31 +67,34 @@ class TenantIsolationIT {
     }
 
     /**
-     * Verifica que a API responde com problem+json para recurso não encontrado.
+     * Acesso a recurso protegido sem token retorna 401, não 404.
+     *
+     * Contrato: a autenticação é verificada antes da busca pelo recurso.
+     * UUID inexistente + sem token → 401 (não vaza a informação de existência).
      */
     @Test
-    void should_return_problem_json_for_not_found() {
-        // Endpoint público de verificação de saúde
+    void protected_resource_without_auth_should_return_401() {
         given()
         .when()
             .get("/api/v1/machines/00000000-0000-0000-0000-000000000000")
         .then()
-            .statusCode(anyOf(is(401), is(404)));
+            .statusCode(401);
     }
 
     /**
-     * Verifica que o endpoint de OpenAPI está disponível.
+     * Especificação OpenAPI deve estar disponível sem autenticação.
+     *
+     * Contrato: /q/openapi retorna 200 com Content-Type application/json
+     * quando requisitado com Accept: application/json.
      */
     @Test
-    void openapi_spec_should_be_available() {
+    void openapi_spec_should_be_available_as_json() {
         given()
+            .accept("application/json")
         .when()
             .get("/q/openapi")
         .then()
             .statusCode(200)
-            .contentType(anyOf(
-                containsString("application/json"),
-                containsString("application/yaml")
-            ));
+            .contentType(containsString("application/json"));
     }
 }

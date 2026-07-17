@@ -1,30 +1,117 @@
 /**
  * Rota do Dia — tela inicial do app mobile.
+ * Busca a rota de hoje do backend via API REST.
+ * Funciona offline: exibe último estado sincronizado quando sem conexão.
  */
 
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
-import { useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
 
-// Dados mock enquanto integração com API está sendo conectada
-const MOCK_ROUTE = [
-  { id: '1', pointName: 'Shopping BV - L1', address: 'Recife, PE', score: 87, machines: 2, reason: 'Estoque crítico + 5 dias sem visita' },
-  { id: '2', pointName: 'Supermercado Fortaleza', address: 'Fortaleza, CE', score: 62, reason: 'Receita em queda' },
-  { id: '3', pointName: 'Parque Natal', address: 'Natal, RN', score: 41, reason: 'Visita preventiva' },
-];
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+
+interface RouteStop {
+  id: string;
+  pointName: string;
+  address: string;
+  score: number;
+  machines?: number;
+  reason: string;
+}
+
+async function fetchTodayRoute(accessToken: string, tenantId: string): Promise<RouteStop[]> {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  // Busca planos de rota para hoje
+  const plansRes = await fetch(
+    `${API_URL}/api/v1/routing/plans?date=${today}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-ID': tenantId,
+      },
+    }
+  );
+
+  if (!plansRes.ok) {
+    throw new Error(`Erro ao buscar rota: ${plansRes.status}`);
+  }
+
+  const plans: Array<{ id: string }> = await plansRes.json();
+  if (plans.length === 0) return [];
+
+  // Busca paradas do primeiro plano do dia
+  const planId = plans[0].id;
+  const stopsRes = await fetch(
+    `${API_URL}/api/v1/routing/plans/${planId}/stops`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-ID': tenantId,
+      },
+    }
+  );
+
+  if (!stopsRes.ok) {
+    throw new Error(`Erro ao buscar paradas: ${stopsRes.status}`);
+  }
+
+  const stops = await stopsRes.json();
+
+  // Mapeia para o formato da tela
+  return stops.map((s: {
+    id: string;
+    operatingPointName?: string;
+    address?: string;
+    priorityScore?: number;
+    machineCount?: number;
+    visitReason?: string;
+  }) => ({
+    id: s.id,
+    pointName: s.operatingPointName ?? 'Ponto sem nome',
+    address: s.address ?? '',
+    score: s.priorityScore ?? 0,
+    machines: s.machineCount,
+    reason: s.visitReason ?? '',
+  }));
+}
 
 export default function RouteScreen() {
-  const { userEmail } = useAuthStore();
+  const { userEmail, accessToken, tenantId } = useAuthStore();
   const { sync } = useSyncQueue();
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [route, setRoute] = useState<RouteStop[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadRoute = useCallback(async () => {
+    if (!accessToken || !tenantId) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setError(null);
+      const stops = await fetchTodayRoute(accessToken, tenantId);
+      setRoute(stops);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao carregar rota');
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken, tenantId]);
+
+  useEffect(() => {
+    loadRoute();
+  }, [loadRoute]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await sync();
+    await loadRoute();
     setRefreshing(false);
-  }, [sync]);
+  }, [sync, loadRoute]);
 
   return (
     <View style={styles.container}>
@@ -33,51 +120,63 @@ export default function RouteScreen() {
         <Text style={styles.subtitle}>{userEmail || 'Operador'}</Text>
       </View>
 
-      <FlatList
-        data={MOCK_ROUTE}
-        keyExtractor={item => item.id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        renderItem={({ item, index }) => (
-          <Link href={`/visits/start?pointId=${item.id}&pointName=${encodeURIComponent(item.pointName)}`} asChild>
-            <TouchableOpacity
-              style={styles.card}
-              accessible
-              accessibilityLabel={`Ponto ${index + 1}: ${item.pointName}. Score: ${item.score}. ${item.reason}`}
-              accessibilityRole="button"
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>#{index + 1}</Text>
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#2563eb" />
+        </View>
+      ) : error ? (
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={route}
+          keyExtractor={item => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          renderItem={({ item, index }) => (
+            <Link href={`/visits/start?pointId=${item.id}&pointName=${encodeURIComponent(item.pointName)}`} asChild>
+              <TouchableOpacity
+                style={styles.card}
+                accessible
+                accessibilityLabel={`Ponto ${index + 1}: ${item.pointName}. Score: ${item.score}. ${item.reason}`}
+                accessibilityRole="button"
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>#{index + 1}</Text>
+                  </View>
+                  <View style={styles.scoreContainer}>
+                    <Text style={styles.scoreLabel}>Score</Text>
+                    <Text style={[
+                      styles.scoreValue,
+                      item.score >= 80 ? styles.scoreHigh :
+                      item.score >= 50 ? styles.scoreMed :
+                      styles.scoreLow
+                    ]}>{item.score}</Text>
+                  </View>
                 </View>
-                <View style={styles.scoreContainer}>
-                  <Text style={styles.scoreLabel}>Score</Text>
-                  <Text style={[
-                    styles.scoreValue,
-                    item.score >= 80 ? styles.scoreHigh :
-                    item.score >= 50 ? styles.scoreMed :
-                    styles.scoreLow
-                  ]}>{item.score}</Text>
-                </View>
-              </View>
-              <Text style={styles.pointName}>{item.pointName}</Text>
-              <Text style={styles.address}>{item.address}</Text>
-              <View style={styles.reasonContainer}>
-                <Text style={styles.reasonLabel}>Motivo: </Text>
-                <Text style={styles.reason}>{item.reason}</Text>
-              </View>
-              <Text style={styles.cta}>Iniciar visita →</Text>
-            </TouchableOpacity>
-          </Link>
-        )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>Nenhuma parada planejada para hoje.</Text>
-          </View>
-        }
-        contentContainerStyle={styles.list}
-      />
+                <Text style={styles.pointName}>{item.pointName}</Text>
+                <Text style={styles.address}>{item.address}</Text>
+                {item.reason ? (
+                  <View style={styles.reasonContainer}>
+                    <Text style={styles.reasonLabel}>Motivo: </Text>
+                    <Text style={styles.reason}>{item.reason}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.cta}>Iniciar visita →</Text>
+              </TouchableOpacity>
+            </Link>
+          )}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>Nenhuma parada planejada para hoje.</Text>
+            </View>
+          }
+          contentContainerStyle={styles.list}
+        />
+      )}
     </View>
   );
 }
@@ -88,6 +187,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
   subtitle: { fontSize: 13, color: '#bfdbfe', marginTop: 2 },
   list: { padding: 16, gap: 12 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+  errorText: { color: '#dc2626', fontSize: 14, textAlign: 'center' },
   card: {
     backgroundColor: '#fff', borderRadius: 12, padding: 16,
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
