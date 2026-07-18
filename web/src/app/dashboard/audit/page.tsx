@@ -26,14 +26,14 @@ export default function AuditPage() {
   const [actionFilter, setActionFilter] = useState('');
   const [resourceFilter, setResourceFilter] = useState('');
 
-  const { data: events = [], isLoading } = useQuery<AuditEvent[]>({
+  const { data: events = [], isLoading, isError, error } = useQuery<AuditEvent[]>({
     queryKey: ['audit-events', actionFilter, resourceFilter],
     queryFn: () => {
       const params = new URLSearchParams();
       params.set('size', '100');
       if (actionFilter) params.set('action', actionFilter);
       if (resourceFilter) params.set('resourceType', resourceFilter);
-      return api.get(`/audit?${params}`).then(r => r.data).catch(() => []);
+      return api.get(`/audit?${params}`).then(r => r.data?.content ?? r.data ?? []);
     },
   });
 
@@ -74,6 +74,12 @@ export default function AuditPage() {
         )}
         <span className="ml-auto self-center text-sm text-gray-500">{events.length} evento(s)</span>
       </div>
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar eventos de auditoria: {(error as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Carregando eventos de auditoria...</div>
