@@ -77,6 +77,13 @@ function Build-Backend {
         }
     }
 
+    # Usar Windows Certificate Store → Java confia no cert do antivírus/VPN
+    # (o JDK usa cacerts próprio por padrão; antivírus injeta cert apenas no Windows Store)
+    $env:MAVEN_OPTS = "-Djavax.net.ssl.trustStoreType=Windows-ROOT " +
+                      "-Djavax.net.ssl.trustStore=NONE " +
+                      "-Djava.net.preferIPv4Stack=true"
+    Write-Host "    MAVEN_OPTS=$env:MAVEN_OPTS"
+
     # Compila
     Push-Location $BackendDir
     try {
