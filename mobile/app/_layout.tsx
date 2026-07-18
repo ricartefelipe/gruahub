@@ -1,5 +1,5 @@
 /**
- * Root layout do app — gerencia autenticação e providers globais.
+ * Root layout do app — inicializa banco SQLite e restaura sessão do SecureStore.
  */
 
 import { useEffect, useState } from 'react';
@@ -10,19 +10,23 @@ import { useAuthStore } from '../src/store/authStore';
 
 export default function RootLayout() {
   const [dbReady, setDbReady] = useState(false);
-  const { accessToken } = useAuthStore();
+  const { restoreSession, isRestoring } = useAuthStore();
 
   useEffect(() => {
-    // Inicializa banco SQLite offline na montagem
+    // 1. Inicializa banco SQLite (crash recovery + migrations incrementais)
     getDb()
       .then(() => setDbReady(true))
       .catch((err) => {
-        console.error('[DB] Failed to initialize offline database:', err);
-        setDbReady(true); // Permite o app iniciar mesmo assim
+        console.error('[DB] Falha ao inicializar banco offline:', err);
+        setDbReady(true); // degrada graciosamente — app abre sem cache
       });
+
+    // 2. Restaura tokens do SecureStore
+    restoreSession();
   }, []);
 
-  if (!dbReady) return null;
+  // Aguarda DB + restauração de sessão para evitar flash de tela de login
+  if (!dbReady || isRestoring) return null;
 
   return (
     <>
@@ -34,14 +38,8 @@ export default function RootLayout() {
           name="visits/start"
           options={{ headerShown: false, presentation: 'modal' }}
         />
-        <Stack.Screen
-          name="visits/checklist"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="visits/complete"
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="visits/checklist" options={{ headerShown: false }} />
+        <Stack.Screen name="visits/complete" options={{ headerShown: false }} />
         <Stack.Screen
           name="qr-scan"
           options={{ headerShown: false, presentation: 'modal' }}
