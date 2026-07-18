@@ -32,11 +32,13 @@ Consulte `docs/TASKS.md` para o status detalhado de cada item.
 | Componente | Status |
 |-----------|--------|
 | Estrutura do monorepo | ✅ Completo |
-| Backend Quarkus base | 🔄 Em progresso |
-| Docker Compose | 🔄 Em progresso |
-| Frontend Web Next.js | ⏳ Planejado |
-| App Mobile Expo | ⏳ Planejado |
-| Simuladores | ⏳ Planejado |
-| Seed demonstrativo | ⏳ Planejado |
-| Testes E2E | ⏳ Planejado |
-| Documentação completa | 🔄 Em progresso |
+| Backend Quarkus 3.8.6 / Java 21 | ✅ Completo |
+| Docker Compose (8 serviços) | ✅ Completo |
+| Frontend Web Next.js 14 | ✅ Completo |
+| App Mobile Expo 51 | ✅ Completo |
+| Simuladores (máquina + pagamento) | ✅ Completo |
+| Seed demonstrativo | ✅ Completo |
+| Testes unitários (mobile, 17/17) | ✅ Completo |
+| Testes de integração (backend) | ✅ Completo |
+| CI GitHub Actions | ✅ Completo |
+| Documentação técnica | ✅ Completo |
