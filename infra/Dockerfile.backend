@@ -11,6 +11,9 @@ WORKDIR /build
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 
+# Corrigir CRLF (Windows) e garantir permissão de execução
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+
 # Baixar dependências (cache layer)
 RUN ./mvnw dependency:go-offline -B --no-transfer-progress
 
