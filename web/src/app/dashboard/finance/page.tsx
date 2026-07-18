@@ -34,9 +34,10 @@ const STATUS_META: Record<string, { label: string; className: string }> = {
 };
 
 export default function FinancePage() {
-  const { data: settlements = [], isLoading } = useQuery<Settlement[]>({
+  const { data: settlements = [], isLoading, isError, error } = useQuery<Settlement[]>({
     queryKey: ['settlements'],
-    queryFn: () => api.get('/finance/settlements?size=100').then(r => r.data).catch(() => []),
+    queryFn: () =>
+      api.get('/finance/settlements?size=100').then(r => r.data?.content ?? r.data ?? []),
   });
 
   const totals = settlements.reduce((acc, s) => ({
@@ -67,6 +68,12 @@ export default function FinancePage() {
           <div className="text-2xl font-bold text-green-600 mt-1">{fmtMoney(totals.net)}</div>
         </div>
       </div>
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar liquidações: {(error as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {/* Settlements table */}
       {isLoading ? (

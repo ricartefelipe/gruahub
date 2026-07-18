@@ -39,15 +39,17 @@ export default function PaymentsPage() {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('');
 
-  const { data: payments = [], isLoading } = useQuery<Payment[]>({
+  const { data: payments = [], isLoading, isError, error } = useQuery<Payment[]>({
     queryKey: ['payments', statusFilter],
     queryFn: () =>
       api.get(`/payments${statusFilter ? `?status=${statusFilter}` : ''}`)
-        .then(r => r.data).catch(() => []),
+        .then(r => r.data?.content ?? r.data ?? []),
     refetchInterval: 30_000,
   });
 
-  // Sandbox actions (only meaningful in dev)
+  // Sandbox actions: visíveis apenas quando NEXT_PUBLIC_SANDBOX_ENABLED=true
+  const isSandbox = process.env.NEXT_PUBLIC_SANDBOX_ENABLED === 'true';
+
   const sandboxConfirm = useMutation({
     mutationFn: (id: string) => api.post(`/payments/sandbox/confirm/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payments'] }),
@@ -96,6 +98,12 @@ export default function PaymentsPage() {
         ))}
       </div>
 
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar pagamentos: {(error as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
+
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Carregando pagamentos...</div>
       ) : (
@@ -134,19 +142,21 @@ export default function PaymentsPage() {
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmtDate(p.createdAt)}</td>
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmtDate(p.confirmedAt)}</td>
                     <td className="px-4 py-3">
-                      {p.status === 'PENDING' && (
+                      {isSandbox && p.status === 'PENDING' && (
                         <div className="flex gap-1">
                           <button
                             onClick={() => sandboxConfirm.mutate(p.id)}
-                            className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                            title="Simular confirmação de pagamento"
+                            disabled={sandboxConfirm.isPending}
+                            className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                            title="[SANDBOX] Simular confirmação"
                           >
                             ✓ Confirmar
                           </button>
                           <button
                             onClick={() => sandboxFail.mutate(p.id)}
-                            className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                            title="Simular falha de pagamento"
+                            disabled={sandboxFail.isPending}
+                            className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                            title="[SANDBOX] Simular falha"
                           >
                             ✕ Falhar
                           </button>

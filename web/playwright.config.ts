@@ -28,10 +28,17 @@ export default defineConfig({
   },
 
   projects: [
+    // ─── Setup projects ─────────────────────────────────────────────────────
     {
       name: 'setup',
       testMatch: '**/auth.setup.ts',
     },
+    {
+      name: 'setup-partner',
+      testMatch: '**/auth.partner.setup.ts',
+    },
+
+    // ─── Main project: TENANT_ADMIN ─────────────────────────────────────────
     {
       name: 'chromium',
       use: {
@@ -39,6 +46,25 @@ export default defineConfig({
         storageState: 'e2e/.auth/user.json',
       },
       dependencies: ['setup'],
+    },
+
+    // ─── Partner project: ESTABLISHMENT_VIEWER ───────────────────────────────
+    // Usado para testar isolamento de papel.
+    // Executar: npx playwright test --project=chromium-partner
+    {
+      name: 'chromium-partner',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/partner.json',
+        // Sinaliza aos specs que estamos rodando como parceiro
+        extraHTTPHeaders: {},
+      },
+      env: {
+        E2E_IS_PARTNER: 'true',
+      },
+      dependencies: ['setup-partner'],
+      // Roda apenas specs que têm cenários de parceiro
+      testMatch: ['**/security.spec.ts', '**/portal.spec.ts'],
     },
   ],
 

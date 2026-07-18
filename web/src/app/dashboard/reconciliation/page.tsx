@@ -52,10 +52,11 @@ export default function ReconciliationPage() {
     queryFn: () => api.get('/reconciliation/summary').then(r => r.data),
   });
 
-  const { data: cases = [], isLoading } = useQuery<ReconciliationCase[]>({
+  const { data: cases = [], isLoading, isError, error } = useQuery<ReconciliationCase[]>({
     queryKey: ['reconciliation', statusFilter],
     queryFn: () =>
-      api.get('/reconciliation' + (statusFilter ? `?status=${statusFilter}` : '')).then(r => r.data),
+      api.get('/reconciliation' + (statusFilter ? `?status=${statusFilter}` : ''))
+         .then(r => r.data?.content ?? r.data ?? []),
   });
 
   const resolve = useMutation({
@@ -122,6 +123,12 @@ export default function ReconciliationPage() {
         )}
         <span className="text-sm text-gray-500 ml-auto">{cases.length} caso(s)</span>
       </div>
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar casos de conciliação: {(error as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Carregando casos...</div>
