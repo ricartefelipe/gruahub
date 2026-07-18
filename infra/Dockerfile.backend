@@ -5,19 +5,28 @@
 # Stage 1: Build
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
-# Instalar Maven diretamente — evita dependência do maven-wrapper.jar
-RUN apk add --no-cache maven
+# Instalar wget para download do Maven (sem apk maven — evita conflito JDK 25)
+RUN apk add --no-cache wget
+
+# Baixar Maven 3.9.6 diretamente — usa o JDK 21 do eclipse-temurin sem conflito
+ENV MAVEN_VERSION=3.9.6 \
+    MAVEN_HOME=/opt/maven
+RUN wget -q https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
+    && tar xzf apache-maven-${MAVEN_VERSION}-bin.tar.gz -C /opt \
+    && mv /opt/apache-maven-${MAVEN_VERSION} ${MAVEN_HOME} \
+    && ln -s ${MAVEN_HOME}/bin/mvn /usr/local/bin/mvn \
+    && rm apache-maven-${MAVEN_VERSION}-bin.tar.gz
 
 WORKDIR /build
 
-# Copiar pom.xml primeiro (cache de dependências)
+# Forçar IPv4: Docker build não roteia IPv6 → Maven trava 111s tentando IPv6 antes de falhar
+ENV MAVEN_OPTS="-Djava.net.preferIPv4Stack=true"
+
+# Copiar pom.xml e código fonte
 COPY pom.xml ./
-
-# Baixar dependências (cache layer)
-RUN mvn dependency:go-offline -B --no-transfer-progress
-
-# Copiar código fonte e compilar
 COPY src/ src/
+
+# Compilar — Maven usa JAVA_HOME do eclipse-temurin 21, baixa BOM e deps em uma única camada
 RUN mvn package -DskipTests -B --no-transfer-progress
 
 # ================================================================
