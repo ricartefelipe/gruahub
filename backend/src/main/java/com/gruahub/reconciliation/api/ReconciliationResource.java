@@ -1,5 +1,6 @@
 package com.gruahub.reconciliation.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -9,8 +10,10 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
@@ -103,7 +106,8 @@ public class ReconciliationResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResultOrNull();
+        if (row == null) throw new NotFoundException("Reconciliation case not found: " + id);
         return mapRow(row);
     }
 
@@ -113,11 +117,10 @@ public class ReconciliationResource {
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
     public ReconciliationCaseResponse resolveManually(
         @PathParam("id") UUID id,
-        ManualResolveRequest req
+        ManualResolveRequest req,
+        @Context SecurityContext secCtx
     ) {
         UUID tenantId = TenantContext.getTenantId();
-        var secCtx = jakarta.enterprise.inject.spi.CDI.current()
-            .select(jakarta.ws.rs.core.SecurityContext.class).get();
         String resolvedBy = secCtx != null && secCtx.getUserPrincipal() != null
             ? secCtx.getUserPrincipal().getName() : "unknown";
 
@@ -138,7 +141,7 @@ public class ReconciliationResource {
             "Case not found or already resolved: " + id);
 
         audit.record("RECONCILIATION_MANUALLY_RESOLVED", "reconciliation_case",
-            id.toString(), "by=" + resolvedBy + " resolution=" + req.resolution());
+            id.toString(), JsonUtil.obj("resolvedBy", resolvedBy, "resolution", req.resolution()));
 
         return getCase(id);
     }

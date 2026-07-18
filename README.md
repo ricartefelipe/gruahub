@@ -169,10 +169,18 @@ gruahub/
 │   └── mqtt/schema-v1.json     # Contrato MQTT completo
 │
 └── docs/
-    ├── IMPLEMENTATION_PLAN.md
-    ├── DECISIONS.md
-    ├── TASKS.md
-    └── KNOWN_LIMITATIONS.md
+    ├── ARCHITECTURE.md         # Diagrama de sistema, módulos, fluxos
+    ├── DECISIONS.md            # 10 ADRs
+    ├── DEPLOYMENT.md           # Pré-requisitos, variáveis, comandos
+    ├── SECURITY.md             # Princípios, autenticação, autorização
+    ├── THREAT_MODEL.md         # STRIDE por componente
+    ├── OBSERVABILITY.md        # Logs, métricas, tracing
+    ├── MQTT_CONTRACT.md        # Referência do contrato IoT
+    ├── KNOWN_LIMITATIONS.md    # Limitações honestas por componente
+    ├── MVP_READINESS.md        # Classificação MVP DEMONSTRÁVEL por componente
+    ├── DEMO_SCRIPT.md          # Roteiro executável de demonstração
+    ├── COMMERCIAL_READINESS.md # Gaps para go-live comercial
+    └── TASKS.md                # Backlog e histórico de tarefas
 ```
 
 ---

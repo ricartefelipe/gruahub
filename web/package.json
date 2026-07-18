@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "jest --passWithNoTests",
+    "test": "jest",
     "e2e": "playwright test"
   },
   "dependencies": {
@@ -26,7 +26,6 @@
     "@radix-ui/react-dropdown-menu": "2.1.1",
     "@radix-ui/react-toast": "1.2.1",
     "@radix-ui/react-select": "2.1.1",
-    "@radix-ui/react-badge": "^1.0.0",
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.1",
     "tailwind-merge": "2.4.0",

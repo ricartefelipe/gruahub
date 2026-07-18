@@ -1,6 +1,10 @@
 /**
  * Tela de login com OIDC PKCE via Keycloak + Expo AuthSession.
- * Armazena o access_token no Zustand (em memória), sem persistência de token.
+ *
+ * Segurança:
+ *   - Sem client_secret embarcado (fluxo público PKCE)
+ *   - Tokens persistidos em SecureStore (Keychain/Keystore)
+ *   - Tokens NUNCA logados
  */
 
 import {
@@ -14,20 +18,31 @@ import { useAuthStore } from '../../src/store/authStore';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const KEYCLOAK_BASE = process.env.EXPO_PUBLIC_KEYCLOAK_URL || 'http://localhost:8180';
-const REALM = process.env.EXPO_PUBLIC_KEYCLOAK_REALM || 'gruahub';
-const CLIENT_ID = process.env.EXPO_PUBLIC_KEYCLOAK_CLIENT_ID || 'gruahub-mobile';
+const KEYCLOAK_BASE =
+  (process.env.EXPO_PUBLIC_KEYCLOAK_URL as string | undefined) ?? 'http://localhost:8180';
+const REALM =
+  (process.env.EXPO_PUBLIC_KEYCLOAK_REALM as string | undefined) ?? 'gruahub';
+const CLIENT_ID =
+  (process.env.EXPO_PUBLIC_KEYCLOAK_CLIENT_ID as string | undefined) ?? 'gruahub-mobile';
 
 const discovery = {
   authorizationEndpoint: `${KEYCLOAK_BASE}/realms/${REALM}/protocol/openid-connect/auth`,
-  tokenEndpoint: `${KEYCLOAK_BASE}/realms/${REALM}/protocol/openid-connect/token`,
-  revocationEndpoint: `${KEYCLOAK_BASE}/realms/${REALM}/protocol/openid-connect/logout`,
+  tokenEndpoint:         `${KEYCLOAK_BASE}/realms/${REALM}/protocol/openid-connect/token`,
+  revocationEndpoint:    `${KEYCLOAK_BASE}/realms/${REALM}/protocol/openid-connect/logout`,
 };
 
-function parseJwtPayload(token: string): Record<string, any> {
+/**
+ * Decodifica o payload de um JWT sem verificar assinatura.
+ * Usado apenas para extrair claims (tenant_id, email, sub) após troca PKCE.
+ * A assinatura é verificada pelo backend em cada requisição autenticada.
+ */
+function parseJwtPayload(token: string): Record<string, unknown> {
   try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(base64));
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return {};
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    return JSON.parse(atob(padded));
   } catch {
     return {};
   }
@@ -44,11 +59,12 @@ export default function LoginScreen() {
       scopes: ['openid', 'profile', 'email', 'offline_access'],
       redirectUri,
       usePKCE: true,
+      // Sem clientSecret — app público
     },
     discovery
   );
 
-  // Redireciona se já autenticado
+  // Redireciona se já autenticado (tokens restaurados do SecureStore)
   useEffect(() => {
     if (accessToken) {
       router.replace('/(tabs)');
@@ -57,41 +73,57 @@ export default function LoginScreen() {
 
   // Processa resposta OIDC
   useEffect(() => {
-    if (response?.type === 'success' && request?.codeVerifier) {
-      const { code } = response.params;
-
-      exchangeCodeAsync(
-        {
-          clientId: CLIENT_ID,
-          code,
-          redirectUri,
-          extraParams: { code_verifier: request.codeVerifier },
-        },
-        discovery
-      )
-        .then((tokenResponse) => {
-          const claims = parseJwtPayload(tokenResponse.accessToken);
-          const tenantId: string = claims['tenant_id'] || '';
-          const email: string = claims['email'] || claims['preferred_username'] || '';
-          const userId: string = claims['sub'] || '';
-
-          setAuth(tokenResponse.accessToken, tenantId, email, userId);
-          router.replace('/(tabs)');
-        })
-        .catch((err) => {
-          console.error('[Auth] Token exchange failed:', err);
-          Alert.alert('Erro de autenticação', 'Não foi possível obter o token. Tente novamente.');
-        });
-    } else if (response?.type === 'error') {
-      Alert.alert('Erro de autenticação', response.error?.message || 'Falha no fluxo de login.');
+    if (response?.type === 'error') {
+      Alert.alert('Erro de autenticação', response.error?.message ?? 'Falha no fluxo de login.');
+      return;
     }
+
+    if (response?.type !== 'success' || !request?.codeVerifier) return;
+
+    const { code } = response.params;
+
+    exchangeCodeAsync(
+      {
+        clientId: CLIENT_ID,
+        code,
+        redirectUri,
+        extraParams: { code_verifier: request.codeVerifier },
+      },
+      discovery
+    )
+      .then(async (tokenResponse) => {
+        const claims = parseJwtPayload(tokenResponse.accessToken);
+        const tenantId = (claims['tenant_id'] as string) ?? '';
+        const userEmail =
+          (claims['email'] as string) ??
+          (claims['preferred_username'] as string) ?? '';
+        const userId = (claims['sub'] as string) ?? '';
+        const expiresAt = Date.now() + (tokenResponse.expiresIn ?? 300) * 1000;
+        const refreshToken = tokenResponse.refreshToken ?? '';
+
+        // Persiste em SecureStore — tokens nunca logados
+        await setAuth({
+          accessToken: tokenResponse.accessToken,
+          refreshToken,
+          expiresAt,
+          tenantId,
+          userEmail,
+          userId,
+        });
+
+        router.replace('/(tabs)');
+      })
+      .catch(() => {
+        // Não loga o erro para evitar vazar informações de token
+        Alert.alert('Erro de autenticação', 'Não foi possível obter o token. Tente novamente.');
+      });
   }, [response]);
 
   async function handleLogin() {
     try {
       await promptAsync();
     } catch (err: any) {
-      Alert.alert('Erro', err.message || 'Não foi possível abrir o navegador de autenticação.');
+      Alert.alert('Erro', err.message ?? 'Não foi possível abrir o navegador de autenticação.');
     }
   }
 

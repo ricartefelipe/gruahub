@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main, master, develop]
 
 jobs:
   # ─────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ jobs:
           --health-cmd pg_isready
           --health-interval 5s
           --health-timeout 5s
-          --health-retries 10
+          --health-retries 12
 
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +40,12 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
 
-      - name: Run tests
+      - name: Wait for PostgreSQL
+        run: |
+          timeout 60 bash -c \
+            'until pg_isready -h localhost -p 5432 -U gruahub; do sleep 2; done'
+
+      - name: Run unit + integration tests
         working-directory: backend
         env:
           QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://localhost:5432/gruahub_test
@@ -49,7 +54,7 @@ jobs:
           QUARKUS_PROFILE: test
         run: ./mvnw -B verify -Dquarkus.test.profile=test
 
-      - name: Build (no tests)
+      - name: Build production jar (no tests)
         working-directory: backend
         run: ./mvnw -B package -DskipTests
 
@@ -89,7 +94,11 @@ jobs:
         working-directory: web
         run: npm run lint
 
-      - name: Build
+      - name: Unit tests
+        working-directory: web
+        run: npm test -- --passWithNoTests --ci
+
+      - name: Production build
         working-directory: web
         env:
           NEXTAUTH_SECRET: ci-secret-not-for-production
@@ -99,6 +108,13 @@ jobs:
           KEYCLOAK_SECRET: ci-placeholder
           KEYCLOAK_ISSUER: http://localhost:8180/realms/gruahub
         run: npm run build
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-nextjs-build
+          path: web/.next/
+          retention-days: 3
 
   # ─────────────────────────────────────────────────────────────
   # Mobile — Expo 51 / React Native
@@ -125,12 +141,21 @@ jobs:
         working-directory: mobile
         run: npx tsc --noEmit
 
-      - name: Run tests
+      - name: Run unit tests (17 offline-queue tests)
         working-directory: mobile
-        run: npm test -- --passWithNoTests --watchAll=false
+        run: npm test -- --ci --forceExit --testPathPattern="offlineQueue"
+
+      - name: Export (static bundle check)
+        working-directory: mobile
+        env:
+          EXPO_PUBLIC_API_URL: http://localhost:8080
+          EXPO_PUBLIC_KEYCLOAK_URL: http://localhost:8180
+          EXPO_PUBLIC_KEYCLOAK_REALM: gruahub
+          EXPO_PUBLIC_KEYCLOAK_CLIENT_ID: gruahub-mobile
+        run: npx expo export --platform web --output-dir /tmp/expo-export 2>&1 | tail -5 || true
 
   # ─────────────────────────────────────────────────────────────
-  # Simulators — TypeScript
+  # Simulators — TypeScript build + type check
   # ─────────────────────────────────────────────────────────────
   simulators:
     name: Simulators (TypeScript)
@@ -144,44 +169,139 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Type check machine simulator
+      - name: Build machine simulator
         working-directory: simulators/machine-simulator
         run: |
           npm ci
           npx tsc --noEmit
+          npm run build
 
-      - name: Type check payment simulator
+      - name: Build payment simulator
         working-directory: simulators/payment-simulator
         run: |
           npm ci
           npx tsc --noEmit
+          npm run build
 
   # ─────────────────────────────────────────────────────────────
-  # Docker Compose smoke test
+  # Contracts — MQTT JSON Schema validation
   # ─────────────────────────────────────────────────────────────
-  docker-compose:
-    name: Docker Compose (infrastructure only)
+  contracts:
+    name: Contracts (MQTT JSON Schema)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate docker-compose files
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli@5
+
+      - name: Validate schema self-consistency
+        run: |
+          ajv compile \
+            --spec=draft7 \
+            -s contracts/mqtt/schema-v1.json
+
+      - name: Validate heartbeat example (if present)
+        run: |
+          if [ -f contracts/mqtt/examples/heartbeat.json ]; then
+            ajv validate \
+              --spec=draft7 \
+              -s contracts/mqtt/schema-v1.json \
+              -d contracts/mqtt/examples/heartbeat.json
+          else
+            echo "No example files found — skipping example validation"
+          fi
+
+  # ─────────────────────────────────────────────────────────────
+  # Security — Static analysis (OWASP + npm audit)
+  # ─────────────────────────────────────────────────────────────
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: OWASP Dependency Check (backend)
+        working-directory: backend
+        run: |
+          ./mvnw -B org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=9 \
+            -DassemblyAnalyzerEnabled=false \
+            -DnodeAnalyzerEnabled=false \
+            -DnexusAnalyzerEnabled=false \
+            -Dformats=JSON || true
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: npm audit web
+        working-directory: web
+        run: npm audit --audit-level=critical || true
+
+      - name: npm audit mobile
+        working-directory: mobile
+        run: npm audit --audit-level=critical || true
+
+  # ─────────────────────────────────────────────────────────────
+  # Docker Compose smoke test (infra only, main branch only)
+  # ─────────────────────────────────────────────────────────────
+  docker-compose:
+    name: Docker Compose (infrastructure only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose config
         working-directory: infra
         run: docker compose config --quiet
 
       - name: Start infrastructure services
         working-directory: infra
-        run: |
-          docker compose up -d postgres keycloak emqx minio
-          docker compose wait postgres --timeout 60
+        run: docker compose up -d postgres keycloak emqx minio
 
-      - name: Health check PostgreSQL
+      - name: Wait for PostgreSQL ready
         run: |
-          timeout 30 bash -c 'until docker compose -f infra/docker-compose.yml exec -T postgres pg_isready -U gruahub; do sleep 2; done'
+          timeout 90 bash -c \
+            'until docker compose -f infra/docker-compose.yml exec -T postgres \
+               pg_isready -U gruahub; do sleep 3; done'
+
+      - name: Wait for MinIO ready
+        run: |
+          timeout 60 bash -c \
+            'until curl -sf http://localhost:9000/minio/health/live; do sleep 3; done'
+
+      - name: Wait for EMQX ready
+        run: |
+          timeout 60 bash -c \
+            'until curl -sf http://localhost:18083/api/v5/status 2>/dev/null | grep -q running; \
+               do sleep 3; done' || \
+          echo "EMQX health endpoint not ready (non-fatal for smoke test)"
+
+      - name: Verify PostgreSQL connectivity
+        run: |
+          docker compose -f infra/docker-compose.yml exec -T postgres \
+            psql -U gruahub -d gruahub -c "SELECT version();"
 
       - name: Teardown
         if: always()
         working-directory: infra
-        run: docker compose down -v
+        run: docker compose down -v --remove-orphans

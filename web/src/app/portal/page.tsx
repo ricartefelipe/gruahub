@@ -69,14 +69,16 @@ export default function PortalPage() {
   const { data: visits = [], isLoading: loadingVisits } = useQuery<Visit[]>({
     queryKey: ['portal-visits'],
     queryFn: () =>
-      api.get('/visits', { params: { size: 10, status: 'COMPLETED' } }).then(r => r.data),
+      api.get('/visits', { params: { size: 10, status: 'COMPLETED' } })
+         .then(r => r.data?.content ?? r.data ?? []),
     refetchInterval: 60_000,
   });
 
   const { data: alerts = [], isLoading: loadingAlerts } = useQuery<AlertRow[]>({
     queryKey: ['portal-alerts'],
     queryFn: () =>
-      api.get('/alerts', { params: { status: 'OPEN', size: 20 } }).then(r => r.data),
+      api.get('/alerts', { params: { status: 'OPEN', size: 20 } })
+         .then(r => r.data?.content ?? r.data ?? []),
     refetchInterval: 30_000,
   });
 

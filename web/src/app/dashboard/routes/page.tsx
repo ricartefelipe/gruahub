@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 
@@ -30,20 +31,22 @@ function fmtDate(iso: string) {
 }
 
 export default function RoutesPage() {
-  const { data: plans = [], isLoading } = useQuery<RoutePlan[]>({
+  const { data: plans = [], isLoading, isError: plansError, error: plansErrorObj } = useQuery<RoutePlan[]>({
     queryKey: ['route-plans'],
-    queryFn: () => api.get('/routes?size=30').then(r => r.data).catch(() => []),
+    queryFn: () =>
+      api.get('/routes?size=30').then(r => r.data?.content ?? r.data ?? []),
   });
 
-  const [selected, setSelected] = React.useState<string | null>(plans[0]?.id ?? null);
+  const [selected, setSelected] = useState<string | null>(plans[0]?.id ?? null);
 
-  const { data: stops = [] } = useQuery<RouteStop[]>({
+  const { data: stops = [], isError: stopsError, error: stopsErrorObj } = useQuery<RouteStop[]>({
     queryKey: ['route-stops', selected],
-    queryFn: () => api.get(`/routes/${selected}/stops`).then(r => r.data).catch(() => []),
+    queryFn: () =>
+      api.get(`/routes/${selected}/stops`).then(r => r.data?.content ?? r.data ?? []),
     enabled: !!selected,
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (plans.length > 0 && !selected) {
       setSelected(plans[0].id);
     }
@@ -59,6 +62,18 @@ export default function RoutesPage() {
         <h1 className="text-2xl font-bold text-gray-900">Rotas</h1>
         <p className="text-sm text-gray-500 mt-1">Planos de rota por operador — ordenados por score de prioridade</p>
       </div>
+
+      {plansError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar planos de rota: {(plansErrorObj as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
+
+      {stopsError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar paradas: {(stopsErrorObj as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {plans.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
@@ -155,6 +170,3 @@ export default function RoutesPage() {
     </div>
   );
 }
-
-// Need React imported for hooks
-import React from 'react';

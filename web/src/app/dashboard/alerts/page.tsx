@@ -40,9 +40,10 @@ function fmt(iso: string | null) {
 
 export default function AlertsPage() {
   const qc = useQueryClient();
-  const { data: alerts = [], isLoading } = useQuery<Alert[]>({
+  const { data: alerts = [], isLoading, isError, error } = useQuery<Alert[]>({
     queryKey: ['alerts', 'OPEN'],
-    queryFn: () => api.get('/alerts?status=OPEN&size=100').then(r => r.data),
+    queryFn: () =>
+      api.get('/alerts?status=OPEN&size=100').then(r => r.data?.content ?? r.data ?? []),
     refetchInterval: 30_000,
   });
 
@@ -71,6 +72,11 @@ export default function AlertsPage() {
 
   return (
     <div className="space-y-6">
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar alertas: {(error as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Alertas Operacionais</h1>

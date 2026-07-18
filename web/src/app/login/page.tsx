@@ -44,15 +44,18 @@ export default function LoginPage() {
           Entrar com SSO
         </button>
 
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
-          <p className="font-medium text-gray-700 mb-2">Credenciais de demonstração:</p>
-          <div className="space-y-1">
-            <p><strong>Admin:</strong> admin@gruahub.local</p>
-            <p><strong>Operador:</strong> operador@diversao.demo</p>
-            <p><strong>Parceiro:</strong> parceiro@shoppingbv.demo</p>
-            <p className="mt-1 text-gray-500">Senha: gruahub@2025</p>
+        {/* Credenciais de demo: visíveis apenas em desenvolvimento */}
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <p className="font-medium mb-2">⚠ Ambiente de demonstração</p>
+            <div className="space-y-1 text-amber-700">
+              <p><strong>Admin:</strong> admin@gruahub.local</p>
+              <p><strong>Operador:</strong> operador@diversao.demo</p>
+              <p><strong>Parceiro:</strong> parceiro@shoppingbv.demo</p>
+              <p className="mt-1 text-amber-600">Senha: gruahub@2025</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

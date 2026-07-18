@@ -45,15 +45,17 @@ function fmtDate(iso: string) {
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<'balances' | 'movements'>('balances');
 
-  const { data: balances = [], isLoading: balLoading } = useQuery<StockBalance[]>({
+  const { data: balances = [], isLoading: balLoading, isError: balError, error: balErrorObj } = useQuery<StockBalance[]>({
     queryKey: ['stock-balances'],
-    queryFn: () => api.get('/inventory/balances?size=200').then(r => r.data).catch(() => []),
+    queryFn: () =>
+      api.get('/inventory/balances?size=200').then(r => r.data?.content ?? r.data ?? []),
     enabled: activeTab === 'balances',
   });
 
-  const { data: movements = [], isLoading: movLoading } = useQuery<StockMovement[]>({
+  const { data: movements = [], isLoading: movLoading, isError: movError, error: movErrorObj } = useQuery<StockMovement[]>({
     queryKey: ['stock-movements'],
-    queryFn: () => api.get('/inventory/movements?size=100').then(r => r.data).catch(() => []),
+    queryFn: () =>
+      api.get('/inventory/movements?size=100').then(r => r.data?.content ?? r.data ?? []),
     enabled: activeTab === 'movements',
     refetchInterval: 30_000,
   });
@@ -103,6 +105,12 @@ export default function InventoryPage() {
           ))}
         </nav>
       </div>
+
+      {activeTab === 'balances' && balError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar saldo: {(balErrorObj as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {activeTab === 'balances' && (
         balLoading ? (
@@ -165,6 +173,12 @@ export default function InventoryPage() {
             </table>
           </div>
         )
+      )}
+
+      {activeTab === 'movements' && movError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar movimentações: {(movErrorObj as Error)?.message ?? 'falha de comunicação'}
+        </div>
       )}
 
       {activeTab === 'movements' && (

@@ -45,10 +45,11 @@ export default function MaintenancePage() {
   const [updateTarget, setUpdateTarget] = useState<Ticket | null>(null);
   const [updateForm, setUpdateForm] = useState({ status: '', assignedTo: '', resolutionNotes: '' });
 
-  const { data: tickets = [], isLoading } = useQuery<Ticket[]>({
+  const { data: tickets = [], isLoading, isError, error } = useQuery<Ticket[]>({
     queryKey: ['maintenance', statusFilter],
     queryFn: () =>
-      api.get(`/maintenance?status=${statusFilter}&size=100`).then(r => r.data),
+      api.get(`/maintenance?status=${statusFilter}&size=100`)
+         .then(r => r.data?.content ?? r.data ?? []),
   });
 
   const updateTicket = useMutation({
@@ -91,6 +92,12 @@ export default function MaintenancePage() {
         ))}
         <span className="ml-auto text-sm text-gray-500">{tickets.length} chamado(s)</span>
       </div>
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar chamados: {(error as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Carregando chamados...</div>

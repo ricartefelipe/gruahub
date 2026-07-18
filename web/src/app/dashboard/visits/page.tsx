@@ -33,9 +33,10 @@ function fmtMoney(cents: number | null) {
 }
 
 export default function VisitsPage() {
-  const { data: visits = [], isLoading } = useQuery<Visit[]>({
+  const { data: visits = [], isLoading, isError, error } = useQuery<Visit[]>({
     queryKey: ['visits'],
-    queryFn: () => api.get('/visits?size=100').then(r => r.data),
+    queryFn: () =>
+      api.get('/visits?size=100').then(r => r.data?.content ?? r.data ?? []),
     refetchInterval: 60_000,
   });
 
@@ -55,6 +56,12 @@ export default function VisitsPage() {
           <div className="text-xl font-bold text-green-600">{fmtMoney(totalCash)}</div>
         </div>
       </div>
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar visitas: {(error as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Carregando visitas...</div>

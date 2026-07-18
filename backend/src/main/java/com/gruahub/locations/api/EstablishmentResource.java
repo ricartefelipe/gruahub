@@ -1,5 +1,6 @@
 package com.gruahub.locations.api;
 
+import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -98,7 +99,9 @@ public class EstablishmentResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResultOrNull();
+
+        if (row == null) throw new NotFoundException("Establishment not found: " + id);
 
         return new EstablishmentResponse(
             (UUID) row[0], (String) row[1], (String) row[2], (String) row[3],
@@ -127,7 +130,7 @@ public class EstablishmentResource {
             .executeUpdate();
 
         audit.record("ESTABLISHMENT_CREATED", "establishment", id.toString(),
-            "name=" + req.name());
+            JsonUtil.obj("name", req.name()));
 
         URI location = uriInfo.getAbsolutePathBuilder().path(id.toString()).build();
         return Response.created(location).entity(java.util.Map.of("id", id)).build();
@@ -155,7 +158,7 @@ public class EstablishmentResource {
         if (updated == 0) throw new NotFoundException("Establishment not found: " + id);
 
         audit.record("ESTABLISHMENT_UPDATED", "establishment", id.toString(),
-            "name=" + req.name());
+            JsonUtil.obj("name", req.name()));
 
         return getEstablishment(id);
     }
@@ -176,7 +179,7 @@ public class EstablishmentResource {
 
         if (updated == 0) throw new NotFoundException("Establishment not found or already inactive: " + id);
 
-        audit.record("ESTABLISHMENT_DEACTIVATED", "establishment", id.toString(), null);
+        audit.record("ESTABLISHMENT_DEACTIVATED", "establishment", id.toString(), "{}");
         return Response.noContent().build();
     }
 }

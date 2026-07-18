@@ -32,14 +32,16 @@ export default function LocationsPage() {
   const [newEstName, setNewEstName] = useState('');
   const [showNewEst, setShowNewEst] = useState(false);
 
-  const { data: establishments = [], isLoading: estLoading } = useQuery<Establishment[]>({
+  const { data: establishments = [], isLoading: estLoading, isError: estError, error: estErrorObj } = useQuery<Establishment[]>({
     queryKey: ['establishments'],
-    queryFn: () => api.get('/establishments?size=100').then(r => r.data),
+    queryFn: () =>
+      api.get('/establishments?size=100').then(r => r.data?.content ?? r.data ?? []),
   });
 
-  const { data: points = [], isLoading: ptLoading } = useQuery<OperatingPoint[]>({
+  const { data: points = [], isLoading: ptLoading, isError: ptError, error: ptErrorObj } = useQuery<OperatingPoint[]>({
     queryKey: ['operating-points'],
-    queryFn: () => api.get('/operating-points?size=100').then(r => r.data),
+    queryFn: () =>
+      api.get('/operating-points?size=100').then(r => r.data?.content ?? r.data ?? []),
     enabled: activeTab === 'points',
   });
 
@@ -79,6 +81,18 @@ export default function LocationsPage() {
           ))}
         </nav>
       </div>
+
+      {estError && activeTab === 'establishments' && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar estabelecimentos: {(estErrorObj as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
+
+      {ptError && activeTab === 'points' && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao carregar pontos de operação: {(ptErrorObj as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {/* Establishments tab */}
       {activeTab === 'establishments' && (
