@@ -7,13 +7,13 @@ import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
 import { useState } from 'react';
-import { getQueueStats } from '../../src/db/offlineQueue';
+import { getQueueStats, QueueStats } from '../../src/db/offlineQueue';
 
 export default function ProfileScreen() {
   const { userEmail, tenantId, userId, clearAuth } = useAuthStore();
   const { sync } = useSyncQueue();
   const [syncing, setSyncing] = useState(false);
-  const [stats, setStats] = useState<{ pending: number; failed: number } | null>(null);
+  const [stats, setStats] = useState<QueueStats | null>(null);
 
   async function handleSync() {
     setSyncing(true);
@@ -21,9 +21,10 @@ export default function ProfileScreen() {
       await sync();
       const s = await getQueueStats();
       setStats(s);
+      const failed = s.failedRetryable + s.failedPermanent;
       Alert.alert(
         'Sincronização concluída',
-        `Pendentes: ${s.pending} | Falhas: ${s.failed}`
+        `Pendentes: ${s.pending} | Falhas: ${failed}`
       );
     } finally {
       setSyncing(false);
