@@ -5,21 +5,20 @@
 # Stage 1: Build
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
+# Instalar Maven diretamente — evita dependência do maven-wrapper.jar
+RUN apk add --no-cache maven
+
 WORKDIR /build
 
-# Copiar wrapper e pom.xml primeiro (cache de dependências)
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-
-# Corrigir CRLF (Windows) e garantir permissão de execução
-RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+# Copiar pom.xml primeiro (cache de dependências)
+COPY pom.xml ./
 
 # Baixar dependências (cache layer)
-RUN ./mvnw dependency:go-offline -B --no-transfer-progress
+RUN mvn dependency:go-offline -B --no-transfer-progress
 
 # Copiar código fonte e compilar
 COPY src/ src/
-RUN ./mvnw package -DskipTests -B --no-transfer-progress
+RUN mvn package -DskipTests -B --no-transfer-progress
 
 # ================================================================
 # Stage 2: Runtime
