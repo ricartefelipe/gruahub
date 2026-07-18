@@ -75,6 +75,12 @@ public class SandboxPaymentProvider implements PaymentProvider {
         }
     }
 
+    /** Utilitário sandbox: registra uma transação no store em memória */
+    public void sandboxCreate(String providerTransactionId) {
+        statusStore.put(providerTransactionId, PaymentStatus.PENDING);
+        LOG.infof("[SANDBOX] Transaction %s registered", providerTransactionId);
+    }
+
     /** Utilitário sandbox: confirma uma transação pendente (não existe em produção) */
     public void sandboxConfirm(String providerTransactionId) {
         statusStore.put(providerTransactionId, PaymentStatus.CONFIRMED);

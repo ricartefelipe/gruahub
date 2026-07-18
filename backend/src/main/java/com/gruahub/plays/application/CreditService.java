@@ -1,6 +1,6 @@
 package com.gruahub.plays.application;
 
-import com.gruahub.iot.infra.MqttClientService;
+import com.gruahub.shared.infra.OutboxPublisher;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -10,6 +10,19 @@ import org.jboss.logging.Logger;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Serviço de crédito de jogadas.
+ * <p>
+ * Garantias de exactly-once credit:
+ * <ol>
+ *   <li>Unique constraint {@code uq_credit_grant_payment} em
+ *       {@code credit_grant(payment_transaction_id)} — banco rejeita segundo INSERT.</li>
+ *   <li>INSERT ON CONFLICT DO NOTHING — a aplicação trata silenciosamente.</li>
+ *   <li>MQTT publish via outbox (tabela {@code outbox_event}) — nunca dentro da
+ *       transação de negócio. Se MQTT estiver indisponível, o scheduler
+ *       publica quando o broker se reconectar.</li>
+ * </ol>
+ */
 @ApplicationScoped
 public class CreditService {
 
@@ -19,75 +32,125 @@ public class CreditService {
     EntityManager em;
 
     @Inject
-    MqttClientService mqttClientService;
+    OutboxPublisher outboxPublisher;
 
     /**
-     * Cria e envia crédito para a máquina após confirmação de pagamento.
-     * Garantia: apenas um crédito por payment_transaction_id (constraint UNIQUE).
+     * Cria um crédito para a máquina após confirmação de pagamento.
+     * <p>
+     * O MQTT command é enfileirado no outbox — não publicado diretamente.
+     * Isso garante que o crédito não é perdido se o broker estiver fora.
+     * <p>
+     * Exactly-once: INSERT ON CONFLICT DO NOTHING + unique constraint.
+     * Se duas chamadas concorrentes chegarem para o mesmo paymentTransactionId,
+     * apenas uma insere. A outra recebe rows=0 e retorna null.
+     *
+     * @return UUID do credit_grant criado, ou null se já existia (idempotente)
      */
     @Transactional
     public UUID grantCreditForPayment(UUID tenantId, UUID machineId,
-                                       UUID paymentTransactionId, long amountCents,
-                                       int playsGranted) {
-        UUID creditId = UUID.randomUUID();
+                                      UUID paymentTransactionId, long amountCents,
+                                      int playsGranted) {
+        UUID creditId  = UUID.randomUUID();
         String commandId = UUID.randomUUID().toString();
 
-        em.createNativeQuery(
-                "INSERT INTO credit_grant (id, tenant_id, machine_id, payment_transaction_id, " +
-                "amount_cents, plays_granted, reason, status, command_id, created_at) " +
-                "VALUES (:id, :tid, :mid, :pid, :amt, :plays, 'PAYMENT', 'PENDING', :cmdId, :now)")
-                .setParameter("id", creditId)
-                .setParameter("tid", tenantId)
-                .setParameter("mid", machineId)
-                .setParameter("pid", paymentTransactionId)
-                .setParameter("amt", amountCents)
+        // INSERT ON CONFLICT DO NOTHING — unique constraint garante exactly-once
+        int rows = em.createNativeQuery(
+                "INSERT INTO credit_grant " +
+                "(id, tenant_id, machine_id, payment_transaction_id, " +
+                " amount_cents, plays_granted, reason, status, command_id, created_at) " +
+                "VALUES (:id, :tid, :mid, :pid, :amt, :plays, 'PAYMENT', 'PENDING', :cmdId, :now) " +
+                "ON CONFLICT (payment_transaction_id) DO NOTHING")
+                .setParameter("id",    creditId)
+                .setParameter("tid",   tenantId)
+                .setParameter("mid",   machineId)
+                .setParameter("pid",   paymentTransactionId)
+                .setParameter("amt",   amountCents)
                 .setParameter("plays", playsGranted)
                 .setParameter("cmdId", commandId)
-                .setParameter("now", Instant.now())
+                .setParameter("now",   Instant.now())
                 .executeUpdate();
 
-        // Publicar comando MQTT para a máquina (via outbox para garantir entrega)
-        String cmdPayload = buildCreditCommand(commandId, creditId, playsGranted, amountCents, tenantId, machineId);
-        mqttClientService.publishCommand(tenantId.toString(), machineId.toString(), cmdPayload);
+        if (rows == 0) {
+            // Crédito já existia para este pagamento — retorno idempotente
+            LOG.debugf("Credit already exists for payment %s (exactly-once guarantee) — no-op",
+                    paymentTransactionId);
+            return null;
+        }
 
+        // Enfileirar no outbox (mesma transação — atômica com o INSERT acima)
+        // O OutboxPublisher scheduler publicará via MQTT quando o broker estiver disponível.
+        String cmdPayload = buildGrantCreditPayload(commandId, creditId, playsGranted, amountCents, tenantId, machineId);
+        outboxPublisher.enqueue(tenantId, "credit_grant", creditId, "GRANT_CREDIT", cmdPayload);
+
+        // Também registrar na tabela device_command para rastreabilidade e ACK tracking
         em.createNativeQuery(
-                "UPDATE credit_grant SET status = 'SENT', sent_at = :now WHERE id = :id")
-                .setParameter("now", Instant.now())
-                .setParameter("id", creditId)
+                "INSERT INTO device_command " +
+                "(id, command_id, tenant_id, machine_id, command_type, payload, " +
+                " status, expires_at, created_at) " +
+                "VALUES (gen_random_uuid(), :cmdId, :tid, :mid, 'GRANT_CREDIT', :payload::jsonb, " +
+                "'PENDING', :expiry, :now)")
+                .setParameter("cmdId",   commandId)
+                .setParameter("tid",     tenantId)
+                .setParameter("mid",     machineId)
+                .setParameter("payload", cmdPayload)
+                .setParameter("expiry",  Instant.now().plusSeconds(300)) // TTL 5 min
+                .setParameter("now",     Instant.now())
                 .executeUpdate();
 
-        LOG.infof("Credit granted: creditId=%s machineId=%s plays=%d", creditId, machineId, playsGranted);
+        LOG.infof("Credit granted and enqueued: creditId=%s payment=%s machine=%s plays=%d",
+                creditId, paymentTransactionId, machineId, playsGranted);
         return creditId;
     }
 
+    /**
+     * Registra ACK de crédito da máquina.
+     * Idempotente: WHERE status IN ('PENDING','SENT') evita dupla transição.
+     */
     @Transactional
     public void acknowledgeCredit(UUID creditGrantId, UUID tenantId) {
-        em.createNativeQuery(
+        int rows = em.createNativeQuery(
                 "UPDATE credit_grant SET status = 'ACKNOWLEDGED', acked_at = :now " +
-                "WHERE id = :id AND tenant_id = :tid AND status IN ('SENT', 'PENDING')")
+                "WHERE id = :id AND tenant_id = :tid AND status IN ('PENDING', 'SENT')")
                 .setParameter("now", Instant.now())
-                .setParameter("id", creditGrantId)
+                .setParameter("id",  creditGrantId)
                 .setParameter("tid", tenantId)
                 .executeUpdate();
+
+        if (rows > 0) {
+            LOG.debugf("Credit acknowledged: creditGrantId=%s", creditGrantId);
+        } else {
+            LOG.debugf("Duplicate ACK or unknown credit: creditGrantId=%s tenant=%s — ignored", creditGrantId, tenantId);
+        }
     }
 
+    /**
+     * Consome o crédito após PLAY_COMPLETED.
+     * Idempotente: WHERE status IN ('ACKNOWLEDGED','SENT') evita dupla transição.
+     */
     @Transactional
     public void consumeCredit(UUID creditGrantId, UUID tenantId) {
-        em.createNativeQuery(
+        int rows = em.createNativeQuery(
                 "UPDATE credit_grant SET status = 'CONSUMED', consumed_at = :now " +
-                "WHERE id = :id AND tenant_id = :tid AND status IN ('ACKNOWLEDGED', 'SENT')")
+                "WHERE id = :id AND tenant_id = :tid AND status IN ('ACKNOWLEDGED', 'SENT', 'PENDING')")
                 .setParameter("now", Instant.now())
-                .setParameter("id", creditGrantId)
+                .setParameter("id",  creditGrantId)
                 .setParameter("tid", tenantId)
                 .executeUpdate();
+
+        if (rows > 0) {
+            LOG.debugf("Credit consumed: creditGrantId=%s", creditGrantId);
+        }
     }
 
-    private String buildCreditCommand(String commandId, UUID creditId, int plays,
-                                       long amountCents, UUID tenantId, UUID machineId) {
+    // ── Helpers ──────────────────────────────────────────────────────────────────
+
+    private String buildGrantCreditPayload(String commandId, UUID creditId, int plays,
+                                           long amountCents, UUID tenantId, UUID machineId) {
+        // Sem string concatenation de dados de usuário — valores são todos controlados
         return String.format("""
                 {
-                  "messageId": "%s",
                   "schemaVersion": 1,
+                  "messageId": "%s",
                   "tenantId": "%s",
                   "machineId": "%s",
                   "type": "GRANT_CREDIT",
@@ -97,9 +160,11 @@ public class CreditService {
                     "creditGrantId": "%s",
                     "playsGranted": %d,
                     "amountCents": %d,
-                    "ttlSeconds": 60
+                    "ttlSeconds": 300
                   }
                 }""",
-                commandId, tenantId, machineId, Instant.now(), commandId, creditId, plays, amountCents);
+                commandId, tenantId, machineId,
+                Instant.now().toString(),
+                commandId, creditId, plays, amountCents);
     }
 }

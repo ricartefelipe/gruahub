@@ -3,15 +3,18 @@
  * Simula controladores de máquinas de pelúcia conectando via MQTT ao EMQX.
  *
  * Uso:
- *   TENANT_ID=xxx MACHINE_IDS=id1,id2 npm run dev
+ *   TENANT_ID=xxx MACHINE_IDS=id1,id2 npm run dev [<command>]
  *
- * Comportamentos simulados:
- *   - Heartbeat periódico
- *   - Recepção de comandos GRANT_CREDIT
- *   - ACK de crédito
- *   - PLAY_STARTED e PLAY_COMPLETED
- *   - Erros simuláveis (MOTOR_FAULT, DOOR_OPEN)
- *   - Modo offline ativado por variável de ambiente ou signal
+ * Comandos (variável SCENARIO):
+ *   normal           — fluxo padrão (heartbeat + responde comandos)
+ *   duplicate-ack    — envia CREDIT_RECEIVED duas vezes para o mesmo comando
+ *   gap-sequence     — envia mensagem com sequência pulada (simula sequência faltante)
+ *   offline-recover  — fica offline 5s depois reconecta e reenvia heartbeat
+ *   motor-fault      — publica ERROR_REPORT com motorFault=true
+ *
+ * Sinais UNIX:
+ *   SIGUSR1 — simula MOTOR_FAULT na primeira máquina
+ *   SIGUSR2 — toggle OFFLINE/ONLINE na primeira máquina
  */
 
 import * as mqtt from 'mqtt';
@@ -20,12 +23,13 @@ import { v4 as uuidv4 } from 'uuid';
 // ================================================================
 // Configuração via variáveis de ambiente
 // ================================================================
-const BROKER_URL = process.env.MQTT_BROKER_URL || 'tcp://localhost:1883';
-const USERNAME = process.env.MQTT_USERNAME || 'sim-machine';
-const PASSWORD = process.env.MQTT_PASSWORD || 'sim-machine-pass';
-const TENANT_ID = process.env.TENANT_ID || '11111111-0000-0000-0000-000000000001';
-const MACHINE_IDS_RAW = process.env.MACHINE_IDS || '66666666-0000-0000-0000-000000000001';
-const HEARTBEAT_MS = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '30000', 10);
+const BROKER_URL     = process.env.MQTT_BROKER_URL      || 'tcp://localhost:1883';
+const USERNAME       = process.env.MQTT_USERNAME        || 'sim-machine';
+const PASSWORD       = process.env.MQTT_PASSWORD        || 'sim-machine-pass';
+const TENANT_ID      = process.env.TENANT_ID            || '11111111-0000-0000-0000-000000000001';
+const MACHINE_IDS_RAW = process.env.MACHINE_IDS         || '66666666-0000-0000-0000-000000000001';
+const HEARTBEAT_MS   = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '30000', 10);
+const SCENARIO       = process.env.SCENARIO             || process.argv[2] || 'normal';
 
 const machineIds = MACHINE_IDS_RAW.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -95,7 +99,7 @@ const client = mqtt.connect(BROKER_URL, {
 });
 
 client.on('connect', () => {
-  console.log('[GruaHub Simulator] Connected to MQTT broker');
+  console.log(`[GruaHub Simulator] Connected to MQTT broker (scenario: ${SCENARIO})`);
 
   // Assinar tópicos de comandos para todas as máquinas
   const commandTopics = machineIds.map(id => topic(id, 'commands'));
@@ -107,8 +111,22 @@ client.on('connect', () => {
     }
   });
 
-  // Iniciar heartbeat para todas as máquinas
-  startHeartbeats();
+  // Iniciar comportamento conforme cenário
+  switch (SCENARIO) {
+    case 'gap-sequence':
+      runGapSequenceScenario();
+      break;
+    case 'offline-recover':
+      runOfflineRecoverScenario();
+      break;
+    case 'motor-fault':
+      runMotorFaultScenario();
+      break;
+    // 'normal', 'duplicate-ack' — o duplicate-ack é acionado via handleGrantCredit
+    default:
+      startHeartbeats();
+      break;
+  }
 });
 
 client.on('error', (err) => {
@@ -154,9 +172,9 @@ client.on('message', (topicStr: string, message: Buffer) => {
 // ================================================================
 async function handleGrantCredit(state: MachineState, envelope: any): Promise<void> {
   const cmdPayload = envelope.payload;
-  const commandId = cmdPayload?.commandId;
+  const commandId    = cmdPayload?.commandId;
   const creditGrantId = cmdPayload?.creditGrantId;
-  const playsGranted = cmdPayload?.playsGranted || 1;
+  const playsGranted  = cmdPayload?.playsGranted || 1;
 
   console.log(`[Machine ${state.machineId.substring(0, 8)}] Processing GRANT_CREDIT: ${playsGranted} play(s)`);
 
@@ -172,6 +190,13 @@ async function handleGrantCredit(state: MachineState, envelope: any): Promise<vo
   });
   client.publish(topic(state.machineId, 'command-acks'), ackMsg, { qos: 1 });
   console.log(`[Machine ${state.machineId.substring(0, 8)}] Sent CREDIT_RECEIVED ACK`);
+
+  // Cenário: duplicate-ack — envia o mesmo ACK novamente (backend deve ignorar)
+  if (SCENARIO === 'duplicate-ack') {
+    await delay(150);
+    client.publish(topic(state.machineId, 'command-acks'), ackMsg, { qos: 1 });
+    console.log(`[Machine ${state.machineId.substring(0, 8)}] [duplicate-ack] Sent duplicate CREDIT_RECEIVED — backend should deduplicate`);
+  }
 
   // 2. Simular jogada após 1s
   await delay(1000);
@@ -237,6 +262,81 @@ function sendHeartbeat(state: MachineState): void {
   });
   client.publish(topic(state.machineId, 'telemetry'), msg, { qos: 0 });
   console.log(`[Machine ${state.machineId.substring(0, 8)}] Heartbeat sent (seq=${state.sequence})`);
+}
+
+// ================================================================
+// Cenários especiais
+// ================================================================
+
+/**
+ * gap-sequence: publica heartbeat normal, depois pula sequência (sequência 1, 2, 4 — faltou 3).
+ * O backend deve detectar o gap e criar um alerta.
+ */
+async function runGapSequenceScenario(): Promise<void> {
+  const [firstId] = machineIds;
+  const state = machines.get(firstId)!;
+  console.log(`[gap-sequence] Starting for machine ${firstId.substring(0, 8)}`);
+
+  sendHeartbeat(state); // seq 1
+  await delay(500);
+  sendHeartbeat(state); // seq 2
+  await delay(500);
+
+  // Pular sequência 3 manualmente: forçar sequência para 4
+  state.sequence += 1;
+  sendHeartbeat(state); // seq 4 (gap em 3)
+
+  console.log('[gap-sequence] Sent sequences 1, 2, 4 — backend should detect gap at 3');
+  startHeartbeats(); // continuar normalmente depois
+}
+
+/**
+ * offline-recover: fica offline 5s e depois reconecta publicando heartbeat.
+ */
+async function runOfflineRecoverScenario(): Promise<void> {
+  const [firstId] = machineIds;
+  const state = machines.get(firstId)!;
+  console.log(`[offline-recover] Machine ${firstId.substring(0, 8)} going OFFLINE for 5s`);
+
+  sendHeartbeat(state); // online
+  state.online = false;
+
+  await delay(5000);
+
+  state.online = true;
+  console.log(`[offline-recover] Machine ${firstId.substring(0, 8)} back ONLINE`);
+  sendHeartbeat(state); // reaparece
+
+  startHeartbeats();
+}
+
+/**
+ * motor-fault: publica ERROR_REPORT imediato e restaura após 10s.
+ */
+async function runMotorFaultScenario(): Promise<void> {
+  const [firstId] = machineIds;
+  const state = machines.get(firstId)!;
+  console.log(`[motor-fault] Simulating MOTOR_FAULT on machine ${firstId.substring(0, 8)}`);
+
+  sendHeartbeat(state);
+
+  state.motorFault = true;
+  const errMsg = buildEnvelope(state.machineId, 'ERROR_REPORT', {
+    motorFault: true,
+    doorOpen: state.doorOpen,
+    errorCode: 'E001',
+    description: 'Motor fault injected by motor-fault scenario',
+  });
+  client.publish(topic(state.machineId, 'events'), errMsg, { qos: 1 });
+  console.log('[motor-fault] ERROR_REPORT published — backend should create MAINTENANCE alert');
+
+  setTimeout(() => {
+    state.motorFault = false;
+    console.log('[motor-fault] Motor fault cleared after 10s');
+    sendHeartbeat(state);
+  }, 10_000);
+
+  startHeartbeats();
 }
 
 // ================================================================
