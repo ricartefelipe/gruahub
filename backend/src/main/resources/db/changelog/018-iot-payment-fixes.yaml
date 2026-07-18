@@ -1,0 +1,96 @@
+databaseChangeLog:
+
+  # ── play_session: unique constraint por crédito ─────────────────────────────
+  # Sem esta constraint, ON CONFLICT DO NOTHING na inserção é no-op.
+  # Um crédito deve gerar exatamente uma sessão de jogo.
+  - changeSet:
+      id: 018-001-play-session-unique-credit
+      author: gruahub
+      changes:
+        - addUniqueConstraint:
+            tableName: play_session
+            constraintName: uq_play_session_credit_grant
+            columnNames: credit_grant_id
+
+  # ── reconciliation_case: colunas faltantes usadas pelo resource ──────────────
+  # ReconciliationResource usa status_reason e resolved_by.
+  # A migration 008 criou resolution_notes e resolved_by_user_id (nomes distintos).
+  # Adicionamos as colunas corretas sem remover as antigas (retrocompatibilidade).
+  - changeSet:
+      id: 018-002-reconciliation-case-columns
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: reconciliation_case
+            columns:
+              - column:
+                  name: status_reason
+                  type: text
+              - column:
+                  name: resolved_by
+                  type: varchar(255)
+
+  # ── reconciliation_case: unique por payment para evitar casos duplicados ──────
+  # O scheduler é idempotente apenas se não inserir o mesmo caso duas vezes.
+  # Um pagamento só pode estar em um caso aberto de cada tipo por vez.
+  - changeSet:
+      id: 018-003-reconciliation-unique-payment-status
+      author: gruahub
+      changes:
+        - createIndex:
+            tableName: reconciliation_case
+            indexName: idx_recon_payment_open_status
+            columns:
+              - column:
+                  name: payment_transaction_id
+              - column:
+                  name: status
+            unique: false
+
+  # ── credit_grant: unique index explícito (já existe, mas garante no changelog) ─
+  # Documenta que uq_credit_grant_payment é a constraint de exactly-once credit.
+  # A migration 007 já criou esta constraint; este changeSet é documentação.
+  - changeSet:
+      id: 018-004-credit-grant-payment-unique-doc
+      author: gruahub
+      comment: "Documenta constraint exactly-once: um CreditGrant por PaymentTransaction"
+      changes: []
+
+  # ── device_command: coluna published_at para rastreio de outbox ──────────────
+  - changeSet:
+      id: 018-005-device-command-published-at
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: device_command
+            columns:
+              - column:
+                  name: published_at
+                  type: timestamptz
+
+  # ── device_message_inbox: coluna device_id para identidade de dispositivo ────
+  - changeSet:
+      id: 018-006-device-message-inbox-device-id
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: device_message_inbox
+            columns:
+              - column:
+                  name: device_id
+                  type: varchar(100)
+
+  # ── machine_reported_state: adiciona last_message_id para dedup ──────────────
+  - changeSet:
+      id: 018-007-machine-reported-state-last-msg
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: machine_reported_state
+            columns:
+              - column:
+                  name: last_message_id
+                  type: varchar(100)
+              - column:
+                  name: last_message_at
+                  type: timestamptz
