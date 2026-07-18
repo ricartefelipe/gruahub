@@ -94,7 +94,7 @@ public class PaymentResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         if (r == null) throw new NotFoundException("Payment not found: " + id);
 
         return new PaymentResponse(

@@ -106,7 +106,7 @@ public class ReconciliationResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         if (row == null) throw new NotFoundException("Reconciliation case not found: " + id);
         return mapRow(row);
     }

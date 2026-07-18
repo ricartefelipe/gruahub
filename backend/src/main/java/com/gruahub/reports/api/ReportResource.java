@@ -147,7 +147,7 @@ public class ReportResource {
             "WHERE v.id = :id AND v.tenant_id = :tid"
         ).setParameter("id", UUID.fromString(visitId))
          .setParameter("tid", tenantId)
-         .getSingleResultOrNull();
+         .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         if (visit == null) throw new NotFoundException("Visit not found: " + visitId);
 
         return visitReceiptReport
@@ -222,7 +222,8 @@ public class ReportResource {
         tidy.setShowWarnings(false);
         tidy.setShowErrors(0);
         tidy.setQuiet(true);
-        tidy.setCharEncoding(org.w3c.tidy.Configuration.UTF8);
+        tidy.setInputEncoding("UTF-8");
+        tidy.setOutputEncoding("UTF-8");
 
         InputStream in = new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
