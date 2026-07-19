@@ -98,7 +98,8 @@ Todo evento sensível é registrado na tabela `audit_log` com:
 - [ ] Configurar ACL MQTT por dispositivo (emqx_acl.conf)
 - [ ] Revogar credenciais de demonstração (seed)
 - [x] Ativar `quarkus.http.proxy.proxy-address-forwarding=true` atrás de proxy reverso
-- [ ] Mover todos os segredos para AWS Secrets Manager / Vault (hoje: só `.env` / `${VAR}`)
+- [x] Caminho `*_FILE` (Docker secrets style) no Compose/entrypoints
+- [ ] Mover rotação de segredos para AWS Secrets Manager / Vault (hoje: `.env` / `${VAR}` / `*_FILE`)
 - [x] Configurar CORS com origens explícitas (`GRUAHUB_CORS_ORIGINS` / default inclui `https://localhost`)
 - [ ] Habilitar Content-Security-Policy no Next.js (`next.config.js`)
 - [x] Rate limiting global da API (`GlobalRateLimitFilter`)
