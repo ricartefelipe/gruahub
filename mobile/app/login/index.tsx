@@ -160,7 +160,8 @@ export default function LoginScreen() {
 
         <Text style={styles.envHint}>
           API: {API_URL}{'\n'}
-          Auth: {KEYCLOAK_URL}
+          Auth: {KEYCLOAK_URL}{'\n'}
+          Redirect: {redirectUri}
         </Text>
         {deviceHint ? <Text style={styles.deviceHint}>{deviceHint}</Text> : null}
       </View>
