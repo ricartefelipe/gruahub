@@ -66,8 +66,9 @@
 | Aspecto | Evidência |
 |---------|-----------|
 | Machine + payment sims | Build TS no CI; secrets via env |
-| MQTT schema | `contracts/mqtt/schema-v1.json` compilado com ajv |
-| Limitação | Sem exemplos obrigatórios em `examples/`; sem adaptadores de fabricante |
+| MQTT schema | `schema-v1.json` + exemplos em `contracts/mqtt/examples/` (ajv no CI) |
+| OpenAPI | `contracts/openapi/` versionado; lint Redocly no CI |
+| Limitação | Sem adaptadores de fabricante; OpenAPI é snapshot do build Quarkus |
 
 ### Infra — Docker Compose
 
