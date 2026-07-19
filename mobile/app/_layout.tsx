@@ -1,8 +1,5 @@
-/**
- * Root layout do app — inicializa banco SQLite e restaura sessão do SecureStore.
- */
-
 import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { getDb } from '../src/db/offlineQueue';
@@ -15,25 +12,32 @@ export default function RootLayout() {
   usePushNotifications();
 
   useEffect(() => {
-    // 1. Inicializa banco SQLite (crash recovery + migrations incrementais)
     getDb()
       .then(() => setDbReady(true))
       .catch((err) => {
         console.error('[DB] Falha ao inicializar banco offline:', err);
-        setDbReady(true); // degrada graciosamente — app abre sem cache
+        setDbReady(true);
       });
 
-    // 2. Restaura tokens do SecureStore
     restoreSession();
   }, []);
 
-  // Aguarda DB + restauração de sessão para evitar flash de tela de login
-  if (!dbReady || isRestoring) return null;
+  if (!dbReady || isRestoring) {
+    return (
+      <View style={styles.boot}>
+        <StatusBar style="light" />
+        <Text style={styles.bootBrand}>GruaHub</Text>
+        <ActivityIndicator color="#fff" size="large" style={{ marginTop: 20 }} />
+        <Text style={styles.bootText}>Preparando app…</Text>
+      </View>
+    );
+  }
 
   return (
     <>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="login/index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
@@ -46,7 +50,19 @@ export default function RootLayout() {
           name="qr-scan"
           options={{ headerShown: false, presentation: 'modal' }}
         />
+        <Stack.Screen name="stock/replenish" options={{ headerShown: false }} />
       </Stack>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  boot: {
+    flex: 1,
+    backgroundColor: '#1e40af',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bootBrand: { color: '#fff', fontSize: 28, fontWeight: '700' },
+  bootText: { color: '#bfdbfe', marginTop: 12, fontSize: 14 },
+});

@@ -157,7 +157,7 @@ public class MaintenanceResource {
             "SELECT COUNT(*) FROM maintenance_ticket " +
             "WHERE client_operation_id = :coid AND tenant_id = :tid"
         )
-            .setParameter("coid", req.clientOperationId())
+            .setParameter("coid", req.clientOperationId().toString())
             .setParameter("tid", tenantId)
             .getSingleResult();
 
@@ -167,7 +167,6 @@ public class MaintenanceResource {
                 .build();
         }
 
-        // Valida que a máquina pertence ao tenant
         Long machineCount = (Long) em.createNativeQuery(
             "SELECT COUNT(*) FROM machine WHERE id = :mid AND tenant_id = :tid"
         )
@@ -185,7 +184,7 @@ public class MaintenanceResource {
         )
             .setParameter("id", ticketId)
             .setParameter("tid", tenantId)
-            .setParameter("coid", req.clientOperationId())
+            .setParameter("coid", req.clientOperationId().toString())
             .setParameter("mid", req.machineId())
             .setParameter("title", req.title())
             .setParameter("desc", req.description())

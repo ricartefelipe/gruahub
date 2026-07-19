@@ -24,19 +24,16 @@ export function usePushNotifications(): void {
         }
 
         if (status !== 'granted') {
-          console.info('[push] permissão negada — FCM/Expo push não ativo');
+          console.info('[push] stub: permissão negada');
           return;
         }
 
         const token = await Notifications.getExpoPushTokenAsync();
         if (!cancelled) {
-          console.info(
-            '[push] token Expo obtido (registry backend / FCM Google não configurados):',
-            token.data,
-          );
+          console.info('[push] stub local — sem FCM/registry:', token.data);
         }
       } catch (err) {
-        console.info('[push] stub local sem entrega remota:', err);
+        console.info('[push] stub local — sem entrega remota:', err);
       }
     })();
 

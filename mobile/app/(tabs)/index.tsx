@@ -8,15 +8,9 @@ import * as Network from 'expo-network';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
 import { apiGet, ApiError } from '../../src/api/apiClient';
+import { loadCachedRoute, saveCachedRoute, CachedRouteStop } from '../../src/db/routeCache';
 
-interface RouteStop {
-  id: string;
-  operatingPointId: string;
-  pointName: string;
-  address: string;
-  score: number;
-  reason: string;
-}
+type RouteStop = CachedRouteStop;
 
 function pageContent<T>(body: unknown): T[] {
   if (Array.isArray(body)) return body as T[];
@@ -26,8 +20,12 @@ function pageContent<T>(body: unknown): T[] {
   return [];
 }
 
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 async function fetchTodayRoute(accessToken: string, tenantId: string): Promise<RouteStop[]> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayKey();
 
   const planRes = await apiGet(`/api/v1/routes?date=${today}&page=0&size=1`, {
     accessToken,
@@ -63,16 +61,17 @@ async function fetchTodayRoute(accessToken: string, tenantId: string): Promise<R
       pointName: s.operatingPointName ?? s.pointName ?? 'Ponto',
       address: s.address ?? '',
       score: s.priorityScore ?? s.score ?? 0,
-      reason: s.priorityExplanation ?? s.reason ?? '',
+      reason: (s.priorityExplanation ?? s.reason ?? '').replace(/^"|"$/g, ''),
     }));
 }
 
 export default function RouteScreen() {
-  const { userEmail, accessToken, tenantId } = useAuthStore();
+  const { userEmail, accessToken, tenantId, refreshAccessToken, clearAuth } = useAuthStore();
   const { sync } = useSyncQueue();
   const [route, setRoute] = useState<RouteStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
 
@@ -84,7 +83,7 @@ export default function RouteScreen() {
 
   const loadRoute = useCallback(async () => {
     if (!accessToken) {
-      setError('Não autenticado.');
+      setError('Não autenticado. Faça login novamente.');
       setLoading(false);
       return;
     }
@@ -92,16 +91,47 @@ export default function RouteScreen() {
       setError(null);
       const stops = await fetchTodayRoute(accessToken, tenantId ?? '');
       setRoute(stops);
+      setFromCache(false);
+      await saveCachedRoute(todayKey(), stops);
     } catch (e: unknown) {
+      const cached = await loadCachedRoute(todayKey());
+      if (cached && cached.length > 0) {
+        setRoute(cached);
+        setFromCache(true);
+        setError('Sem conexão com a API — exibindo rota em cache.');
+        return;
+      }
+
       if (e instanceof ApiError && e.status === 401) {
-        setError('Sessão expirada. Puxe para atualizar.');
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+          try {
+            const stops = await fetchTodayRoute(
+              useAuthStore.getState().accessToken ?? accessToken,
+              tenantId ?? ''
+            );
+            setRoute(stops);
+            setFromCache(false);
+            await saveCachedRoute(todayKey(), stops);
+            setError(null);
+            return;
+          } catch {
+            // fall through
+          }
+        }
+        await clearAuth();
+        setError('Sessão expirada. Faça login novamente.');
+      } else if (e instanceof ApiError && e.status === 0) {
+        setError(
+          'Não foi possível alcançar a API. Confira EXPO_PUBLIC_API_URL (localhost no emulador; IP da máquina no device).'
+        );
       } else {
         setError(e instanceof Error ? e.message : 'Erro ao carregar rota.');
       }
     } finally {
       setLoading(false);
     }
-  }, [accessToken, tenantId]);
+  }, [accessToken, tenantId, refreshAccessToken, clearAuth]);
 
   useEffect(() => { loadRoute(); }, [loadRoute]);
 
@@ -130,7 +160,13 @@ export default function RouteScreen() {
         <Text style={styles.subtitle}>{userEmail || 'Operador'}</Text>
         <View style={styles.netRow}>
           <View style={[styles.netDot, isOnline ? styles.netDotOnline : styles.netDotOffline]} />
-          <Text style={styles.netLabel}>{isOnline ? 'Online' : 'Offline — dados em cache'}</Text>
+          <Text style={styles.netLabel}>
+            {isOnline
+              ? fromCache
+                ? 'Online — dados em cache'
+                : 'Online'
+              : 'Offline — dados em cache'}
+          </Text>
         </View>
       </View>
 
@@ -172,7 +208,7 @@ export default function RouteScreen() {
                 </View>
               </View>
               <Text style={styles.pointName}>{item.pointName}</Text>
-              <Text style={styles.address}>{item.address}</Text>
+              <Text style={styles.address}>{item.address || 'Endereço não informado'}</Text>
               {item.reason ? (
                 <View style={styles.reasonContainer}>
                   <Text style={styles.reasonLabel}>Motivo: </Text>

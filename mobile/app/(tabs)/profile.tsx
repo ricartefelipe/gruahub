@@ -69,8 +69,25 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Modo</Text>
-          <Text style={styles.rowValue}>📵 Offline-first</Text>
+          <Text style={styles.rowValue}>Offline-first</Text>
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Campo</Text>
+        <TouchableOpacity
+          style={styles.queueButton}
+          onPress={() =>
+            router.push({
+              pathname: '/qr-scan',
+              params: { returnTo: 'stock' },
+            })
+          }
+          accessibilityLabel="Escanear QR para reposição de estoque"
+          accessibilityRole="button"
+        >
+          <Text style={styles.queueButtonText}>Repor estoque (QR) →</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -83,7 +100,7 @@ export default function ProfileScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.syncButtonText}>
-            {syncing ? '⏳ Sincronizando...' : '🔄 Sincronizar Agora'}
+            {syncing ? 'Sincronizando...' : 'Sincronizar agora'}
           </Text>
         </TouchableOpacity>
 

@@ -1,26 +1,38 @@
-/**
- * Início de visita — checkin com localização e leitura de QR Code.
- */
-
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { v4 as uuidv4 } from 'uuid';
 import { enqueue } from '../../src/db/offlineQueue';
 import { OPERATION_TYPES } from '../../src/db/schema';
+import {
+  CheckinLocation,
+  getCheckinLocation,
+} from '../../src/location/getCheckinLocation';
 
 export default function StartVisitScreen() {
   const { pointId, pointName } = useLocalSearchParams<{ pointId: string; pointName: string }>();
   const [responsibleName, setResponsibleName] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(true);
+  const [location, setLocation] = useState<CheckinLocation | null>(null);
 
-  async function handleCheckin() {
-    if (!responsibleName.trim()) {
-      Alert.alert('Campo obrigatório', 'Informe o nome do responsável no estabelecimento.');
-      return;
-    }
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setGpsLoading(true);
+      const result = await getCheckinLocation();
+      if (!cancelled) {
+        setLocation(result);
+        setGpsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
+  async function proceedCheckin(loc: CheckinLocation) {
     setLoading(true);
     try {
       const clientOperationId = uuidv4();
@@ -32,21 +44,65 @@ export default function StartVisitScreen() {
         responsibleName: responsibleName.trim(),
         notes: notes.trim(),
         checkinAt: new Date().toISOString(),
-        // Em produção: obter localização via expo-location
-        checkinLatitude: null,
-        checkinLongitude: null,
+        checkinLatitude: loc.latitude,
+        checkinLongitude: loc.longitude,
       });
 
       router.replace({
         pathname: '/visits/checklist',
         params: { visitId, clientOperationId, pointName },
       });
-    } catch (err: any) {
-      Alert.alert('Erro', 'Não foi possível iniciar a visita. ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'erro desconhecido';
+      Alert.alert('Erro', 'Não foi possível iniciar a visita. ' + message);
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleCheckin() {
+    if (!responsibleName.trim()) {
+      Alert.alert('Campo obrigatório', 'Informe o nome do responsável no estabelecimento.');
+      return;
+    }
+
+    let loc = location;
+    if (!loc || gpsLoading) {
+      setGpsLoading(true);
+      loc = await getCheckinLocation();
+      setLocation(loc);
+      setGpsLoading(false);
+    }
+
+    if (loc.status !== 'ok') {
+      Alert.alert(
+        'GPS indisponível',
+        loc.detail + '\n\nDeseja continuar o check-in sem coordenadas?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Continuar sem GPS', onPress: () => proceedCheckin(loc!) },
+        ]
+      );
+      return;
+    }
+
+    await proceedCheckin(loc);
+  }
+
+  const gpsLabel = gpsLoading
+    ? 'Obtendo GPS…'
+    : location?.status === 'ok'
+      ? `GPS: ${location.detail}`
+      : location?.status === 'denied'
+        ? 'GPS: permissão negada'
+        : 'GPS: indisponível';
+
+  const gpsTone =
+    location?.status === 'ok'
+      ? styles.gpsOk
+      : location?.status === 'denied'
+        ? styles.gpsWarn
+        : styles.gpsMuted;
 
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
@@ -59,6 +115,23 @@ export default function StartVisitScreen() {
       </View>
 
       <View style={styles.form}>
+        <View style={[styles.gpsBanner, gpsTone]} accessibilityLiveRegion="polite">
+          <Text style={styles.gpsText}>{gpsLabel}</Text>
+          {!gpsLoading && location?.status !== 'ok' ? (
+            <TouchableOpacity
+              onPress={async () => {
+                setGpsLoading(true);
+                const result = await getCheckinLocation();
+                setLocation(result);
+                setGpsLoading(false);
+              }}
+              accessibilityLabel="Tentar obter GPS novamente"
+            >
+              <Text style={styles.gpsRetry}>Tentar novamente</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
         <Text style={styles.label}>Nome do Responsável *</Text>
         <TextInput
           style={styles.input}
@@ -83,7 +156,7 @@ export default function StartVisitScreen() {
 
         <View style={styles.offlineNote}>
           <Text style={styles.offlineNoteText}>
-            📵 Modo offline ativo — a visita será sincronizada ao reconectar.
+            Modo offline-first: a visita vai para a fila local e sincroniza ao reconectar.
           </Text>
         </View>
 
@@ -110,6 +183,17 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
   subtitle: { fontSize: 14, color: '#bfdbfe', marginTop: 4 },
   form: { padding: 20 },
+  gpsBanner: {
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    marginBottom: 4,
+  },
+  gpsOk: { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' },
+  gpsWarn: { backgroundColor: '#fffbeb', borderColor: '#fde68a' },
+  gpsMuted: { backgroundColor: '#f3f4f6', borderColor: '#e5e7eb' },
+  gpsText: { fontSize: 13, color: '#374151', fontWeight: '600' },
+  gpsRetry: { marginTop: 6, color: '#2563eb', fontWeight: '600', fontSize: 13 },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 16 },
   input: {
     backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db',

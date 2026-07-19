@@ -115,13 +115,56 @@
       "directAccessGrantsEnabled": false,
       "protocol": "openid-connect",
       "redirectUris": [
-        "gruahub://auth*",
-        "exp://localhost:8081*",
-        "http://localhost:8081*"
+        "gruahub://*",
+        "exp://*",
+        "http://localhost:8081*",
+        "http://127.0.0.1:8081*"
       ],
+      "webOrigins": ["*"],
       "attributes": {
         "pkce.code.challenge.method": "S256"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "tenant_slug",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_slug",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "tenant_slug",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String"
+          }
+        }
+      ]
     }
   ],
   "users": [

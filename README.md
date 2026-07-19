@@ -88,13 +88,33 @@ cd simulators/payment-simulator && npm install && npm start confirm
 
 ### 5. App mobile (opcional)
 
+Pré-requisitos: stack Docker local saudável (`backend` :8080, `keycloak` :8180).
+
 ```bash
 cd mobile
+cp .env.example .env   # ajuste IPs se for device físico
 npm install
 npx expo start
 ```
 
-Aponte o Expo Go para o QR Code.
+Variáveis `EXPO_PUBLIC_*` (também documentadas em `mobile/.env.example`):
+
+| Variável | Default local | Nota |
+|---|---|---|
+| `EXPO_PUBLIC_API_URL` | `http://localhost:8080` | No **device físico**, use o IP da máquina (`http://192.168.x.x:8080`) |
+| `EXPO_PUBLIC_KEYCLOAK_URL` | `http://localhost:8180` | Mesmo host alcançável pelo telefone; issuer público do realm |
+| `EXPO_PUBLIC_KEYCLOAK_REALM` | `gruahub` | |
+| `EXPO_PUBLIC_KEYCLOAK_CLIENT_ID` | `gruahub-mobile` | Client público PKCE |
+
+Login demo do operador: `operador@diversao.demo` / `gruahub@2025`.
+
+Jornada: login SSO → rota do dia → iniciar visita (GPS real; se negar permissão, confirma sem coordenadas) → checklist → sangria e/ou reposição de estoque (QR → itens → `STOCK_IN` na fila) → concluir → aba **Fila** (sync). Visitas e movimentos aparecem no web em **Visitas** / **Estoque**.
+
+QR demo: UUID da máquina, `gruahub://machine/<uuid>`, patrimônio (`MAQUINA-001`) ou `qr_code` seed (`GH-MAQUINA-001`) — os dois últimos exigem rede para resolver.
+
+```bash
+cd mobile && npm test && npm run typecheck
+```
 
 ---
 
