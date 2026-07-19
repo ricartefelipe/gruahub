@@ -22,11 +22,15 @@
       ],
       [
         "expo-camera",
-        { "cameraPermission": "GruaHub precisa da câmera para ler QR codes das máquinas." }
+        {
+          "cameraPermission": "GruaHub precisa da câmera para ler QR codes das máquinas."
+        }
       ],
       [
         "expo-location",
-        { "locationWhenInUsePermission": "GruaHub usa a localização para registrar check-in nas visitas." }
+        {
+          "locationWhenInUsePermission": "GruaHub usa a localização para registrar check-in nas visitas."
+        }
       ]
     ],
     "scheme": "gruahub",

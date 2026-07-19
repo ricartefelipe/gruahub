@@ -122,10 +122,10 @@ jobs:
           retention-days: 3
 
   # ─────────────────────────────────────────────────────────────
-  # Mobile — Expo 51 / React Native
+  # Mobile — Expo 54 / React Native
   # ─────────────────────────────────────────────────────────────
   mobile:
-    name: Mobile (Expo 51)
+    name: Mobile (Expo 54)
     runs-on: ubuntu-latest
 
     steps:
