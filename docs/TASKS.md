@@ -24,7 +24,7 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 
 - [x] `contracts/openapi/` versionado (`openapi.yaml`/`openapi.json`; regenerar com `scripts/export-openapi.sh`)
 - [x] Exemplos MQTT em `contracts/mqtt/examples/` (CI valida contra `schema-v1.json`)
-- [ ] E2E Playwright em CI (specs em `web/e2e/`; smoke ainda não no pipeline)
+- [x] E2E Playwright smoke em CI (`web/e2e/smoke.spec.ts`; specs autenticados ainda locais com Keycloak)
 - [ ] Rate limiting global / WAF / login (só webhook+sandbox hoje)
 - [ ] TLS/HTTPS no compose (HTTP local de propósito)
 - [ ] Push FCM ativo, SMS/e-mail
