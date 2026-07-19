@@ -33,3 +33,4 @@ services:
       NEXTAUTH_URL: ${NEXTAUTH_URL:-https://localhost}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://localhost}
       KEYCLOAK_ISSUER: ${KEYCLOAK_EDGE_ISSUER:-https://auth.localhost/realms/gruahub}
+      KEYCLOAK_INTERNAL_ISSUER: ${KEYCLOAK_INTERNAL_ISSUER:-http://keycloak:8080/realms/gruahub}

@@ -3,15 +3,9 @@ import KeycloakProvider from 'next-auth/providers/keycloak';
 import type { JWT } from 'next-auth/jwt';
 import type { Account, Session } from 'next-auth';
 
-/**
- * NextAuth com Keycloak PKCE
- *
- * Garante:
- * - roles extraídas do access_token (realm_access + resource_access.<clientId>)
- * - token refresh automático antes da expiração (margem de 60s)
- * - accessToken mantido apenas no cookie HttpOnly via JWT strategy
- * - signIn/error apontam para /login
- */
+const publicIssuer = process.env.KEYCLOAK_ISSUER!;
+const internalIssuer =
+  process.env.KEYCLOAK_INTERNAL_ISSUER?.trim() || publicIssuer;
 
 function decodeKeycloakRoles(accessToken: string): string[] {
   try {
@@ -30,8 +24,7 @@ function decodeKeycloakRoles(accessToken: string): string[] {
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
-    const issuer = process.env.KEYCLOAK_ISSUER!;
-    const tokenUrl = `${issuer}/protocol/openid-connect/token`;
+    const tokenUrl = `${internalIssuer}/protocol/openid-connect/token`;
 
     const res = await fetch(tokenUrl, {
       method: 'POST',
@@ -56,8 +49,6 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
       error:         undefined,
     };
   } catch {
-    // Refresh falhou — próxima request ao backend vai retornar 401
-    // e o interceptor de response em api.ts vai chamar signOut()
     return { ...token, error: 'RefreshAccessTokenError' };
   }
 }
@@ -67,16 +58,20 @@ const handler = NextAuth({
     KeycloakProvider({
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
-      issuer: process.env.KEYCLOAK_ISSUER!,
+      issuer: publicIssuer,
+      wellKnown: '',
       authorization: {
-        params: { scope: 'openid email profile roles offline_access' },
+        url: `${publicIssuer}/protocol/openid-connect/auth`,
+        params: { scope: 'openid email profile roles' },
       },
+      token: `${internalIssuer}/protocol/openid-connect/token`,
+      userinfo: `${internalIssuer}/protocol/openid-connect/userinfo`,
+      jwks_endpoint: `${internalIssuer}/protocol/openid-connect/certs`,
     }),
   ],
 
   callbacks: {
     async jwt({ token, account }: { token: JWT; account: Account | null }) {
-      // Primeiro login: popular campos do account OAuth
       if (account) {
         token.accessToken  = account.access_token;
         token.idToken      = account.id_token;
@@ -86,13 +81,11 @@ const handler = NextAuth({
         return token;
       }
 
-      // Token ainda válido (com margem de 60s para refresh antecipado)
       const expiresAt = (token.expiresAt as number) ?? 0;
       if (Date.now() / 1000 < expiresAt - 60) {
         return token;
       }
 
-      // Token expirado → tentar refresh
       return refreshAccessToken(token);
     },
 
@@ -106,7 +99,7 @@ const handler = NextAuth({
 
   session: {
     strategy: 'jwt',
-    maxAge: 8 * 60 * 60, // 8h — jornada operacional padrão
+    maxAge: 8 * 60 * 60,
   },
 
   pages: {
