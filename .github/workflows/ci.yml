@@ -145,7 +145,7 @@ jobs:
         working-directory: mobile
         run: npm test -- --ci --forceExit --testPathPattern="offlineQueue"
 
-      - name: Export (static bundle check)
+      - name: Export static bundle (soft-fail)
         working-directory: mobile
         env:
           EXPO_PUBLIC_API_URL: http://localhost:8080
@@ -248,7 +248,7 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
 
-      - name: OWASP Dependency Check (backend)
+      - name: OWASP Dependency Check backend (soft-fail)
         working-directory: backend
         run: |
           ./mvnw -B org.owasp:dependency-check-maven:check \
@@ -263,11 +263,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: npm audit web
+      - name: npm audit web critical (soft-fail)
         working-directory: web
         run: npm audit --audit-level=critical || true
 
-      - name: npm audit mobile
+      - name: npm audit mobile critical (soft-fail)
         working-directory: mobile
         run: npm audit --audit-level=critical || true
 
