@@ -7,6 +7,7 @@ import com.gruahub.fleet.application.MachineService;
 import com.gruahub.fleet.domain.MachineStatus;
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -56,7 +57,22 @@ class BackendServiceTest {
 
     @BeforeEach
     void setTenantA() {
+        ensureTenant(TENANT_A, "tenant-a", "Tenant A");
+        ensureTenant(TENANT_B, "tenant-b", "Tenant B");
         TenantContext.set(TENANT_A, "tenant-a", "user-a", "user-a@test.local");
+    }
+
+    private void ensureTenant(UUID id, String slug, String name) {
+        QuarkusTransaction.requiringNew().run(() -> {
+            em.createNativeQuery(
+                    "INSERT INTO tenant (id, name, slug, status, settings, created_at, updated_at, version) " +
+                    "VALUES (:id, :name, :slug, 'ACTIVE', CAST('{}' AS jsonb), NOW(), NOW(), 0) " +
+                    "ON CONFLICT (id) DO NOTHING")
+                    .setParameter("id", id)
+                    .setParameter("name", name)
+                    .setParameter("slug", slug)
+                    .executeUpdate();
+        });
     }
 
     @AfterEach

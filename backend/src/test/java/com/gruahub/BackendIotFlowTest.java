@@ -67,12 +67,9 @@ class BackendIotFlowTest {
     @Test
     @TestTransaction
     void credit_grant_is_exactly_once_for_same_payment() {
-        UUID paymentId = UUID.randomUUID();
-
-        // Cria máquina no banco para satisfazer FK
         insertMachine(MACHINE_ID, TENANT_ID, 200L);
+        UUID paymentId = insertPaymentTransaction("CONFIRMED");
 
-        // Primeira chamada deve criar o crédito
         UUID firstCreditId = creditService.grantCreditForPayment(
                 TENANT_ID, MACHINE_ID, paymentId, 200L, 1);
         assertThat(firstCreditId).isNotNull();
@@ -98,8 +95,8 @@ class BackendIotFlowTest {
     @Test
     @TestTransaction
     void credit_grant_enqueues_outbox_event() {
-        UUID paymentId = UUID.randomUUID();
         insertMachine(MACHINE_ID, TENANT_ID, 200L);
+        UUID paymentId = insertPaymentTransaction("CONFIRMED");
 
         UUID creditId = creditService.grantCreditForPayment(
                 TENANT_ID, MACHINE_ID, paymentId, 200L, 1);
@@ -346,7 +343,7 @@ class BackendIotFlowTest {
         em.createNativeQuery(
                 "INSERT INTO play_session " +
                 "(id, tenant_id, machine_id, credit_grant_id, status, " +
-                " started_at, ended_at, created_at) " +
+                " started_at, completed_at, created_at) " +
                 "VALUES (:id, :tid, :mid, :cid, :status, " +
                 "NOW(), CASE WHEN :status = 'COMPLETED' THEN NOW() ELSE NULL END, NOW())")
                 .setParameter("id",     playId)
