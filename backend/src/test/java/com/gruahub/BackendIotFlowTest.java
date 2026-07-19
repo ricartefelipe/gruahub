@@ -266,6 +266,13 @@ class BackendIotFlowTest {
 
     private void insertMachine(UUID machineId, UUID tenantId, long playPriceCents) {
         em.createNativeQuery(
+                "INSERT INTO tenant (id, name, slug, status, settings, created_at, updated_at, version) " +
+                "VALUES (:tid, 'IoT Flow Tenant', 'iot-flow-tenant', 'ACTIVE', CAST('{}' AS jsonb), NOW(), NOW(), 0) " +
+                "ON CONFLICT (id) DO NOTHING")
+                .setParameter("tid", tenantId)
+                .executeUpdate();
+
+        em.createNativeQuery(
                 "INSERT INTO machine (id, tenant_id, asset_number, name, " +
                 "play_price_cents, currency, status, created_at, updated_at) " +
                 "VALUES (:id, :tid, :asset, 'Test Machine', :price, 'BRL', 'ACTIVE', NOW(), NOW()) " +
