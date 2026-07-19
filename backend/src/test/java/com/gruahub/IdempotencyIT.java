@@ -47,22 +47,13 @@ class IdempotencyIT {
             .statusCode(400);
     }
 
-    /**
-     * Sandbox confirm de transação inexistente → 200.
-     *
-     * SandboxPaymentProvider.sandboxConfirm() só faz statusStore.put() sem lançar
-     * exceção. O endpoint retorna 200 independentemente de a transação existir.
-     * Isso é comportamento intencional do sandbox (facilita testes de integração).
-     *
-     * Contrato exato: 200 (não 404, não 401).
-     */
     @Test
-    void sandbox_confirm_returns_200_regardless_of_transaction_existence() {
+    void sandbox_confirm_returns_404_when_sandbox_disabled_in_packaged_app() {
         given()
         .when()
             .post("/api/v1/payments/sandbox/confirm/00000000-0000-0000-0000-000000000000")
         .then()
-            .statusCode(200);
+            .statusCode(404);
     }
 
     /**

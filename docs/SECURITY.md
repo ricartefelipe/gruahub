@@ -7,7 +7,7 @@
 2. **Segredos apenas por variáveis de ambiente / secret store.** `.env.example` não contém valores reais.
 3. **Sem PAN/CVV.** A plataforma nunca manipula dados brutos de cartão.
 4. **Logs sem dados sensíveis.** Tokens, credenciais, payloads financeiros integrais e dados pessoais desnecessários nunca aparecem em logs.
-5. **Mocks e fakes apenas em testes e sandbox.** Produção usa adaptadores reais.
+5. **Mocks e fakes apenas em testes e sandbox.** Produção usa adaptadores reais. Endpoints `/api/v1/payments/sandbox/*` só existem com `GRUAHUB_SANDBOX_ENABLED=true` e exigem JWT (roles `PLATFORM_ADMIN` / `TENANT_ADMIN` / `FINANCE`) ou header `X-Sandbox-Secret`.
 
 ## Autenticação e Autorização
 

@@ -58,7 +58,7 @@ case "${COMMAND,,}" in
         ;;
     infra)
         step "Subindo apenas infraestrutura (sem backend/web)..."
-        docker compose up -d postgres keycloak emqx minio minio-setup
+        docker compose up -d postgres keycloak emqx emqx-users minio minio-setup
         ok "Infra iniciada."
         printf '\n  Para rodar o backend em modo dev (hot-reload):\n'
         printf '  cd backend && ./mvnw quarkus:dev\n\n'
