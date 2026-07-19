@@ -2,7 +2,7 @@ package com.gruahub.notifications.infra;
 
 import com.gruahub.notifications.domain.PushNotifier;
 import com.gruahub.shared.domain.JsonUtil;
-import io.quarkus.arc.lookup.LookupIfProperty;
+import io.quarkus.arc.properties.IfBuildProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 @ApplicationScoped
-@LookupIfProperty(name = "gruahub.push.provider", stringValue = "http-stub")
+@IfBuildProperty(name = "gruahub.push.provider", stringValue = "http-stub")
 public class HttpStubPushNotifier implements PushNotifier {
 
     private static final Logger LOG = Logger.getLogger(HttpStubPushNotifier.class);
