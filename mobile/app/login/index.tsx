@@ -3,7 +3,7 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, exchangeCodeAsync } from 'expo-auth-session';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import {
@@ -37,10 +37,11 @@ function parseJwtPayload(token: string): Record<string, unknown> {
 export default function LoginScreen() {
   const { setAuth, accessToken } = useAuthStore();
   const [exchanging, setExchanging] = useState(false);
+  const exchangedCodesRef = useRef(new Set<string>());
 
   const redirectUri = makeRedirectUri({ scheme: 'gruahub', path: 'auth' });
 
-  const [request, response, promptAsync] = useAuthRequest(
+  const [request, , promptAsync] = useAuthRequest(
     {
       clientId: KEYCLOAK_CLIENT_ID,
       scopes: ['openid', 'profile', 'email', 'offline_access'],
@@ -56,70 +57,72 @@ export default function LoginScreen() {
     }
   }, [accessToken]);
 
-  useEffect(() => {
-    if (response?.type === 'error') {
+  async function exchangeAuthCode(code: string, codeVerifier: string) {
+    if (exchangedCodesRef.current.has(code)) return;
+    exchangedCodesRef.current.add(code);
+    setExchanging(true);
+    try {
+      const tokenResponse = await exchangeCodeAsync(
+        {
+          clientId: KEYCLOAK_CLIENT_ID,
+          code,
+          redirectUri,
+          extraParams: { code_verifier: codeVerifier },
+        },
+        discovery
+      );
+
+      const claims = parseJwtPayload(tokenResponse.accessToken);
+      const tenantId = (claims['tenant_id'] as string) ?? '';
+      const userEmail =
+        (claims['email'] as string) ??
+        (claims['preferred_username'] as string) ?? '';
+      const userId = (claims['sub'] as string) ?? '';
+      const expiresAt = Date.now() + (tokenResponse.expiresIn ?? 300) * 1000;
+      const refreshToken = tokenResponse.refreshToken ?? '';
+
+      if (!tenantId) {
+        Alert.alert(
+          'Login incompleto',
+          'O token não contém tenant_id. Confirme os protocol mappers do client gruahub-mobile no Keycloak.'
+        );
+      }
+
+      await setAuth({
+        accessToken: tokenResponse.accessToken,
+        refreshToken,
+        expiresAt,
+        tenantId,
+        userEmail,
+        userId,
+      });
+
+      router.replace('/(tabs)');
+    } catch {
+      exchangedCodesRef.current.delete(code);
       Alert.alert(
         'Erro de autenticação',
-        response.error?.message ??
-          'Falha no login Keycloak. Verifique EXPO_PUBLIC_KEYCLOAK_URL e o client gruahub-mobile.'
+        'Não foi possível trocar o código por token. Verifique se a redirect URI está autorizada no Keycloak.'
       );
-      return;
+    } finally {
+      setExchanging(false);
     }
-
-    if (response?.type !== 'success' || !request?.codeVerifier) return;
-
-    const { code } = response.params;
-    setExchanging(true);
-
-    exchangeCodeAsync(
-      {
-        clientId: KEYCLOAK_CLIENT_ID,
-        code,
-        redirectUri,
-        extraParams: { code_verifier: request.codeVerifier },
-      },
-      discovery
-    )
-      .then(async (tokenResponse) => {
-        const claims = parseJwtPayload(tokenResponse.accessToken);
-        const tenantId = (claims['tenant_id'] as string) ?? '';
-        const userEmail =
-          (claims['email'] as string) ??
-          (claims['preferred_username'] as string) ?? '';
-        const userId = (claims['sub'] as string) ?? '';
-        const expiresAt = Date.now() + (tokenResponse.expiresIn ?? 300) * 1000;
-        const refreshToken = tokenResponse.refreshToken ?? '';
-
-        if (!tenantId) {
-          Alert.alert(
-            'Login incompleto',
-            'O token não contém tenant_id. Confirme os protocol mappers do client gruahub-mobile no Keycloak.'
-          );
-        }
-
-        await setAuth({
-          accessToken: tokenResponse.accessToken,
-          refreshToken,
-          expiresAt,
-          tenantId,
-          userEmail,
-          userId,
-        });
-
-        router.replace('/(tabs)');
-      })
-      .catch(() => {
-        Alert.alert(
-          'Erro de autenticação',
-          'Não foi possível trocar o código por token. Verifique se a redirect URI está autorizada no Keycloak.'
-        );
-      })
-      .finally(() => setExchanging(false));
-  }, [response]);
+  }
 
   async function handleLogin() {
     try {
-      await promptAsync();
+      const result = await promptAsync();
+      if (result.type === 'error') {
+        Alert.alert(
+          'Erro de autenticação',
+          result.error?.message ??
+            'Falha no login Keycloak. Verifique EXPO_PUBLIC_KEYCLOAK_URL e o client gruahub-mobile.'
+        );
+        return;
+      }
+      if (result.type === 'success' && request?.codeVerifier) {
+        await exchangeAuthCode(result.params.code, request.codeVerifier);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Não foi possível abrir o navegador.';
       Alert.alert('Erro', message);
