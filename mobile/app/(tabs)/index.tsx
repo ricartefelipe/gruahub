@@ -2,13 +2,14 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'expo-router';
 import * as Network from 'expo-network';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
 import { apiGet, ApiError } from '../../src/api/apiClient';
 import { loadCachedRoute, saveCachedRoute, CachedRouteStop } from '../../src/db/routeCache';
+import { ThemeColors, useTheme } from '../../src/theme';
 
 type RouteStop = CachedRouteStop;
 
@@ -68,6 +69,8 @@ async function fetchTodayRoute(accessToken: string, tenantId: string): Promise<R
 export default function RouteScreen() {
   const { userEmail, accessToken, tenantId, refreshAccessToken, clearAuth } = useAuthStore();
   const { sync } = useSyncQueue();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [route, setRoute] = useState<RouteStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,7 +150,7 @@ export default function RouteScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#1e40af" />
+        <ActivityIndicator size="large" color={colors.header} />
         <Text style={styles.loadingText}>Carregando rota…</Text>
       </View>
     );
@@ -180,7 +183,7 @@ export default function RouteScreen() {
         data={route}
         keyExtractor={item => item.id}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         renderItem={({ item, index }) => (
           <Link
@@ -234,43 +237,65 @@ export default function RouteScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  centered: { justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12, color: '#6b7280', fontSize: 14 },
-  errorBanner: {
-    backgroundColor: '#fef2f2', borderLeftWidth: 4, borderLeftColor: '#ef4444',
-    padding: 12, margin: 16, borderRadius: 6,
-  },
-  errorText: { color: '#b91c1c', fontSize: 13 },
-  header: { backgroundColor: '#1e40af', padding: 20, paddingTop: 60 },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
-  subtitle: { fontSize: 13, color: '#bfdbfe', marginTop: 2 },
-  netRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 },
-  netDot: { width: 7, height: 7, borderRadius: 4 },
-  netDotOnline: { backgroundColor: '#34d399' },
-  netDotOffline: { backgroundColor: '#fbbf24' },
-  netLabel: { fontSize: 11, color: '#bfdbfe' },
-  list: { padding: 16, gap: 12 },
-  card: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 16,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
-  },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  badge: { backgroundColor: '#e0e7ff', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText: { color: '#3730a3', fontWeight: 'bold', fontSize: 12 },
-  scoreContainer: { alignItems: 'flex-end' },
-  scoreLabel: { fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' },
-  scoreValue: { fontSize: 24, fontWeight: 'bold' },
-  scoreHigh: { color: '#16a34a' },
-  scoreMed: { color: '#d97706' },
-  scoreLow: { color: '#6b7280' },
-  pointName: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  address: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  reasonContainer: { flexDirection: 'row', marginTop: 8, flexWrap: 'wrap' },
-  reasonLabel: { fontSize: 12, color: '#374151', fontWeight: '500' },
-  reason: { fontSize: 12, color: '#6b7280', flex: 1 },
-  cta: { marginTop: 12, color: '#2563eb', fontWeight: '600', fontSize: 14, textAlign: 'right' },
-  empty: { padding: 40, alignItems: 'center' },
-  emptyText: { color: '#6b7280', fontSize: 15, textAlign: 'center' },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    centered: { justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 12, color: colors.textSecondary, fontSize: 14 },
+    errorBanner: {
+      backgroundColor: colors.errorBannerBg,
+      borderLeftWidth: 4,
+      borderLeftColor: '#ef4444',
+      padding: 12,
+      margin: 16,
+      borderRadius: 6,
+    },
+    errorText: { color: colors.errorBannerText, fontSize: 13 },
+    header: { backgroundColor: colors.header, padding: 20, paddingTop: 60 },
+    title: { fontSize: 22, fontWeight: 'bold', color: colors.headerText },
+    subtitle: { fontSize: 13, color: colors.headerMuted, marginTop: 2 },
+    netRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 },
+    netDot: { width: 7, height: 7, borderRadius: 4 },
+    netDotOnline: { backgroundColor: '#34d399' },
+    netDotOffline: { backgroundColor: '#fbbf24' },
+    netLabel: { fontSize: 11, color: colors.headerMuted },
+    list: { padding: 16, gap: 12 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    badge: {
+      backgroundColor: colors.badgeBg,
+      borderRadius: 20,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    badgeText: { color: colors.badgeText, fontWeight: 'bold', fontSize: 12 },
+    scoreContainer: { alignItems: 'flex-end' },
+    scoreLabel: { fontSize: 10, color: colors.textMuted, textTransform: 'uppercase' },
+    scoreValue: { fontSize: 24, fontWeight: 'bold' },
+    scoreHigh: { color: colors.scoreHigh },
+    scoreMed: { color: colors.scoreMed },
+    scoreLow: { color: colors.scoreLow },
+    pointName: { fontSize: 16, fontWeight: '600', color: colors.text },
+    address: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+    reasonContainer: { flexDirection: 'row', marginTop: 8, flexWrap: 'wrap' },
+    reasonLabel: { fontSize: 12, color: colors.text, fontWeight: '500' },
+    reason: { fontSize: 12, color: colors.textSecondary, flex: 1 },
+    cta: {
+      marginTop: 12,
+      color: colors.primary,
+      fontWeight: '600',
+      fontSize: 14,
+      textAlign: 'right',
+    },
+    empty: { padding: 40, alignItems: 'center' },
+    emptyText: { color: colors.textSecondary, fontSize: 15, textAlign: 'center' },
+  });
+}

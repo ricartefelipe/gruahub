@@ -2,18 +2,22 @@
  * Tela de perfil — exibe dados do usuário autenticado e permite logout.
  */
 
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { getQueueStats, QueueStats } from '../../src/db/offlineQueue';
+import { ThemeColors, useTheme } from '../../src/theme';
 
 export default function ProfileScreen() {
   const { userEmail, tenantId, userId, clearAuth } = useAuthStore();
   const { sync } = useSyncQueue();
+  const { theme, colors, setTheme } = useTheme();
   const [syncing, setSyncing] = useState(false);
   const [stats, setStats] = useState<QueueStats | null>(null);
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const isDark = theme === 'dark';
 
   async function handleSync() {
     setSyncing(true);
@@ -58,6 +62,27 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Aparência</Text>
+        <View style={styles.themeRow}>
+          <View style={styles.themeLabels}>
+            <Text style={styles.rowLabel}>Tema escuro</Text>
+            <Text style={styles.themeHint}>
+              {isDark ? 'Ativo' : 'Desativado'} — igual ao web
+            </Text>
+          </View>
+          <Switch
+            value={isDark}
+            onValueChange={(value) => setTheme(value ? 'dark' : 'light')}
+            trackColor={{ false: colors.border, true: colors.primaryMuted }}
+            thumbColor={isDark ? colors.primary : colors.surface}
+            accessibilityLabel={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: isDark }}
+          />
+        </View>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Informações</Text>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Tenant ID</Text>
@@ -67,7 +92,7 @@ export default function ProfileScreen() {
           <Text style={styles.rowLabel}>Versão</Text>
           <Text style={styles.rowValue}>1.0.0-mvp</Text>
         </View>
-        <View style={styles.row}>
+        <View style={[styles.row, styles.rowLast]}>
           <Text style={styles.rowLabel}>Modo</Text>
           <Text style={styles.rowValue}>Offline-first</Text>
         </View>
@@ -126,46 +151,87 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: {
-    backgroundColor: '#1e40af', alignItems: 'center',
-    padding: 32, paddingTop: 70,
-  },
-  avatar: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center',
-  },
-  avatarText: { fontSize: 28, color: '#fff', fontWeight: 'bold' },
-  email: { color: '#fff', fontSize: 16, fontWeight: '600', marginTop: 12 },
-  userId: { color: '#bfdbfe', fontSize: 12, marginTop: 4 },
-  section: {
-    margin: 16, marginBottom: 0, backgroundColor: '#fff',
-    borderRadius: 12, padding: 16,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
-  },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#6b7280',
-    textTransform: 'uppercase', marginBottom: 10 },
-  row: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
-  },
-  rowLabel: { fontSize: 14, color: '#374151' },
-  rowValue: { fontSize: 14, color: '#6b7280' },
-  syncButton: {
-    backgroundColor: '#2563eb', borderRadius: 8, padding: 12,
-    alignItems: 'center', marginBottom: 8,
-  },
-  buttonDisabled: { backgroundColor: '#93c5fd' },
-  syncButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  queueButton: {
-    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8,
-    padding: 12, alignItems: 'center',
-  },
-  queueButtonText: { color: '#2563eb', fontWeight: '600', fontSize: 14 },
-  logoutButton: {
-    margin: 16, backgroundColor: '#fee2e2', borderRadius: 10,
-    padding: 14, alignItems: 'center', marginTop: 24,
-  },
-  logoutText: { color: '#dc2626', fontWeight: '700', fontSize: 15 },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      backgroundColor: colors.header,
+      alignItems: 'center',
+      padding: 32,
+      paddingTop: 70,
+    },
+    avatar: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { fontSize: 28, color: colors.headerText, fontWeight: 'bold' },
+    email: { color: colors.headerText, fontSize: 16, fontWeight: '600', marginTop: 12 },
+    userId: { color: colors.headerMuted, fontSize: 12, marginTop: 4 },
+    section: {
+      margin: 16,
+      marginBottom: 0,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.04,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    sectionTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      marginBottom: 10,
+    },
+    themeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    themeLabels: { flex: 1 },
+    themeHint: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    rowLast: { borderBottomWidth: 0 },
+    rowLabel: { fontSize: 14, color: colors.text },
+    rowValue: { fontSize: 14, color: colors.textSecondary },
+    syncButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      padding: 12,
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    buttonDisabled: { backgroundColor: colors.primaryMuted },
+    syncButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+    queueButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      alignItems: 'center',
+    },
+    queueButtonText: { color: colors.primary, fontWeight: '600', fontSize: 14 },
+    logoutButton: {
+      margin: 16,
+      backgroundColor: colors.dangerBg,
+      borderRadius: 10,
+      padding: 14,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    logoutText: { color: colors.dangerText, fontWeight: '700', fontSize: 15 },
+  });
+}

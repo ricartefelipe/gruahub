@@ -30,5 +30,6 @@ module.exports = {
     '^expo-network$': '<rootDir>/src/__mocks__/expo-network.ts',
     '^expo-constants$': '<rootDir>/src/__mocks__/expo-constants.ts',
     '^expo-location$': '<rootDir>/src/__mocks__/expo-location.ts',
+    '^@react-native-async-storage/async-storage$': '<rootDir>/src/__mocks__/async-storage.ts',
   },
 };

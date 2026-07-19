@@ -13,6 +13,7 @@ import {
   KEYCLOAK_URL,
   isLocalhostUrl,
 } from '../../src/config/env';
+import { ThemeColors, useTheme } from '../../src/theme';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -57,6 +58,8 @@ function formatTokenExchangeError(err: unknown): string {
 
 export default function LoginScreen() {
   const { setAuth, accessToken } = useAuthStore();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [exchanging, setExchanging] = useState(false);
   const exchangedCodesRef = useRef(new Set<string>());
   const codeVerifierRef = useRef<string | null>(null);
@@ -193,7 +196,7 @@ export default function LoginScreen() {
         </Text>
 
         {isLoading ? (
-          <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 24 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
         ) : (
           <TouchableOpacity
             style={styles.button}
@@ -224,35 +227,64 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1, backgroundColor: '#1e40af', alignItems: 'center',
-    justifyContent: 'center', padding: 24,
-  },
-  brand: { alignItems: 'center', marginBottom: 40 },
-  appName: { fontSize: 36, fontWeight: 'bold', color: '#fff' },
-  tagline: { fontSize: 14, color: '#bfdbfe', marginTop: 6 },
-  card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '100%',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 12, elevation: 8,
-  },
-  cardTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 8 },
-  cardDesc: { fontSize: 14, color: '#6b7280', lineHeight: 20 },
-  button: {
-    backgroundColor: '#2563eb', borderRadius: 10, padding: 16,
-    alignItems: 'center', marginTop: 24,
-  },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  envHint: {
-    marginTop: 16, fontSize: 11, color: '#9ca3af', lineHeight: 16,
-  },
-  deviceHint: {
-    marginTop: 8, fontSize: 12, color: '#b45309', lineHeight: 17,
-  },
-  offlineNote: {
-    marginTop: 24, backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 10, padding: 14,
-  },
-  offlineNoteText: { color: '#bfdbfe', fontSize: 13, lineHeight: 18, textAlign: 'center' },
-  version: { marginTop: 32, color: '#93c5fd', fontSize: 11 },
-});
+function createStyles(colors: ThemeColors, isDark: boolean) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.header,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    brand: { alignItems: 'center', marginBottom: 40 },
+    appName: { fontSize: 36, fontWeight: 'bold', color: colors.headerText },
+    tagline: { fontSize: 14, color: colors.headerMuted, marginTop: 6 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 24,
+      width: '100%',
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 8,
+      borderWidth: isDark ? 1 : 0,
+      borderColor: colors.border,
+    },
+    cardTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 },
+    cardDesc: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    envHint: {
+      marginTop: 16,
+      fontSize: 11,
+      color: colors.textMuted,
+      lineHeight: 16,
+    },
+    deviceHint: {
+      marginTop: 8,
+      fontSize: 12,
+      color: isDark ? '#fbbf24' : '#b45309',
+      lineHeight: 17,
+    },
+    offlineNote: {
+      marginTop: 24,
+      backgroundColor: 'rgba(255,255,255,0.12)',
+      borderRadius: 10,
+      padding: 14,
+    },
+    offlineNoteText: {
+      color: colors.headerMuted,
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center',
+    },
+    version: { marginTop: 32, color: colors.primaryMuted, fontSize: 11 },
+  });
+}
