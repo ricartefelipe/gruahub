@@ -1,12 +1,12 @@
 package com.gruahub.notifications.infra;
 
 import com.gruahub.notifications.domain.PushNotifier;
-import io.quarkus.arc.lookup.LookupIfProperty;
+import io.quarkus.arc.properties.IfBuildProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-@LookupIfProperty(name = "gruahub.push.provider", stringValue = "noop", lookupIfMissing = true)
+@IfBuildProperty(name = "gruahub.push.provider", stringValue = "noop", enableIfMissing = true)
 public class NoopPushNotifier implements PushNotifier {
 
     private static final Logger LOG = Logger.getLogger(NoopPushNotifier.class);
