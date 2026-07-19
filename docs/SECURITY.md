@@ -52,7 +52,7 @@ Todos os recursos de domínio chamam `TenantContext.getTenantId()` nas queries S
 
 - **Assinatura HMAC-SHA256:** header `X-Signature` = `HMAC-SHA256(body, GRUAHUB_SANDBOX_WEBHOOK_SECRET)`
 - **Replay protection:** `Idempotency-Key` header verificado contra tabela `webhook_event` (unique constraint)
-- **Rate limiting:** `WebhookRateLimitFilter` — sliding window 30 req/60s por IP+provider. Retorna 429 com `Retry-After`.
+- **Rate limiting:** `WebhookRateLimitFilter` — sliding window configurável (`gruahub.rate-limit.*`): webhook 30/60s por IP+provider; sandbox 60/60s por IP. Retorna 429 com `Retry-After`.
 
 ## MQTT (EMQX)
 

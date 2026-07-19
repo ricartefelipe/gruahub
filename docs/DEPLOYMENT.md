@@ -12,13 +12,15 @@
 ### 1. Copiar e preencher variáveis de ambiente
 
 ```bash
-cp .env.example .env
-# Edite .env — troque os valores CHANGE_ME_IN_PRODUCTION
+cp infra/.env.example infra/.env
+# Segredos só vêm do .env — o compose não embute passwords/secrets.
+# Para apps locais fora do compose, use também a raiz `.env.example`.
 ```
 
 ### 2. Subir infraestrutura
 
 ```bash
+cd infra
 docker compose up -d postgres keycloak emqx minio
 ```
 

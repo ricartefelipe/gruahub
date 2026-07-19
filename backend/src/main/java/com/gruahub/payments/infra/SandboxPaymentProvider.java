@@ -21,7 +21,7 @@ public class SandboxPaymentProvider implements PaymentProvider {
 
     private static final Logger LOG = Logger.getLogger(SandboxPaymentProvider.class);
 
-    @ConfigProperty(name = "gruahub.sandbox.secret", defaultValue = "sandbox-webhook-secret-gruahub-demo")
+    @ConfigProperty(name = "gruahub.sandbox.secret", defaultValue = "")
     String sandboxSecret;
 
     private final ConcurrentHashMap<String, PaymentStatus> statusStore = new ConcurrentHashMap<>();

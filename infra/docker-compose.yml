@@ -21,7 +21,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-gruahub}
       POSTGRES_USER: ${POSTGRES_USER:-gruahub}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gruahub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init-keycloak-schema.sql:/docker-entrypoint-initdb.d/01-keycloak-schema.sql:ro
@@ -44,11 +44,11 @@ services:
       - --import-realm
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-gruahub}
       KC_DB_USERNAME: ${POSTGRES_USER:-gruahub}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-gruahub}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KC_DB_SCHEMA: keycloak
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
@@ -81,7 +81,7 @@ services:
       EMQX_AUTHENTICATION__1__BACKEND: built_in_database
       EMQX_AUTHENTICATION__1__PASSWORD_HASH_ALGORITHM__NAME: sha256
       EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USERNAME:-admin}
-      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-public}
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD}
     volumes:
       - emqx_data:/opt/emqx/data
       - emqx_log:/opt/emqx/log
@@ -103,11 +103,11 @@ services:
     environment:
       EMQX_API: http://emqx:18083
       EMQX_DASHBOARD_USERNAME: ${EMQX_DASHBOARD_USERNAME:-admin}
-      EMQX_DASHBOARD_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-public}
+      EMQX_DASHBOARD_PASSWORD: ${EMQX_DASHBOARD_PASSWORD}
       MQTT_USERNAME: ${MQTT_USERNAME:-gruahub-backend}
-      MQTT_PASSWORD: ${MQTT_PASSWORD:-gruahub-backend-pass}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
       MQTT_SIM_USERNAME: ${MQTT_SIM_USERNAME:-sim-machine}
-      MQTT_SIM_PASSWORD: ${MQTT_SIM_PASSWORD:-sim-machine-pass}
+      MQTT_SIM_PASSWORD: ${MQTT_SIM_PASSWORD}
     volumes:
       - ./emqx/bootstrap-users.sh:/bootstrap-users.sh:ro
     entrypoint: ["/bin/sh", "/bootstrap-users.sh"]
@@ -123,8 +123,8 @@ services:
       - "9001:9001"
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
     healthcheck:
@@ -142,8 +142,8 @@ services:
       minio:
         condition: service_healthy
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET:-gruahub}
     entrypoint: >
       /bin/sh -c "
@@ -168,21 +168,21 @@ services:
       DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME:-gruahub}
       DB_USER: ${DB_USER:-gruahub}
-      DB_PASSWORD: ${DB_PASSWORD:-gruahub}
+      DB_PASSWORD: ${DB_PASSWORD}
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gruahub}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-gruahub-backend}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-gruahub-backend-secret}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
       MQTT_BROKER_URL: ${MQTT_BROKER_URL:-tcp://emqx:1883}
       MQTT_USERNAME: ${MQTT_USERNAME:-gruahub-backend}
-      MQTT_PASSWORD: ${MQTT_PASSWORD:-gruahub-backend-pass}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
       MINIO_HOST: ${MINIO_HOST:-minio}
       MINIO_PORT: ${MINIO_PORT:-9000}
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET:-gruahub}
       GRUAHUB_SANDBOX_ENABLED: ${GRUAHUB_SANDBOX_ENABLED:-true}
-      GRUAHUB_SANDBOX_WEBHOOK_SECRET: ${GRUAHUB_SANDBOX_WEBHOOK_SECRET:-sandbox-webhook-secret-gruahub-demo}
+      GRUAHUB_SANDBOX_WEBHOOK_SECRET: ${GRUAHUB_SANDBOX_WEBHOOK_SECRET}
       LOG_JSON: ${LOG_JSON:-true}
       QUARKUS_LIQUIBASE_CONTEXTS: ${QUARKUS_LIQUIBASE_CONTEXTS:-demo}
     depends_on:
@@ -214,11 +214,11 @@ services:
       - "3000:3000"
     environment:
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-gruahub-nextauth-secret-local-only}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8180/realms/gruahub}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID_WEB:-gruahub-web}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET_WEB:-gruahub-web-secret}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET_WEB}
     depends_on:
       backend:
         condition: service_healthy
@@ -239,7 +239,7 @@ services:
     environment:
       MQTT_BROKER_URL: ${MQTT_BROKER_URL:-tcp://emqx:1883}
       MQTT_USERNAME: ${MQTT_SIM_USERNAME:-sim-machine}
-      MQTT_PASSWORD: ${MQTT_SIM_PASSWORD:-sim-machine-pass}
+      MQTT_PASSWORD: ${MQTT_SIM_PASSWORD}
       TENANT_ID: ${TENANT_ID:-11111111-0000-0000-0000-000000000001}
       MACHINE_IDS: ${MACHINE_IDS:-66666666-0000-0000-0000-000000000001,66666666-0000-0000-0000-000000000003}
       HEARTBEAT_INTERVAL_MS: ${HEARTBEAT_INTERVAL_MS:-30000}
@@ -260,7 +260,7 @@ services:
     profiles: [simulators]
     environment:
       BACKEND_URL: http://backend:8080
-      SANDBOX_SECRET: ${SANDBOX_SECRET:-sandbox-webhook-secret-gruahub-demo}
+      SANDBOX_SECRET: ${SANDBOX_SECRET}
       TENANT_ID: ${TENANT_ID:-11111111-0000-0000-0000-000000000001}
       MACHINE_ID: ${MACHINE_ID:-66666666-0000-0000-0000-000000000001}
     depends_on:

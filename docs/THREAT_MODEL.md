@@ -67,8 +67,8 @@ com exposição planejada para internet em produção.
 
 ### T-008 — Denial of Service (Webhook Flood)
 **Ameaça:** Atacante envia milhares de requisições ao endpoint de webhook, esgotando threads.
-**Mitigação:** `WebhookRateLimitFilter` — sliding window 30 req/60s por IP+provider. Retorna 429.
-**Status:** Mitigado (MVP). Para produção: adicionar WAF / CDN rate limiting na camada de rede.
+**Mitigação:** `WebhookRateLimitFilter` — sliding window em webhook e endpoints sandbox (`/api/v1/payments/sandbox/*`). Retorna 429.
+**Status:** Mitigado (MVP parcial). Rate limit global / WAF ainda é gap comercial.
 
 ### T-009 — Elevation of Privilege (JWT Forgery)
 **Ameaça:** Atacante forja um JWT com role `PLATFORM_ADMIN`.
