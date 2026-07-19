@@ -51,8 +51,13 @@ jobs:
           QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://localhost:5432/gruahub_test
           QUARKUS_DATASOURCE_USERNAME: gruahub
           QUARKUS_DATASOURCE_PASSWORD: gruahub
-          QUARKUS_PROFILE: test
-        run: ./mvnw -B verify -Dquarkus.test.profile=test
+          DB_PASSWORD: gruahub
+          MQTT_PASSWORD: test-mqtt-pass
+          KEYCLOAK_CLIENT_SECRET: test-oidc-secret
+          GRUAHUB_SANDBOX_WEBHOOK_SECRET: test-sandbox-secret
+          MINIO_ACCESS_KEY: minioadmin
+          MINIO_SECRET_KEY: minioadmin
+        run: ./mvnw -B verify -Dquarkus.test.profile=test -Dquarkus.datasource.devservices.enabled=false
 
       - name: Build production jar (no tests)
         working-directory: backend

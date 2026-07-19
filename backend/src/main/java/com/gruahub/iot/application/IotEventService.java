@@ -85,7 +85,7 @@ public class IotEventService {
                 "INSERT INTO device_message_inbox " +
                 "(id, message_id, tenant_id, machine_id, message_type, " +
                 " schema_version, payload, status, received_at) " +
-                "VALUES (:id, :mid, :tid, :macid, :type, :sv, :payload::jsonb, 'RECEIVED', :now) " +
+                "VALUES (:id, :mid, :tid, :macid, :type, :sv, CAST(:payload AS jsonb), 'RECEIVED', :now) " +
                 "ON CONFLICT (message_id, tenant_id) DO NOTHING")
                 .setParameter("id",      UUID.randomUUID())
                 .setParameter("mid",     messageId)
@@ -319,7 +319,7 @@ public class IotEventService {
         int rows = em.createNativeQuery(
                 "INSERT INTO play_session " +
                 "(id, tenant_id, machine_id, credit_grant_id, status, started_at, created_at) " +
-                "VALUES (:id, :tid, :mid, :cgid::uuid, 'STARTED', :now, :now) " +
+                "VALUES (:id, :tid, :mid, CAST(:cgid AS uuid), 'STARTED', :now, :now) " +
                 "ON CONFLICT (credit_grant_id) DO NOTHING")
                 .setParameter("id",   UUID.randomUUID())
                 .setParameter("tid",  tenantId)
@@ -348,7 +348,7 @@ public class IotEventService {
         int rows = em.createNativeQuery(
                 "UPDATE play_session SET status = 'COMPLETED', prize_delivered = :prize, " +
                 "completed_at = :now " +
-                "WHERE credit_grant_id = :cgid::uuid AND tenant_id = :tid AND status = 'STARTED'")
+                "WHERE credit_grant_id = CAST(:cgid AS uuid) AND tenant_id = :tid AND status = 'STARTED'")
                 .setParameter("prize", prizeDelivered)
                 .setParameter("now",   Instant.now())
                 .setParameter("cgid",  creditGrantId)

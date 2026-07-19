@@ -91,7 +91,7 @@ public class CreditService {
                 "INSERT INTO device_command " +
                 "(id, command_id, tenant_id, machine_id, command_type, payload, " +
                 " status, expires_at, created_at) " +
-                "VALUES (gen_random_uuid(), :cmdId, :tid, :mid, 'GRANT_CREDIT', :payload::jsonb, " +
+                "VALUES (gen_random_uuid(), :cmdId, :tid, :mid, 'GRANT_CREDIT', CAST(:payload AS jsonb), " +
                 "'PENDING', :expiry, :now)")
                 .setParameter("cmdId",   commandId)
                 .setParameter("tid",     tenantId)

@@ -55,6 +55,9 @@ public class PaymentWebhookResource {
         if (body == null || body.length == 0) {
             return Response.status(400).entity(Map.of("error", "Empty body")).build();
         }
+        if (tenantIdHeader == null || tenantIdHeader.isBlank()) {
+            return Response.status(400).entity(Map.of("error", "Invalid tenant ID")).build();
+        }
 
         try {
             UUID tenantId = UUID.fromString(tenantIdHeader);
