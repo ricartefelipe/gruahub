@@ -118,14 +118,12 @@
         "gruahub://*",
         "exp://*",
         "http://localhost:*",
-        "http://127.0.0.1:*",
-        "http://192.168.*:*"
+        "http://127.0.0.1:*"
       ],
       "webOrigins": [
         "*",
         "http://localhost:*",
-        "http://127.0.0.1:*",
-        "http://192.168.*:*"
+        "http://127.0.0.1:*"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
@@ -181,7 +179,7 @@
       "lastName": "GruaHub",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
-      "realmRoles": ["PLATFORM_ADMIN"],
+      "realmRoles": ["PLATFORM_ADMIN", "offline_access"],
       "attributes": {
         "tenant_id": ["11111111-0000-0000-0000-000000000001"],
         "tenant_slug": ["diversao-nordeste-demo"]
@@ -194,7 +192,7 @@
       "lastName": "Gestor",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
-      "realmRoles": ["TENANT_ADMIN"],
+      "realmRoles": ["TENANT_ADMIN", "offline_access"],
       "attributes": {
         "tenant_id": ["11111111-0000-0000-0000-000000000001"],
         "tenant_slug": ["diversao-nordeste-demo"]
@@ -207,7 +205,7 @@
       "lastName": "Operadora",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
-      "realmRoles": ["FIELD_OPERATOR"],
+      "realmRoles": ["FIELD_OPERATOR", "offline_access"],
       "attributes": {
         "tenant_id": ["11111111-0000-0000-0000-000000000001"],
         "tenant_slug": ["diversao-nordeste-demo"]
@@ -220,7 +218,7 @@
       "lastName": "Técnico",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
-      "realmRoles": ["TECHNICIAN"],
+      "realmRoles": ["TECHNICIAN", "offline_access"],
       "attributes": {
         "tenant_id": ["11111111-0000-0000-0000-000000000001"],
         "tenant_slug": ["diversao-nordeste-demo"]
@@ -233,7 +231,7 @@
       "lastName": "Financeiro",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
-      "realmRoles": ["FINANCE"],
+      "realmRoles": ["FINANCE", "offline_access"],
       "attributes": {
         "tenant_id": ["11111111-0000-0000-0000-000000000001"],
         "tenant_slug": ["diversao-nordeste-demo"]
@@ -246,7 +244,7 @@
       "lastName": "Parceiro",
       "enabled": true,
       "credentials": [{ "type": "password", "value": "gruahub@2025", "temporary": false }],
-      "realmRoles": ["ESTABLISHMENT_VIEWER"],
+      "realmRoles": ["ESTABLISHMENT_VIEWER", "offline_access"],
       "attributes": {
         "tenant_id": ["11111111-0000-0000-0000-000000000001"],
         "tenant_slug": ["diversao-nordeste-demo"]

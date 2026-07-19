@@ -3,7 +3,7 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, exchangeCodeAsync } from 'expo-auth-session';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import {
@@ -34,12 +34,37 @@ function parseJwtPayload(token: string): Record<string, unknown> {
   }
 }
 
+function formatTokenExchangeError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const tokenErr = err as {
+      code?: string;
+      description?: string;
+      message?: string;
+    };
+    const code = typeof tokenErr.code === 'string' ? tokenErr.code : '';
+    const description =
+      typeof tokenErr.description === 'string' ? tokenErr.description : '';
+    if (code || description) {
+      return [code, description].filter(Boolean).join(' — ');
+    }
+    if (typeof tokenErr.message === 'string' && tokenErr.message) {
+      return tokenErr.message;
+    }
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return 'Falha desconhecida no endpoint /token.';
+}
+
 export default function LoginScreen() {
   const { setAuth, accessToken } = useAuthStore();
   const [exchanging, setExchanging] = useState(false);
   const exchangedCodesRef = useRef(new Set<string>());
+  const codeVerifierRef = useRef<string | null>(null);
 
-  const redirectUri = makeRedirectUri({ scheme: 'gruahub', path: 'auth' });
+  const redirectUri = useMemo(
+    () => makeRedirectUri({ scheme: 'gruahub', path: 'auth' }),
+    []
+  );
 
   const [request, , promptAsync] = useAuthRequest(
     {
@@ -98,11 +123,13 @@ export default function LoginScreen() {
       });
 
       router.replace('/(tabs)');
-    } catch {
+    } catch (err: unknown) {
       exchangedCodesRef.current.delete(code);
+      const detail = formatTokenExchangeError(err);
+      console.warn('[Auth] Token exchange falhou:', detail, err);
       Alert.alert(
         'Erro de autenticação',
-        'Não foi possível trocar o código por token. Verifique se a redirect URI está autorizada no Keycloak.'
+        `Não foi possível trocar o código por token.\n${detail}\n\nRedirect: ${redirectUri}`
       );
     } finally {
       setExchanging(false);
@@ -111,6 +138,14 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     try {
+      if (!request?.codeVerifier) {
+        Alert.alert(
+          'Erro de autenticação',
+          'PKCE ainda não está pronto. Aguarde e tente novamente.'
+        );
+        return;
+      }
+      codeVerifierRef.current = request.codeVerifier;
       const result = await promptAsync();
       if (result.type === 'error') {
         Alert.alert(
@@ -120,8 +155,17 @@ export default function LoginScreen() {
         );
         return;
       }
-      if (result.type === 'success' && request?.codeVerifier) {
-        await exchangeAuthCode(result.params.code, request.codeVerifier);
+      if (result.type === 'success') {
+        const code = result.params.code;
+        const codeVerifier = codeVerifierRef.current;
+        if (!code || !codeVerifier) {
+          Alert.alert(
+            'Erro de autenticação',
+            'Retorno OAuth sem código ou code_verifier. Tente novamente.'
+          );
+          return;
+        }
+        await exchangeAuthCode(code, codeVerifier);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Não foi possível abrir o navegador.';

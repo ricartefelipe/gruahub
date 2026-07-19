@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { router } from 'expo-router';
 import { useAuthStore } from '../src/store/authStore';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function AuthCallbackScreen() {
   const accessToken = useAuthStore((s) => s.accessToken);
