@@ -184,7 +184,7 @@ public class FieldVisitResource {
             "(id, tenant_id, client_operation_id, operating_point_id, status, " +
             " responsible_name, notes, checkin_at, checkin_latitude, checkin_longitude) " +
             "VALUES (:id, :tid, :coid, :pid, 'IN_PROGRESS', :name, :notes, " +
-            " COALESCE(:checkinAt::timestamptz, NOW()), :lat, :lng)"
+            " COALESCE(CAST(:checkinAt AS timestamptz), NOW()), :lat, :lng)"
         )
             .setParameter("id", visitId)
             .setParameter("tid", tenantId)
@@ -232,7 +232,7 @@ public class FieldVisitResource {
 
         em.createNativeQuery(
             "UPDATE field_visit SET status = 'COMPLETED', " +
-            "checkout_at = COALESCE(:co::timestamptz, NOW()), " +
+            "checkout_at = COALESCE(CAST(:co AS timestamptz), NOW()), " +
             "cash_collected_cents = :cash, updated_at = NOW() " +
             "WHERE id = :id AND tenant_id = :tid"
         )
@@ -283,8 +283,8 @@ public class FieldVisitResource {
         em.createNativeQuery(
             "INSERT INTO visit_checklist_result " +
             "(id, tenant_id, visit_id, client_operation_id, items, completed_at) " +
-            "VALUES (:id, :tid, :vid, :coid, :items::jsonb, " +
-            "COALESCE(:completedAt::timestamptz, NOW()))"
+            "VALUES (:id, :tid, :vid, :coid, CAST(:items AS jsonb), " +
+            "COALESCE(CAST(:completedAt AS timestamptz), NOW()))"
         )
             .setParameter("id", resultId)
             .setParameter("tid", tenantId)

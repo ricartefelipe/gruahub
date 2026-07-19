@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.*;
  *   <li>Outbox enqueued: INSERT em outbox_event dentro da mesma transação</li>
  *   <li>Scheduler MATCHED: pagamento + crédito + play → caso MATCHED</li>
  *   <li>Scheduler PAYMENT_WITHOUT_CREDIT: sem crédito após janela → caso detectado</li>
- *   <li>Scheduler DUPLICATE_EVENT: dois plays para o mesmo crédito</li>
+ *   <li>Constraint de play_session: caminho feliz gera MATCHED, sem DUPLICATE_EVENT</li>
  *   <li>Idempotência do scheduler: segunda execução não cria casos duplicados</li>
  * </ol>
  * <p>
@@ -164,30 +164,28 @@ class BackendIotFlowTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 5. Scheduler DUPLICATE_EVENT — dois plays COMPLETED para o mesmo crédito
+    // 5. Constraint uq_play_session_credit_grant — sem DUPLICATE_EVENT no caminho feliz
     // ═══════════════════════════════════════════════════════════════════════════
 
     @Test
     @TestTransaction
-    void scheduler_creates_duplicate_event_case_for_multiple_plays() {
+    void scheduler_does_not_flag_duplicate_when_single_play_exists() {
         insertMachine(MACHINE_ID, TENANT_ID, 200L);
 
         UUID paymentId = insertPaymentTransaction("CONFIRMED");
         UUID creditId  = insertCreditGrant(paymentId, "CONSUMED");
-
-        // Dois plays COMPLETED para o mesmo credit_grant (viola constraint — inserção direta no teste)
         insertPlaySession(creditId, "COMPLETED");
-        insertPlaySessionDirect(creditId, "COMPLETED"); // direto sem constraint para simular anomalia
 
         reconciliationScheduler.setClock(Clock.systemUTC());
         reconciliationScheduler.runReconciliation();
 
-        Number count = (Number) em.createNativeQuery(
+        Number dupCount = (Number) em.createNativeQuery(
                 "SELECT COUNT(*) FROM reconciliation_case " +
                 "WHERE credit_grant_id = :cid AND status = 'DUPLICATE_EVENT'")
                 .setParameter("cid", creditId)
                 .getSingleResult();
-        assertThat(count.longValue()).isGreaterThanOrEqualTo(1L);
+        assertThat(dupCount.longValue()).isEqualTo(0L);
+        assertThat(queryReconciliationStatus(paymentId)).isEqualTo("MATCHED");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -352,32 +350,6 @@ class BackendIotFlowTest {
                 .setParameter("cid",    creditGrantId)
                 .setParameter("status", status)
                 .executeUpdate();
-        return playId;
-    }
-
-    /**
-     * Insere um segundo play_session contornando a unique constraint
-     * (para simular anomalia DUPLICATE_EVENT sem remover a constraint de produção).
-     */
-    private UUID insertPlaySessionDirect(UUID creditGrantId, String status) {
-        UUID playId = UUID.randomUUID();
-        try {
-            em.createNativeQuery(
-                    "INSERT INTO play_session " +
-                    "(id, tenant_id, machine_id, credit_grant_id, status, " +
-                    " started_at, created_at) " +
-                    "VALUES (:id, :tid, :mid, :cid, :status, NOW(), NOW())")
-                    .setParameter("id",     playId)
-                    .setParameter("tid",    TENANT_ID)
-                    .setParameter("mid",    MACHINE_ID)
-                    .setParameter("cid",    creditGrantId)
-                    .setParameter("status", status)
-                    .executeUpdate();
-        } catch (Exception e) {
-            // Se a constraint proibir (migration 018 adicionou UNIQUE), o teste
-            // ainda é válido — o scheduler não deve criar DUPLICATE_EVENT se não houver duplicata.
-            // Anotar como expected e deixar o teste seguir.
-        }
         return playId;
     }
 

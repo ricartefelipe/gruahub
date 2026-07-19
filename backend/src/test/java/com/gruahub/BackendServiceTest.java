@@ -264,16 +264,15 @@ class BackendServiceTest {
 
     @Test
     @TestTransaction
-    void machine_can_transition_inactive_to_active() {
+    void machine_can_transition_draft_to_active() {
         MachineResponse created = machineService.create(new CreateMachineRequest(
             "SM-ACT-" + UUID.randomUUID(), "SM Machine", 200L, "BRL",
             null, null, null, null, null, null, null
         ));
-        // Máquinas começam como INACTIVE
-        assertThat(created.status()).isEqualTo("INACTIVE");
+        assertThat(created.status()).isEqualTo(MachineStatus.DRAFT);
 
         MachineResponse activated = machineService.changeStatus(created.id(), MachineStatus.ACTIVE);
-        assertThat(activated.status()).isEqualTo("ACTIVE");
+        assertThat(activated.status()).isEqualTo(MachineStatus.ACTIVE);
     }
 
     @Test
@@ -286,7 +285,7 @@ class BackendServiceTest {
 
         machineService.changeStatus(created.id(), MachineStatus.ACTIVE);
         MachineResponse inMaintenance = machineService.changeStatus(created.id(), MachineStatus.MAINTENANCE);
-        assertThat(inMaintenance.status()).isEqualTo("MAINTENANCE");
+        assertThat(inMaintenance.status()).isEqualTo(MachineStatus.MAINTENANCE);
     }
 
     @Test
@@ -357,20 +356,17 @@ class BackendServiceTest {
 
     @Test
     void audit_record_actor_user_id_column_is_correct() {
-        // Verifica que o schema usa 'actor_user_id' (não 'actor_id')
         String resourceId = UUID.randomUUID().toString();
         auditService.record("ACTOR_CHECK", "test", resourceId, "{}");
 
-        // Se a coluna 'actor_user_id' não existisse, esta query falharia
-        Object result = em.createNativeQuery(
-            "SELECT actor_user_id FROM audit_event WHERE resource_id = :rid"
+        Long count = (Long) em.createNativeQuery(
+            "SELECT COUNT(*) FROM audit_event " +
+            "WHERE resource_id = :rid AND actor_user_id IS NULL"
         )
             .setParameter("rid", resourceId)
             .getSingleResult();
 
-        // O valor pode ser null (subject do TenantContext.set no BeforeEach = "user-a")
-        // O que importa é que a query não falhou com coluna desconhecida
-        assertThat(result).isNotNull();
+        assertThat(count).isEqualTo(1L);
     }
 
     @Test
@@ -397,7 +393,6 @@ class BackendServiceTest {
         String metadataFromJsonUtil = JsonUtil.obj("assetNumber", "ASSET-001");
         String resourceId = UUID.randomUUID().toString();
 
-        // Inserção via auditService usa ':meta::jsonb' — se o JSON for inválido, falha aqui
         assertThatCode(() ->
             auditService.record("JSON_CAST_CHECK", "machine", resourceId, metadataFromJsonUtil)
         ).doesNotThrowAnyException();
