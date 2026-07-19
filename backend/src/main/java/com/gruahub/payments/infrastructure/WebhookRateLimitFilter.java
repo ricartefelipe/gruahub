@@ -1,7 +1,10 @@
 package com.gruahub.payments.infrastructure;
 
+import com.gruahub.shared.infra.ClientIpResolver;
+import com.gruahub.shared.infra.RateLimitService;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -9,11 +12,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
-
-import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Provider
 @ApplicationScoped
@@ -34,7 +32,11 @@ public class WebhookRateLimitFilter implements ContainerRequestFilter {
     @ConfigProperty(name = "gruahub.rate-limit.window-seconds", defaultValue = "60")
     long windowSeconds;
 
-    private final ConcurrentHashMap<String, Deque<Long>> buckets = new ConcurrentHashMap<>();
+    @Inject
+    RateLimitService rateLimitService;
+
+    @Inject
+    ClientIpResolver clientIpResolver;
 
     @Override
     public void filter(ContainerRequestContext ctx) {
@@ -52,8 +54,8 @@ public class WebhookRateLimitFilter implements ContainerRequestFilter {
             return;
         }
 
-        String key = extractIp(ctx) + "|" + bucketKind;
-        if (isRateLimited(key, limit)) {
+        String key = clientIpResolver.resolve(ctx) + "|" + bucketKind;
+        if (!rateLimitService.tryAcquire(key, limit, windowSeconds)) {
             LOG.warnf("Rate limit exceeded for key=%s", key);
             ctx.abortWith(Response.status(429)
                 .header("Retry-After", String.valueOf(windowSeconds))
@@ -62,23 +64,6 @@ public class WebhookRateLimitFilter implements ContainerRequestFilter {
                 .entity("{\"error\":\"Too many requests. Please wait before retrying.\"}")
                 .type("application/json")
                 .build());
-        }
-    }
-
-    private boolean isRateLimited(String key, int maxRequests) {
-        long now = Instant.now().getEpochSecond();
-        long cutoff = now - windowSeconds;
-        Deque<Long> bucket = buckets.computeIfAbsent(key, k -> new ArrayDeque<>());
-
-        synchronized (bucket) {
-            while (!bucket.isEmpty() && bucket.peekFirst() <= cutoff) {
-                bucket.pollFirst();
-            }
-            if (bucket.size() >= maxRequests) {
-                return true;
-            }
-            bucket.addLast(now);
-            return false;
         }
     }
 
@@ -92,13 +77,5 @@ public class WebhookRateLimitFilter implements ContainerRequestFilter {
     private static String extractTail(String path) {
         int idx = path.lastIndexOf('/');
         return idx >= 0 ? path.substring(idx + 1) : "unknown";
-    }
-
-    private static String extractIp(ContainerRequestContext ctx) {
-        String xff = ctx.getHeaderString("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
-        }
-        return "unknown";
     }
 }

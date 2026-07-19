@@ -116,17 +116,51 @@ eas build --platform android --profile production
 eas build --platform ios --profile production
 ```
 
-## Docker Compose — Produção
+## Docker Compose — profiles comerciais (prod-like)
+
+O compose principal já expõe profiles opcionais (sem overlay separado):
+
+| Profile | Serviços | Uso |
+|---------|----------|-----|
+| `tls` / `prod-like` | `caddy` | HTTPS local (`https://localhost`) com certificado interno |
+| `backup` / `prod-like` | `postgres-backup` | `pg_dump` periódico para volume `postgres_backups` |
+| `simulators` | machine/payment sim | Demo IoT/pagamento |
+
+### HTTPS local (Caddy)
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+cd infra
+cp .env.example .env   # se ainda não existir
+docker compose --profile tls up -d
+# ou tudo comercial local:
+docker compose --profile prod-like up -d
 ```
 
-O `docker-compose.prod.yml` (a criar) deve:
-- Usar imagens de build (não `build: .`)
+- Entrada HTTPS: `https://localhost` (web) e `https://localhost/api/...` / `https://localhost/q/...` (backend)
+- Certificado: Caddy `tls internal` — aceitar aviso do browser ou usar `curl -k`
+- Portas `3000`/`8080` continuam expostas para debug HTTP direto
+- Para demo com NextAuth atrás do proxy, ajuste `NEXTAUTH_URL=https://localhost` e `NEXT_PUBLIC_API_URL=https://localhost` no `.env` e recrie o `web`
+
+### Backup Postgres
+
+```bash
+cd infra
+docker compose --profile backup up -d postgres postgres-backup
+# dumps em volume nomeado postgres_backups; retenção via BACKUP_RETENTION_DAYS
+# one-shot manual (stack já no ar):
+docker compose --profile backup run --rm postgres-backup /bin/sh /scripts/pg-backup.sh
+```
+
+Variáveis: `BACKUP_INTERVAL_SECONDS` (default 86400), `BACKUP_RETENTION_DAYS` (default 7).  
+Offsite (S3) e drill de restore ainda são gaps comerciais — ver `COMMERCIAL_READINESS.md`.
+
+### Produção pública (ainda aberto)
+
+Além dos profiles locais, um deploy público deve:
+- Trocar `tls internal` por Let's Encrypt / cert gerenciado (DNS real)
+- Usar imagens versionadas (não só `build:`)
 - Definir réplicas e limites de recursos
-- Configurar Traefik/nginx para TLS
-- Usar segredos Docker Secrets ou Vault ao invés de `.env`
+- Mover segredos para Vault / AWS Secrets Manager / Docker Secrets
 
 ## Variáveis de Ambiente Críticas
 

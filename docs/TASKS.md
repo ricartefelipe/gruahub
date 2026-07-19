@@ -11,6 +11,9 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [x] Identity/tenant + isolamento HTTP com JWT (`TenantIsolationIT`)
 - [x] Frota, locais, IoT (heartbeat/comandos/outbox), pagamentos sandbox + webhook HMAC + idempotência
 - [x] Rate-limit in-memory em webhook e sandbox
+- [x] Rate-limit global da API (`GlobalRateLimitFilter`, env `GRUAHUB_RATE_LIMIT_GLOBAL_*`)
+- [x] HTTPS local via Caddy (Compose profiles `tls` / `prod-like`)
+- [x] Backup Postgres agendado (`pg_dump`, profiles `backup` / `prod-like`)
 - [x] Plays / conciliação / inventário / fieldops / finance / routing / maintenance / alerts / reports PDF
 - [x] Seed demo (`Diversão Nordeste Demo`) + rota do dia (`CURRENT_DATE`)
 - [x] Web dashboard + portal parceiro (RBAC por página)
@@ -25,12 +28,12 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [x] `contracts/openapi/` versionado (`openapi.yaml`/`openapi.json`; regenerar com `scripts/export-openapi.sh`)
 - [x] Exemplos MQTT em `contracts/mqtt/examples/` (CI valida contra `schema-v1.json`)
 - [x] E2E Playwright smoke em CI (`web/e2e/smoke.spec.ts`; specs autenticados ainda locais com Keycloak)
-- [ ] Rate limiting global / WAF / login (só webhook+sandbox hoje)
-- [ ] TLS/HTTPS no compose (HTTP local de propósito)
-- [ ] Push FCM ativo, SMS/e-mail
-- [ ] Backup automatizado Postgres, Vault/Secrets Manager
+- [ ] WAF / rate-limit de login (Keycloak brute-force / proxy); rate-limit in-memory não cobre multi-instância
+- [ ] TLS público (Let's Encrypt / cert gerenciado); hoje só `tls internal` local
+- [ ] Push FCM ativo, SMS/e-mail (stubs/prod ainda abertos)
+- [ ] Backup offsite (S3) + drill de restore; Vault / Secrets Manager em produção
 - [ ] Pagamento real / hardware físico / adaptadores de controlador
-- [ ] Escala horizontal (outbox polling, locks in-memory)
+- [ ] Escala horizontal (outbox polling, locks in-memory, rate-limit in-memory)
 
 ## Fora do MVP (comercial longo)
 

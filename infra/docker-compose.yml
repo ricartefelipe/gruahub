@@ -4,10 +4,13 @@ networks:
 
 volumes:
   postgres_data:
+  postgres_backups:
   keycloak_data:
   emqx_data:
   emqx_log:
   minio_data:
+  caddy_data:
+  caddy_config:
 
 services:
 
@@ -183,6 +186,13 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-gruahub}
       GRUAHUB_SANDBOX_ENABLED: ${GRUAHUB_SANDBOX_ENABLED:-true}
       GRUAHUB_SANDBOX_WEBHOOK_SECRET: ${GRUAHUB_SANDBOX_WEBHOOK_SECRET}
+      GRUAHUB_CORS_ORIGINS: ${GRUAHUB_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,https://localhost}
+      GRUAHUB_RATE_LIMIT_WEBHOOK_MAX: ${GRUAHUB_RATE_LIMIT_WEBHOOK_MAX:-30}
+      GRUAHUB_RATE_LIMIT_SANDBOX_MAX: ${GRUAHUB_RATE_LIMIT_SANDBOX_MAX:-60}
+      GRUAHUB_RATE_LIMIT_WINDOW_SECONDS: ${GRUAHUB_RATE_LIMIT_WINDOW_SECONDS:-60}
+      GRUAHUB_RATE_LIMIT_GLOBAL_ENABLED: ${GRUAHUB_RATE_LIMIT_GLOBAL_ENABLED:-true}
+      GRUAHUB_RATE_LIMIT_GLOBAL_MAX: ${GRUAHUB_RATE_LIMIT_GLOBAL_MAX:-300}
+      GRUAHUB_RATE_LIMIT_GLOBAL_WINDOW_SECONDS: ${GRUAHUB_RATE_LIMIT_GLOBAL_WINDOW_SECONDS:-60}
       LOG_JSON: ${LOG_JSON:-true}
       QUARKUS_LIQUIBASE_CONTEXTS: ${QUARKUS_LIQUIBASE_CONTEXTS:-demo}
     depends_on:
@@ -265,4 +275,47 @@ services:
       MACHINE_ID: ${MACHINE_ID:-66666666-0000-0000-0000-000000000001}
     depends_on:
       backend:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: gruahub-caddy
+    restart: unless-stopped
+    networks: [gruahub]
+    profiles: [tls, prod-like]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+
+  postgres-backup:
+    image: postgres:16-alpine
+    container_name: gruahub-postgres-backup
+    restart: unless-stopped
+    networks: [gruahub]
+    profiles: [backup, prod-like]
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-gruahub}
+      POSTGRES_USER: ${POSTGRES_USER:-gruahub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_DIR: /backups
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+    volumes:
+      - postgres_backups:/backups
+      - ./scripts/pg-backup.sh:/scripts/pg-backup.sh:ro
+      - ./scripts/pg-backup-loop.sh:/scripts/pg-backup-loop.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/pg-backup-loop.sh"]
+    depends_on:
+      postgres:
         condition: service_healthy

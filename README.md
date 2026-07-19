@@ -35,6 +35,21 @@ Aguarde todos os serviços ficarem `healthy` (30–60 s):
 docker compose ps
 ```
 
+#### Profiles comerciais (opcional)
+
+```bash
+# HTTPS local (Caddy) + backup Postgres agendado
+docker compose --profile prod-like up -d
+
+# ou só TLS / só backup:
+docker compose --profile tls up -d
+docker compose --profile backup up -d
+```
+
+- HTTPS: `https://localhost` (certificado interno — aceite o aviso do browser ou use `curl -k`)
+- Backup: dumps em volume `postgres_backups` (`BACKUP_INTERVAL_SECONDS`, `BACKUP_RETENTION_DAYS`)
+- Detalhes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) e [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md)
+
 ### 2. Subir o backend
 
 ```bash
@@ -160,7 +175,9 @@ gruahub/
 │   └── payment-simulator/      # Node/TS — simula webhooks de pagamento
 │
 ├── infra/
-│   ├── docker-compose.yml      # Todos os serviços
+│   ├── docker-compose.yml      # Serviços + profiles tls/backup/prod-like/simulators
+│   ├── caddy/Caddyfile         # HTTPS local
+│   ├── scripts/pg-backup*.sh   # Backup Postgres
 │   ├── Dockerfile.backend
 │   ├── Dockerfile.web
 │   ├── keycloak/realm-gruahub.json
@@ -208,8 +225,9 @@ TL;DR: sem hardware real, pagamentos sandbox apenas, sem nota fiscal, sem Kubern
 
 ## Segurança
 
-- Secrets somente por variáveis de ambiente — nunca em código
-- `.env.example` sem segredos reais
+- Secrets somente por variáveis de ambiente — nunca em código / Compose sem senhas literais
+- `.env.example` / `infra/.env.example` com placeholders; produção → Vault/SM
+- Rate-limit global em `/api/*` + limites mais estritos em webhook/sandbox
 - Webhooks com HMAC-SHA256 e replay protection via inbox
 - ACL MQTT por dispositivo
 - `tenant_id` derivado do JWT (nunca aceito do cliente)
