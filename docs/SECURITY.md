@@ -102,7 +102,8 @@ Todo evento sensível é registrado na tabela `audit_log` com:
 - [x] Configurar CORS com origens explícitas (`GRUAHUB_CORS_ORIGINS` / default inclui `https://localhost`)
 - [ ] Habilitar Content-Security-Policy no Next.js (`next.config.js`)
 - [x] Rate limiting global da API (`GlobalRateLimitFilter`)
-- [ ] Ativar rate limiting também no endpoint de login (via Keycloak ou proxy)
-- [ ] TLS público (Let's Encrypt); local já coberto pelo profile `tls`
+- [x] Brute-force protection no realm Keycloak demo (`failureFactor=5`)
+- [ ] Keycloak atrás do proxy/edge (hoje `:8180` ainda no host no prod-like)
+- [ ] TLS público (Let's Encrypt); local já coberto pelo profile `tls` / headers HSTS no Caddy
 - [ ] Revisar e reduzir TTL dos tokens de acesso (padrão Keycloak: 5 min)
 - [ ] Configurar alertas de falha de autenticação no SIEM

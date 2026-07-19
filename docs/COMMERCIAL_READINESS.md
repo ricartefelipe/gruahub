@@ -18,7 +18,9 @@ Estes itens funcionam hoje, sem condicionantes:
 - Rotas, visitas, sangria, comissão, alertas funcionais
 - CI/CD com 7 jobs (security/export com soft-fail; smoke compose em PR/develop)
 - Rate limiting global da API + limites mais estritos em webhook/sandbox
-- HTTPS local via Caddy (Compose profiles `tls` / `prod-like`)
+- HTTPS local via Caddy (Compose profiles `tls` / `prod-like`) com headers de segurança
+- Overlay `docker-compose.prod-like.yml`: app/admin sem portas no host (tráfego via Caddy)
+- Keycloak brute-force protection no realm demo (`failureFactor=5`)
 - Backup agendado do PostgreSQL (`pg_dump` no profile `backup` / `prod-like`)
 - Segredos do Compose apenas via `${VAR}` / `infra/.env` (sem literais no YAML)
 
@@ -32,7 +34,7 @@ Estes itens funcionam hoje, sem condicionantes:
 |-----|-------|------------------|--------|
 | TLS/HTTPS em deploy real (Let's Encrypt / cert gerenciado) | Dados em trânsito sem criptografia em produção pública | 1–2 dias (Caddy/Traefik + DNS) | Parcial — HTTPS local com `tls internal` pronto; produção pública ainda aberta |
 | Secrets em Vault / AWS Secrets Manager | Rotação manual; risco de exposure em CI logs | 3–5 dias | Parcial — Compose 100% `${VAR}`; Vault/SM ainda necessário para produção |
-| Rate limiting global / WAF / login | DDoS e enumeração de tenants | 1–2 dias restantes (WAF + Keycloak brute-force) | Parcial — API global + webhook/sandbox in-memory; sem WAF/login |
+| Rate limiting global / WAF / login | DDoS e enumeração de tenants | 1 dia restante (WAF / Keycloak atrás do edge) | Parcial — API global + Keycloak brute-force; sem WAF nem proxy Keycloak |
 | Backup Postgres com offsite (S3) | Perda de dados se o volume local falhar | 0,5–1 dia (upload S3 + restore drill) | Parcial — `pg_dump` local agendado; offsite/restore drill abertos |
 | Sem auditoria de penetração | Vulnerabilidades desconhecidas | Externo — 2–4 semanas | Aberto |
 
@@ -61,7 +63,7 @@ Estes itens funcionam hoje, sem condicionantes:
 
 ---
 
-## Fatia entregue: commercial hardening baseline
+## Fatia entregue: commercial hardening baseline + perímetro prod-like
 
 Entregue no Compose / backend (ver `DEPLOYMENT.md`):
 
@@ -69,8 +71,11 @@ Entregue no Compose / backend (ver `DEPLOYMENT.md`):
 2. **Rate-limit global** — `GlobalRateLimitFilter` em `/api/*` (env `GRUAHUB_RATE_LIMIT_GLOBAL_*`)
 3. **Backup Postgres** — `postgres-backup` com `pg_dump` + retenção (profiles `backup` / `prod-like`)
 4. **Secrets** — YAML sem senhas literais; `infra/.env.example` e raiz `.env.example` alinhados
+5. **Perímetro prod-like** — overlay sem publicar 8080/3000/Postgres/MinIO/dashboards; script `up-prod-like.sh`
+6. **Headers Caddy** — HSTS e headers básicos de browser hardening
+7. **Login throttle** — brute-force Keycloak no realm importado
 
-Ainda aberto nesta frente: Vault/SM, cert público, offsite backup, WAF/login throttle, FCM/SMS/e-mail, pen-test, pagamento real, hardware, NF-e.
+Ainda aberto nesta frente: Vault/SM (`*_FILE` path), cert público, offsite backup + restore drill, Keycloak atrás do Caddy, WAF, FCM/SMS/e-mail, pen-test, pagamento real, hardware, NF-e.
 
 ---
 
@@ -79,9 +84,10 @@ Ainda aberto nesta frente: Vault/SM, cert público, offsite backup, WAF/login th
 ```
 Mês 1 (Hardening de infra) — em andamento:
   ├── HTTPS/TLS local (Caddy) ✅ / Let's Encrypt produção ⬜
-  ├── Segredos via .env no Compose ✅ / Vault ou SM ⬜
+  ├── Perímetro prod-like (sem 8080/3000 no host) ✅ / Keycloak no edge ⬜
+  ├── Segredos via .env no Compose ✅ / Vault ou SM / *_FILE ⬜
   ├── Backup PostgreSQL local ✅ / offsite S3 ⬜
-  └── Rate limiting API ✅ / WAF + login ⬜
+  └── Rate limiting API + Keycloak brute-force ✅ / WAF ⬜
 
 Mês 2 (Notificações + Monitoramento):
   ├── FCM + Expo Notifications ativo

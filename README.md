@@ -38,15 +38,16 @@ docker compose ps
 #### Profiles comerciais (opcional)
 
 ```bash
-# HTTPS local (Caddy) + backup Postgres agendado
-docker compose --profile prod-like up -d
+# Prod-like: Caddy HTTPS + backup + sem publicar 8080/3000/admin no host
+./scripts/up-prod-like.sh up -d --build
 
-# ou só TLS / só backup:
+# ou só TLS / só backup (portas de debug ainda no host):
 docker compose --profile tls up -d
 docker compose --profile backup up -d
 ```
 
 - HTTPS: `https://localhost` (certificado interno — aceite o aviso do browser ou use `curl -k`)
+- Prod-like: ajuste `NEXTAUTH_URL` / `NEXT_PUBLIC_API_URL` para `https://localhost` no `.env`
 - Backup: dumps em volume `postgres_backups` (`BACKUP_INTERVAL_SECONDS`, `BACKUP_RETENTION_DAYS`)
 - Detalhes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) e [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md)
 

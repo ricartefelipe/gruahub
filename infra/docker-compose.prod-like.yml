@@ -1,0 +1,20 @@
+services:
+  postgres:
+    ports: !reset []
+
+  emqx:
+    ports: !override
+      - "1883:1883"
+      - "8883:8883"
+
+  minio:
+    ports: !reset []
+
+  backend:
+    ports: !reset []
+
+  web:
+    ports: !reset []
+    environment:
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://localhost}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://localhost}

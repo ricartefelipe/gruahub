@@ -23,7 +23,8 @@
 - **Assinatura digital qualificada:** Confirmação de responsável na visita é simples (checkbox/código), sem certificado digital.
 - **Escalabilidade horizontal do backend:** Monólito modular em instância única. Escalonamento horizontal requer adaptação do outbox e locks distribuídos.
 - **Suporte a múltiplos controladores:** Contrato MQTT genérico. Controladores específicos (Eletek, Sega, etc.) exigem adaptadores não implementados.
-- **TLS em produção pública:** Compose oferece HTTPS local via Caddy (`tls internal`, profiles `tls`/`prod-like`). Certificado público (Let's Encrypt) e DNS real ainda não estão no stack.
+- **TLS em produção pública:** Compose oferece HTTPS local via Caddy (`tls internal`, profiles `tls`/`prod-like`) com headers de segurança. Certificado público (Let's Encrypt) e DNS real ainda não estão no stack.
+- **Keycloak no edge:** no prod-like, web/API não publicam portas no host; Keycloak OIDC ainda usa `:8180` (não está atrás do Caddy).
 - **Backup offsite:** há `pg_dump` agendado para volume local; upload S3 e drill de restore não estão automatizados.
 
 ## Status de Implementação
