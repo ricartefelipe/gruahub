@@ -97,8 +97,8 @@ Todos com senha `gruahub@2025`:
 1. **Login web** → `gestor@diversao.demo`
 2. **Dashboard** → ver status online/offline das 5 máquinas seed
 3. **Simulador de máquina** → envia heartbeats; MAQUINA-001 fica online
-4. **Simulador de pagamento** → `npm start confirm` → pagamento confirmado via webhook
-5. **Backend** → `POST /api/v1/payments/sandbox/confirm/{id}` → crédito concedido via MQTT
+4. **Simulador de pagamento** → `npm start full-flow` → `sandbox/initiate` + `sandbox/confirm` (header `X-Sandbox-Secret`)
+5. **Backend** → crédito concedido e comando MQTT publicado
 6. **Simulador de máquina** → recebe GRANT_CREDIT → ACK → PLAY_STARTED → PLAY_COMPLETED
 7. **Dashboard → Conciliação** → caso MATCHED aparece automaticamente
 8. **App mobile** → login → rota do dia → iniciar visita → checklist → sangria → concluir

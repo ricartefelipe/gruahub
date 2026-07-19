@@ -79,6 +79,7 @@ public class PaymentWebhookResource {
      */
     @POST
     @Path("/sandbox/initiate")
+    @SandboxEndpoint
     @Transactional
     @Operation(summary = "[SANDBOX] Criar transação de pagamento fictícia")
     public Response sandboxInitiate(
@@ -123,6 +124,7 @@ public class PaymentWebhookResource {
      */
     @POST
     @Path("/sandbox/confirm/{transactionId}")
+    @SandboxEndpoint
     @Operation(summary = "[SANDBOX] Confirmar pagamento fictício")
     public Response sandboxConfirm(
             @PathParam("transactionId")  String transactionId,
@@ -152,6 +154,7 @@ public class PaymentWebhookResource {
      */
     @POST
     @Path("/sandbox/fail/{transactionId}")
+    @SandboxEndpoint
     @Operation(summary = "[SANDBOX] Falhar pagamento fictício")
     public Response sandboxFail(@PathParam("transactionId") String transactionId) {
         sandboxProvider.sandboxFail(transactionId);

@@ -132,7 +132,7 @@ switch ($Command.ToLower()) {
 
     "infra" {
         Write-Step "Subindo apenas infraestrutura (sem backend/web)..."
-        docker compose up -d postgres keycloak emqx minio minio-setup
+        docker compose up -d postgres keycloak emqx emqx-users minio minio-setup
         Write-OK "Infra iniciada."
         Write-Host "`n  Para rodar o backend em modo dev (hot-reload):"
         Write-Host "  cd backend && mvn quarkus:dev`n"

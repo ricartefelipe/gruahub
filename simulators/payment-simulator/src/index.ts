@@ -123,11 +123,14 @@ async function fullFlow(label = 'full-flow'): Promise<void> {
   console.log(`  Machine: ${MACHINE_ID}`);
   console.log(`  Amount: R$ ${(AMOUNT_CENTS / 100).toFixed(2)}`);
 
-  // Step 1: Criar transação no banco via /sandbox/initiate
   const initiateResp = await httpPost(
     `${BACKEND_URL}/api/v1/payments/sandbox/initiate`,
     '{}',
-    { 'X-Tenant-Id': TENANT_ID, 'X-Machine-Id': MACHINE_ID }
+    {
+      'X-Tenant-Id': TENANT_ID,
+      'X-Machine-Id': MACHINE_ID,
+      'X-Sandbox-Secret': SANDBOX_SECRET,
+    }
   );
 
   if (initiateResp.status !== 200 || !initiateResp.json?.transactionId) {
@@ -138,11 +141,14 @@ async function fullFlow(label = 'full-flow'): Promise<void> {
   const transactionId = initiateResp.json.transactionId as string;
   console.log(`[Payment Simulator][${label}] ✓ Transaction created: ${transactionId} (status=PENDING)`);
 
-  // Step 2: Confirmar via sandbox/confirm (sem payload — backend usa o txId do path)
   const confirmResp = await httpPost(
     `${BACKEND_URL}/api/v1/payments/sandbox/confirm/${transactionId}`,
     '{}',
-    { 'X-Tenant-Id': TENANT_ID, 'X-Machine-Id': MACHINE_ID }
+    {
+      'X-Tenant-Id': TENANT_ID,
+      'X-Machine-Id': MACHINE_ID,
+      'X-Sandbox-Secret': SANDBOX_SECRET,
+    }
   );
 
   if (confirmResp.status === 200) {
@@ -197,11 +203,14 @@ async function sendWebhookDirectly(eventType: 'confirmed' | 'failed' | 'expired'
 async function testIdempotency(): Promise<void> {
   console.log('\n[Payment Simulator][idempotency] Testing confirm idempotency...');
 
-  // Primeiro criar a transação no banco
   const initiateResp = await httpPost(
     `${BACKEND_URL}/api/v1/payments/sandbox/initiate`,
     '{}',
-    { 'X-Tenant-Id': TENANT_ID, 'X-Machine-Id': MACHINE_ID }
+    {
+      'X-Tenant-Id': TENANT_ID,
+      'X-Machine-Id': MACHINE_ID,
+      'X-Sandbox-Secret': SANDBOX_SECRET,
+    }
   );
 
   if (initiateResp.status !== 200) {
@@ -217,7 +226,11 @@ async function testIdempotency(): Promise<void> {
     const resp = await httpPost(
       `${BACKEND_URL}/api/v1/payments/sandbox/confirm/${transactionId}`,
       '{}',
-      { 'X-Tenant-Id': TENANT_ID, 'X-Machine-Id': MACHINE_ID }
+      {
+        'X-Tenant-Id': TENANT_ID,
+        'X-Machine-Id': MACHINE_ID,
+        'X-Sandbox-Secret': SANDBOX_SECRET,
+      }
     );
     console.log(`[idempotency] Attempt ${i}: HTTP ${resp.status}`);
     if (resp.status === 200) okCount++;
@@ -238,11 +251,14 @@ async function testIdempotency(): Promise<void> {
 async function testDuplicateWebhook(): Promise<void> {
   console.log('\n[Payment Simulator][duplicate-webhook] Testing webhook deduplication...');
 
-  // Precisa existir no banco primeiro
   const initiateResp = await httpPost(
     `${BACKEND_URL}/api/v1/payments/sandbox/initiate`,
     '{}',
-    { 'X-Tenant-Id': TENANT_ID, 'X-Machine-Id': MACHINE_ID }
+    {
+      'X-Tenant-Id': TENANT_ID,
+      'X-Machine-Id': MACHINE_ID,
+      'X-Sandbox-Secret': SANDBOX_SECRET,
+    }
   );
 
   if (initiateResp.status !== 200) {
