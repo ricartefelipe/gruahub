@@ -3,8 +3,9 @@
 ## Preparação (5 min)
 
 ```bash
-# 1. Clonar e configurar
-cp .env.example .env
+# 1. Clonar e configurar (segredos só via .env — ver infra/.env.example)
+cp infra/.env.example infra/.env
+cp .env.example .env   # opcional: apps locais fora do compose
 
 # 2. Subir infra + backend + web + simuladores MQTT/pagamento
 cd infra

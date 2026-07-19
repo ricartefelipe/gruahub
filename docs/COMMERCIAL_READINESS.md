@@ -28,7 +28,7 @@ Estes itens funcionam hoje, sem condicionantes:
 |-----|-------|-----------------|
 | TLS/HTTPS ausente (Docker Compose usa HTTP) | Dados em trânsito sem criptografia | 1–2 dias (Traefik + Let's Encrypt) |
 | Secrets em variáveis de ambiente (sem Vault) | Rotação manual; risco de exposure em CI logs | 3–5 dias (Vault ou AWS Secrets Manager) |
-| Sem rate limiting global (apenas no webhook) | DDoS e enumeração de tenants | 1–2 dias (Quarkus SmallRye Fault Tolerance ou Nginx) |
+| Sem rate limiting global (há webhook + sandbox; sem WAF/login) | DDoS e enumeração de tenants | 1–2 dias (proxy/WAF ou SmallRye) |
 | Backup automatizado do PostgreSQL ausente | Perda de dados em falha de volume | 1 dia (pg_dump agendado + S3) |
 | Sem auditoria de penetração | Vulnerabilidades desconhecidas | Externo — 2–4 semanas |
 

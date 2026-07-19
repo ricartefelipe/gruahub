@@ -26,7 +26,7 @@ public class SandboxAccessFilter implements ContainerRequestFilter {
     @ConfigProperty(name = "gruahub.sandbox.enabled", defaultValue = "false")
     boolean sandboxEnabled;
 
-    @ConfigProperty(name = "gruahub.sandbox.secret", defaultValue = "sandbox-webhook-secret-gruahub-demo")
+    @ConfigProperty(name = "gruahub.sandbox.secret", defaultValue = "")
     String sandboxSecret;
 
     @Inject
