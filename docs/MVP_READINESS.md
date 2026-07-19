@@ -45,8 +45,8 @@
 | Build / lint / tsc | Jobs no CI |
 | Auth + RBAC | NextAuth/Keycloak; guards por rota |
 | API | Cliente com timeout / Problem Details / `PageResponse` |
-| E2E | Specs em `web/e2e/` — **não** rodam no CI sem stack completa |
-| Limitação | E2E e demo completa dependem do compose + seed |
+| E2E | Smoke no CI (`--project=smoke`: login + redirect); specs autenticados locais |
+| Limitação | E2E autenticado/demo completa dependem do compose + Keycloak + seed |
 
 ### App Mobile — Expo 51
 
@@ -87,6 +87,7 @@
 | Job | Nota honesta |
 |-----|--------------|
 | `backend` / `web` / `mobile` / `simulators` / `contracts` | Gates principais |
+| `e2e-smoke` | Playwright smoke (Next.js only; sem Keycloak/stack) |
 | `docker-compose` | Smoke infra em push/PR para `develop` e `main` (timeout 12m) |
 | `security` | OWASP e `npm audit` usam `\|\| true` — **não** falham o pipeline |
 | Expo export | Step mobile termina com `\|\| true` |
