@@ -125,7 +125,7 @@ switch ($Command.ToLower()) {
         Write-OK "Serviços iniciados. Aguarde health checks (~2 min)."
         Write-Host "`n  Backend:  http://localhost:8080/q/swagger-ui"
         Write-Host "  Web:      http://localhost:3000"
-        Write-Host "  Keycloak: http://localhost:8180  (admin/admin)"
+        Write-Host "  Keycloak: http://localhost:8180 (demo) | https://auth.localhost (prod-like)"
         Write-Host "  EMQX:     http://localhost:18083 (admin/public)"
         Write-Host "  MinIO:    http://localhost:9001  (minioadmin/minioadmin)`n"
     }

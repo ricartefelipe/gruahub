@@ -289,7 +289,10 @@ services:
         condition: service_healthy
 
   caddy:
-    image: caddy:2.8-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    image: gruahub-caddy:2.8-ratelimit
     container_name: gruahub-caddy
     restart: unless-stopped
     networks: [gruahub]
@@ -305,6 +308,8 @@ services:
       backend:
         condition: service_healthy
       web:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
 
   postgres-backup:

@@ -9,7 +9,7 @@ Plataforma B2B multi-tenant para gestão de máquinas de pelúcia e gruas: telem
 | **Backend** | Quarkus 3.8 + Java 21 | 8080 |
 | **Frontend Web** | Next.js 14 App Router | 3000 |
 | **App Mobile** | Expo 51 / React Native | — |
-| **Keycloak** | v24 (auth) | 8180 |
+| **Keycloak** | v24 (auth) | 8180 (demo) / `https://auth.localhost` (prod-like) |
 | **PostgreSQL** | v16 | 5432 |
 | **EMQX** | v5.7 (MQTT) | 1883 / 8083 |
 | **MinIO** | S3-compatible | 9000 |
@@ -38,16 +38,16 @@ docker compose ps
 #### Profiles comerciais (opcional)
 
 ```bash
-# Prod-like: Caddy HTTPS + backup + sem publicar 8080/3000/admin no host
+# Prod-like: Caddy HTTPS + backup + sem publicar 8080/3000/8180/admin no host
 ./scripts/up-prod-like.sh up -d --build
 
 # ou só TLS / só backup (portas de debug ainda no host):
-docker compose --profile tls up -d
+docker compose --profile tls up -d --build
 docker compose --profile backup up -d
 ```
 
-- HTTPS: `https://localhost` (certificado interno — aceite o aviso do browser ou use `curl -k`)
-- Prod-like: ajuste `NEXTAUTH_URL` / `NEXT_PUBLIC_API_URL` para `https://localhost` no `.env`
+- HTTPS: `https://localhost` + OIDC `https://auth.localhost` (certificado interno — `curl -k`)
+- Prod-like: `KEYCLOAK_EDGE_ISSUER` default `https://auth.localhost/realms/gruahub`
 - Backup: volume `postgres_backups`; offsite opcional via `BACKUP_S3_*`; drill `pg-restore-drill.sh`
 - Segredos: preferir `infra/.env`; produção pode usar `VAR_FILE` (ver `DEPLOYMENT.md`)
 - Detalhes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) e [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md)

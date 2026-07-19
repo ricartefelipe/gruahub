@@ -122,7 +122,7 @@ O compose principal expõe profiles opcionais. O modo **prod-like** usa ainda o 
 
 | Profile | Serviços | Uso |
 |---------|----------|-----|
-| `tls` / `prod-like` | `caddy` | HTTPS local (`https://localhost`) com certificado interno |
+| `tls` / `prod-like` | `caddy` (build com rate-limit) | HTTPS local (`https://localhost` + `https://auth.localhost`) |
 | `backup` / `prod-like` | `postgres-backup` | `pg_dump` periódico para volume `postgres_backups` |
 | `simulators` | machine/payment sim | Demo IoT/pagamento |
 
@@ -131,24 +131,27 @@ O compose principal expõe profiles opcionais. O modo **prod-like** usa ainda o 
 ```bash
 cd infra
 cp .env.example .env   # se ainda não existir
-docker compose --profile tls up -d
+docker compose --profile tls up -d --build
 ```
 
 - Entrada HTTPS: `https://localhost` (web) e `https://localhost/api/...` / `https://localhost/q/...` (backend)
+- Auth no edge: `https://auth.localhost` → Keycloak (também disponível em `:8180` sem overlay)
 - Certificado: Caddy `tls internal` — aceitar aviso do browser ou usar `curl -k`
 - Headers de segurança: HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
-- Neste modo (sem overlay), portas `3000`/`8080` continuam no host para debug HTTP direto
+- Edge leve: rate-limit por IP (global + rotas OIDC) e bloqueio de paths de scanner (`waf_lite`)
+- Neste modo (sem overlay), portas `3000`/`8080`/`8180` continuam no host para debug HTTP direto
 
-### Prod-like (tráfego app só via Caddy)
+### Prod-like (tráfego app + OIDC só via Caddy)
 
-Fecha publicação no host de **backend (8080)**, **web (3000)**, **Postgres (5432)**, **MinIO (9000/9001)** e dashboards EMQX. Mantém MQTT `1883`/`8883` e Keycloak `8180` (OIDC no browser).
+Fecha publicação no host de **backend (8080)**, **web (3000)**, **Keycloak (8180)**, **Postgres (5432)**, **MinIO (9000/9001)** e dashboards EMQX. Mantém MQTT `1883`/`8883`. OIDC no browser: `https://auth.localhost`.
 
 ```bash
 cd infra
-# no .env:
+# no .env (defaults do overlay cobrem isso se omitido):
 #   NEXTAUTH_URL=https://localhost
 #   NEXT_PUBLIC_API_URL=https://localhost
 #   GRUAHUB_CORS_ORIGINS=https://localhost
+#   KEYCLOAK_EDGE_ISSUER=https://auth.localhost/realms/gruahub   # default do overlay
 ./scripts/up-prod-like.sh up -d --build
 ```
 
@@ -163,10 +166,23 @@ Verificação rápida:
 ```bash
 curl -kI https://localhost | tr -d '\r' | grep -iE 'strict-transport|x-content-type|x-frame'
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/q/health/ready   # esperado: falha de conexão
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8180/                  # esperado: falha de conexão
 curl -k -s -o /dev/null -w '%{http_code}\n' https://localhost/q/health/ready     # esperado: 200
+curl -k -s https://auth.localhost/realms/gruahub/.well-known/openid-configuration | grep -o '"issuer":"[^"]*"'
+# esperado: "issuer":"https://auth.localhost/realms/gruahub"
 ```
 
-Login: Keycloak realm com brute-force protection (`failureFactor=5`). Proxy Keycloak atrás do Caddy ainda é gap (porta 8180 permanece).
+Login: Keycloak atrás do Caddy (`auth.localhost`) + brute-force no realm (`failureFactor=5`). Web/backend usam `KEYCLOAK_EDGE_ISSUER` (default `https://auth.localhost/realms/gruahub`); JWKS via `KEYCLOAK_URL=http://keycloak:8080` (backchannel).
+
+### Let's Encrypt / DNS real (config pronta, sem cert público no CI)
+
+Template: `infra/caddy/Caddyfile.public.example`.
+
+1. DNS A/AAAA: `app.exemplo.com` e `auth.exemplo.com` → IP do host
+2. No `.env` de produção: `GRUAHUB_PUBLIC_HOST=app.exemplo.com`, `GRUAHUB_AUTH_HOST=auth.exemplo.com`, `CADDY_ACME_EMAIL=ops@exemplo.com`
+3. Trocar o volume do Caddyfile para o template público (ou copiar sobre `Caddyfile`) e remover `tls internal` / `local_certs`
+4. Alinhar issuer/OIDC: `KEYCLOAK_EDGE_ISSUER=https://auth.exemplo.com/realms/gruahub`, `NEXTAUTH_URL`/`NEXT_PUBLIC_API_URL`/`GRUAHUB_CORS_ORIGINS` no host público, `KC_HOSTNAME=auth.exemplo.com`
+5. Caddy emite/renova Let's Encrypt automaticamente na porta 80/443 — **não** é exercitado no CI (só `tls internal` local)
 
 ### Backup Postgres (local + offsite opcional)
 
@@ -230,11 +246,11 @@ Ainda aberto para produção gerenciada: rotação automática via Vault / AWS S
 ### Produção pública (ainda aberto)
 
 Além dos profiles locais, um deploy público deve:
-- Trocar `tls internal` por Let's Encrypt / cert gerenciado (DNS real)
-- Colocar Keycloak atrás do mesmo edge (sem `:8180` no host)
+- Aplicar `Caddyfile.public.example` com DNS real (Let's Encrypt automático; não coberto no CI)
 - Usar imagens versionadas (não só `build:`)
 - Definir réplicas e limites de recursos
 - Completar Vault / AWS Secrets Manager (hoje: `.env` + caminho `*_FILE`)
+- WAF comercial / rate-limit distribuído (hoje: edge leve in-process no Caddy + API in-memory)
 
 ## Variáveis de Ambiente Críticas
 

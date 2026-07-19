@@ -1,6 +1,5 @@
 {
-	auto_https disable_redirects
-	local_certs
+	email {$CADDY_ACME_EMAIL}
 	order rate_limit before basicauth
 }
 
@@ -39,8 +38,7 @@
 	respond @scanner 404
 }
 
-https://localhost {
-	tls internal
+{$GRUAHUB_PUBLIC_HOST} {
 	import security_headers
 	import edge_rate_limit
 	import waf_lite
@@ -58,8 +56,7 @@ https://localhost {
 	}
 }
 
-https://auth.localhost {
-	tls internal
+{$GRUAHUB_AUTH_HOST} {
 	import security_headers
 	import edge_rate_limit
 	import waf_lite
@@ -67,12 +64,4 @@ https://auth.localhost {
 	reverse_proxy keycloak:8080 {
 		header_up Host {host}
 	}
-}
-
-http://localhost {
-	redir https://localhost{uri} permanent
-}
-
-http://auth.localhost {
-	redir https://auth.localhost{uri} permanent
 }
