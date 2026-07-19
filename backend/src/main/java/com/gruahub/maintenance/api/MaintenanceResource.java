@@ -1,6 +1,7 @@
 package com.gruahub.maintenance.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -76,7 +77,7 @@ public class MaintenanceResource {
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "TECHNICIAN", "FIELD_OPERATOR"})
-    public List<TicketResponse> listTickets(
+    public PageResponse<TicketResponse> listTickets(
         @QueryParam("machineId") UUID machineId,
         @QueryParam("status") String status,
         @QueryParam("priority") String priority,
@@ -84,30 +85,40 @@ public class MaintenanceResource {
         @QueryParam("size") @DefaultValue("50") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
-        StringBuilder sql = new StringBuilder(
+        int lim = Math.min(size, 200);
+        StringBuilder where = new StringBuilder("WHERE t.tenant_id = :tid ");
+        if (machineId != null) where.append("AND t.machine_id = :mid ");
+        if (status != null) where.append("AND t.status = :status ");
+        if (priority != null) where.append("AND t.priority = :priority ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM maintenance_ticket t " + where
+        ).setParameter("tid", tenantId);
+        if (machineId != null) countQuery.setParameter("mid", machineId);
+        if (status != null) countQuery.setParameter("status", status);
+        if (priority != null) countQuery.setParameter("priority", priority);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT t.id, t.machine_id, m.asset_number, t.title, t.description, " +
             "t.status, t.priority, t.symptom_code, t.assigned_to, t.resolution_notes, " +
             "t.created_at, t.updated_at, t.resolved_at " +
             "FROM maintenance_ticket t " +
             "JOIN machine m ON m.id = t.machine_id " +
-            "WHERE t.tenant_id = :tid "
-        );
-        if (machineId != null) sql.append("AND t.machine_id = :mid ");
-        if (status != null) sql.append("AND t.status = :status ");
-        if (priority != null) sql.append("AND t.priority = :priority ");
-        sql.append("ORDER BY t.created_at DESC LIMIT :lim OFFSET :off");
+            where +
+            "ORDER BY t.created_at DESC LIMIT :lim OFFSET :off";
 
-        var q = em.createNativeQuery(sql.toString())
+        var q = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
         if (machineId != null) q.setParameter("mid", machineId);
         if (status != null) q.setParameter("status", status);
         if (priority != null) q.setParameter("priority", priority);
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
-        return rows.stream().map(this::mapRow).toList();
+        return PageResponse.of(rows.stream().map(this::mapRow).toList(), page, lim, total);
     }
 
     @GET

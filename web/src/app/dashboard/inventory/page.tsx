@@ -48,14 +48,14 @@ export default function InventoryPage() {
   const { data: balances = [], isLoading: balLoading, isError: balError, error: balErrorObj } = useQuery<StockBalance[]>({
     queryKey: ['stock-balances'],
     queryFn: () =>
-      api.get('/inventory/balances?size=200').then(r => r.data?.content ?? r.data ?? []),
+      api.get('/inventory/balances?size=200').then(r => r.data?.content ?? []),
     enabled: activeTab === 'balances',
   });
 
   const { data: movements = [], isLoading: movLoading, isError: movError, error: movErrorObj } = useQuery<StockMovement[]>({
     queryKey: ['stock-movements'],
     queryFn: () =>
-      api.get('/inventory/movements?size=100').then(r => r.data?.content ?? r.data ?? []),
+      api.get('/inventory/movements?size=100').then(r => r.data?.content ?? []),
     enabled: activeTab === 'movements',
     refetchInterval: 30_000,
   });

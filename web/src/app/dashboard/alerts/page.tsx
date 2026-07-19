@@ -43,7 +43,7 @@ export default function AlertsPage() {
   const { data: alerts = [], isLoading, isError, error } = useQuery<Alert[]>({
     queryKey: ['alerts', 'OPEN'],
     queryFn: () =>
-      api.get('/alerts?status=OPEN&size=100').then(r => r.data?.content ?? r.data ?? []),
+      api.get('/alerts?status=OPEN&size=100').then(r => r.data?.content ?? []),
     refetchInterval: 30_000,
   });
 

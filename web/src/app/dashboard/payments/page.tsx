@@ -43,7 +43,7 @@ export default function PaymentsPage() {
     queryKey: ['payments', statusFilter],
     queryFn: () =>
       api.get(`/payments${statusFilter ? `?status=${statusFilter}` : ''}`)
-        .then(r => r.data?.content ?? r.data ?? []),
+        .then(r => r.data?.content ?? []),
     refetchInterval: 30_000,
   });
 

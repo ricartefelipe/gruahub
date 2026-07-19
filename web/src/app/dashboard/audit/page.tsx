@@ -33,7 +33,7 @@ export default function AuditPage() {
       params.set('size', '100');
       if (actionFilter) params.set('action', actionFilter);
       if (resourceFilter) params.set('resourceType', resourceFilter);
-      return api.get(`/audit?${params}`).then(r => r.data?.content ?? r.data ?? []);
+      return api.get(`/audit?${params}`).then(r => r.data?.content ?? []);
     },
   });
 

@@ -34,7 +34,7 @@ export default function RoutesPage() {
   const { data: plans = [], isLoading, isError: plansError, error: plansErrorObj } = useQuery<RoutePlan[]>({
     queryKey: ['route-plans'],
     queryFn: () =>
-      api.get('/routes?size=30').then(r => r.data?.content ?? r.data ?? []),
+      api.get('/routes?size=30').then(r => r.data?.content ?? []),
   });
 
   const [selected, setSelected] = useState<string | null>(plans[0]?.id ?? null);
@@ -42,7 +42,7 @@ export default function RoutesPage() {
   const { data: stops = [], isError: stopsError, error: stopsErrorObj } = useQuery<RouteStop[]>({
     queryKey: ['route-stops', selected],
     queryFn: () =>
-      api.get(`/routes/${selected}/stops`).then(r => r.data?.content ?? r.data ?? []),
+      api.get(`/routes/${selected}/stops`).then(r => r.data?.content ?? []),
     enabled: !!selected,
   });
 
