@@ -29,5 +29,6 @@ module.exports = {
     '^expo-secure-store$': '<rootDir>/src/__mocks__/expo-secure-store.ts',
     '^expo-network$': '<rootDir>/src/__mocks__/expo-network.ts',
     '^expo-constants$': '<rootDir>/src/__mocks__/expo-constants.ts',
+    '^expo-location$': '<rootDir>/src/__mocks__/expo-location.ts',
   },
 };

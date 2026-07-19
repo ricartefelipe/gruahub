@@ -74,6 +74,23 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Campo</Text>
+        <TouchableOpacity
+          style={styles.queueButton}
+          onPress={() =>
+            router.push({
+              pathname: '/qr-scan',
+              params: { returnTo: 'stock' },
+            })
+          }
+          accessibilityLabel="Escanear QR para reposição de estoque"
+          accessibilityRole="button"
+        >
+          <Text style={styles.queueButtonText}>Repor estoque (QR) →</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Sincronização</Text>
         <TouchableOpacity
           style={[styles.syncButton, syncing && styles.buttonDisabled]}

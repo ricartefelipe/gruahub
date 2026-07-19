@@ -494,3 +494,93 @@ databaseChangeLog:
               - column:
                   name: status
                   value: OPEN
+
+  - changeSet:
+      id: 099-010-seed-demo-stock-balances
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: machine_stock_balance
+            columns:
+              - column:
+                  name: id
+                  value: aaaaaaaa-0000-0000-0000-000000000001
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_id
+                  value: 66666666-0000-0000-0000-000000000001
+              - column:
+                  name: prize_id
+                  value: 77777777-0000-0000-0000-000000000001
+              - column:
+                  name: quantity
+                  valueNumeric: 24
+              - column:
+                  name: minimum_quantity
+                  valueNumeric: 10
+        - insert:
+            tableName: machine_stock_balance
+            columns:
+              - column:
+                  name: id
+                  value: aaaaaaaa-0000-0000-0000-000000000002
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_id
+                  value: 66666666-0000-0000-0000-000000000001
+              - column:
+                  name: prize_id
+                  value: 77777777-0000-0000-0000-000000000002
+              - column:
+                  name: quantity
+                  valueNumeric: 12
+              - column:
+                  name: minimum_quantity
+                  valueNumeric: 8
+        - insert:
+            tableName: machine_stock_balance
+            columns:
+              - column:
+                  name: id
+                  value: aaaaaaaa-0000-0000-0000-000000000003
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_id
+                  value: 66666666-0000-0000-0000-000000000002
+              - column:
+                  name: prize_id
+                  value: 77777777-0000-0000-0000-000000000001
+              - column:
+                  name: quantity
+                  valueNumeric: 6
+              - column:
+                  name: minimum_quantity
+                  valueNumeric: 10
+        - insert:
+            tableName: machine_stock_balance
+            columns:
+              - column:
+                  name: id
+                  value: aaaaaaaa-0000-0000-0000-000000000004
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: machine_id
+                  value: 66666666-0000-0000-0000-000000000003
+              - column:
+                  name: prize_id
+                  value: 77777777-0000-0000-0000-000000000003
+              - column:
+                  name: quantity
+                  valueNumeric: 18
+              - column:
+                  name: minimum_quantity
+                  valueNumeric: 5

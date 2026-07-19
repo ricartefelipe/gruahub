@@ -136,6 +136,41 @@ export default function CompleteVisitScreen() {
           ) : null}
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Reposição de estoque</Text>
+          <Text style={styles.hint}>
+            Escaneie o QR da máquina para carregar os itens e registrar a reposição (fila offline).
+          </Text>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() =>
+              router.push({
+                pathname: '/qr-scan',
+                params: { returnTo: 'stock' },
+              })
+            }
+            accessibilityLabel="Escanear QR para reposição de estoque"
+            accessibilityRole="button"
+          >
+            <Text style={styles.secondaryButtonText}>Repor estoque (QR)</Text>
+          </TouchableOpacity>
+          {machineId ? (
+            <TouchableOpacity
+              style={[styles.secondaryButton, { marginTop: 10 }]}
+              onPress={() =>
+                router.push({
+                  pathname: '/stock/replenish',
+                  params: { machineId },
+                })
+              }
+              accessibilityLabel="Repor estoque da máquina já identificada"
+              accessibilityRole="button"
+            >
+              <Text style={styles.secondaryButtonText}>Usar máquina já identificada</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
         <View style={styles.summary}>
           <Text style={styles.summaryTitle}>Resumo da visita</Text>
           <View style={styles.summaryRow}>
