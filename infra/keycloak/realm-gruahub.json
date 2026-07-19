@@ -10,6 +10,14 @@
   "resetPasswordAllowed": true,
   "accessTokenLifespan": 1800,
   "ssoSessionMaxLifespan": 36000,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
   "roles": {
     "realm": [
       { "name": "PLATFORM_ADMIN", "description": "Administrador da plataforma" },
@@ -46,11 +54,13 @@
       "protocol": "openid-connect",
       "redirectUris": [
         "http://localhost:3000/*",
-        "http://localhost:3001/*"
+        "http://localhost:3001/*",
+        "https://localhost/*"
       ],
       "webOrigins": [
         "http://localhost:3000",
-        "http://localhost:3001"
+        "http://localhost:3001",
+        "https://localhost"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256"

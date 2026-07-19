@@ -118,7 +118,7 @@ eas build --platform ios --profile production
 
 ## Docker Compose — profiles comerciais (prod-like)
 
-O compose principal já expõe profiles opcionais (sem overlay separado):
+O compose principal expõe profiles opcionais. O modo **prod-like** usa ainda o overlay `docker-compose.prod-like.yml` (fecha exposição de app/admin no host).
 
 | Profile | Serviços | Uso |
 |---------|----------|-----|
@@ -126,20 +126,47 @@ O compose principal já expõe profiles opcionais (sem overlay separado):
 | `backup` / `prod-like` | `postgres-backup` | `pg_dump` periódico para volume `postgres_backups` |
 | `simulators` | machine/payment sim | Demo IoT/pagamento |
 
-### HTTPS local (Caddy)
+### HTTPS local (Caddy) — só TLS
 
 ```bash
 cd infra
 cp .env.example .env   # se ainda não existir
 docker compose --profile tls up -d
-# ou tudo comercial local:
-docker compose --profile prod-like up -d
 ```
 
 - Entrada HTTPS: `https://localhost` (web) e `https://localhost/api/...` / `https://localhost/q/...` (backend)
 - Certificado: Caddy `tls internal` — aceitar aviso do browser ou usar `curl -k`
-- Portas `3000`/`8080` continuam expostas para debug HTTP direto
-- Para demo com NextAuth atrás do proxy, ajuste `NEXTAUTH_URL=https://localhost` e `NEXT_PUBLIC_API_URL=https://localhost` no `.env` e recrie o `web`
+- Headers de segurança: HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
+- Neste modo (sem overlay), portas `3000`/`8080` continuam no host para debug HTTP direto
+
+### Prod-like (tráfego app só via Caddy)
+
+Fecha publicação no host de **backend (8080)**, **web (3000)**, **Postgres (5432)**, **MinIO (9000/9001)** e dashboards EMQX. Mantém MQTT `1883`/`8883` e Keycloak `8180` (OIDC no browser).
+
+```bash
+cd infra
+# no .env:
+#   NEXTAUTH_URL=https://localhost
+#   NEXT_PUBLIC_API_URL=https://localhost
+#   GRUAHUB_CORS_ORIGINS=https://localhost
+./scripts/up-prod-like.sh up -d --build
+```
+
+Equivalente manual:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod-like.yml --profile prod-like up -d --build
+```
+
+Verificação rápida:
+
+```bash
+curl -kI https://localhost | tr -d '\r' | grep -iE 'strict-transport|x-content-type|x-frame'
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/q/health/ready   # esperado: falha de conexão
+curl -k -s -o /dev/null -w '%{http_code}\n' https://localhost/q/health/ready     # esperado: 200
+```
+
+Login: Keycloak realm com brute-force protection (`failureFactor=5`). Proxy Keycloak atrás do Caddy ainda é gap (porta 8180 permanece).
 
 ### Backup Postgres
 
@@ -158,9 +185,10 @@ Offsite (S3) e drill de restore ainda são gaps comerciais — ver `COMMERCIAL_R
 
 Além dos profiles locais, um deploy público deve:
 - Trocar `tls internal` por Let's Encrypt / cert gerenciado (DNS real)
+- Colocar Keycloak atrás do mesmo edge (sem `:8180` no host)
 - Usar imagens versionadas (não só `build:`)
 - Definir réplicas e limites de recursos
-- Mover segredos para Vault / AWS Secrets Manager / Docker Secrets
+- Mover segredos para Vault / AWS Secrets Manager / Docker Secrets (`*_FILE`)
 
 ## Variáveis de Ambiente Críticas
 
