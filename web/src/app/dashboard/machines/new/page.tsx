@@ -44,7 +44,7 @@ export default function NewMachinePage() {
 
   const { data: operatingPoints = [] } = useQuery<OperatingPoint[]>({
     queryKey: ['operating-points-select'],
-    queryFn: () => api.get('/operating-points', { params: { size: 200 } }).then(r => r.data),
+    queryFn: () => api.get('/operating-points', { params: { size: 200 } }).then(r => r.data?.content ?? []),
   });
 
   const createMutation = useMutation({

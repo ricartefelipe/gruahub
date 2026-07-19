@@ -1,6 +1,7 @@
 package com.gruahub.alerts.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -59,7 +60,7 @@ public class AlertResource {
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "TECHNICIAN", "FINANCE"})
-    public List<AlertResponse> listAlerts(
+    public PageResponse<AlertResponse> listAlerts(
         @QueryParam("status") @DefaultValue("OPEN") String status,
         @QueryParam("severity") String severity,
         @QueryParam("machineId") UUID machineId,
@@ -69,23 +70,32 @@ public class AlertResource {
         UUID tenantId = TenantContext.getTenantId();
         LOG.debugf("[%s] GET /alerts status=%s severity=%s", tenantId, status, severity);
 
-        StringBuilder sql = new StringBuilder(
+        int lim = Math.min(size, 200);
+        StringBuilder where = new StringBuilder("WHERE a.tenant_id = :tid ");
+        if (!"ALL".equalsIgnoreCase(status)) where.append("AND a.status = :status ");
+        if (severity != null) where.append("AND a.severity = :severity ");
+        if (machineId != null) where.append("AND a.machine_id = :machineId ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM alert a " + where
+        ).setParameter("tid", tenantId);
+        if (!"ALL".equalsIgnoreCase(status)) countQuery.setParameter("status", status);
+        if (severity != null) countQuery.setParameter("severity", severity);
+        if (machineId != null) countQuery.setParameter("machineId", machineId);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT a.id, a.machine_id, m.asset_number, a.alert_type, a.severity, " +
-            // occurred_at adicionado em 017; fallback para created_at (014) em rows antigas
             "a.status, a.message, COALESCE(a.occurred_at, a.created_at), a.acknowledged_at, a.acknowledged_by " +
             "FROM alert a " +
             "LEFT JOIN machine m ON m.id = a.machine_id " +
-            "WHERE a.tenant_id = :tid "
-        );
-        if (!"ALL".equalsIgnoreCase(status)) sql.append("AND a.status = :status ");
-        if (severity != null) sql.append("AND a.severity = :severity ");
-        if (machineId != null) sql.append("AND a.machine_id = :machineId ");
-        sql.append("ORDER BY COALESCE(a.occurred_at, a.created_at) DESC LIMIT :lim OFFSET :off");
+            where +
+            "ORDER BY COALESCE(a.occurred_at, a.created_at) DESC LIMIT :lim OFFSET :off";
 
-        var query = em.createNativeQuery(sql.toString())
+        var query = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
 
         if (!"ALL".equalsIgnoreCase(status)) query.setParameter("status", status);
         if (severity != null) query.setParameter("severity", severity);
@@ -93,7 +103,7 @@ public class AlertResource {
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = query.getResultList();
-        return rows.stream().map(this::mapRow).toList();
+        return PageResponse.of(rows.stream().map(this::mapRow).toList(), page, lim, total);
     }
 
     @GET

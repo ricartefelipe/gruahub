@@ -1,6 +1,7 @@
 package com.gruahub.locations.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -61,13 +62,21 @@ public class EstablishmentResource {
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN"})
-    public List<EstablishmentResponse> listEstablishments(
+    public PageResponse<EstablishmentResponse> listEstablishments(
         @QueryParam("status") @DefaultValue("ACTIVE") String status,
         @QueryParam("page") @DefaultValue("0") int page,
         @QueryParam("size") @DefaultValue("50") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
         LOG.debugf("[%s] GET /establishments status=%s page=%d", tenantId, status, page);
+
+        int lim = Math.min(size, 200);
+        long total = ((Number) em.createNativeQuery(
+            "SELECT COUNT(*) FROM establishment WHERE tenant_id = :tid AND status = :status"
+        )
+            .setParameter("tid", tenantId)
+            .setParameter("status", status)
+            .getSingleResult()).longValue();
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery(
@@ -77,14 +86,15 @@ public class EstablishmentResource {
         )
             .setParameter("tid", tenantId)
             .setParameter("status", status)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size)
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim)
             .getResultList();
 
-        return rows.stream().map(r -> new EstablishmentResponse(
+        var content = rows.stream().map(r -> new EstablishmentResponse(
             (UUID) r[0], (String) r[1], (String) r[2], (String) r[3],
             r[4] != null ? ((java.sql.Timestamp) r[4]).toInstant() : null
         )).toList();
+        return PageResponse.of(content, page, lim, total);
     }
 
     @GET

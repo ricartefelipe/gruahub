@@ -37,7 +37,7 @@ export default function FinancePage() {
   const { data: settlements = [], isLoading, isError, error } = useQuery<Settlement[]>({
     queryKey: ['settlements'],
     queryFn: () =>
-      api.get('/finance/settlements?size=100').then(r => r.data?.content ?? r.data ?? []),
+      api.get('/finance/settlements?size=100').then(r => r.data?.content ?? []),
   });
 
   const totals = settlements.reduce((acc, s) => ({

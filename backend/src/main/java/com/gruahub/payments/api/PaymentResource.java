@@ -1,6 +1,7 @@
 package com.gruahub.payments.api;
 
 import com.gruahub.shared.domain.TenantContext;
+import com.gruahub.shared.api.PageResponse;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -40,43 +41,52 @@ public class PaymentResource {
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
-    public List<PaymentResponse> listPayments(
+    public PageResponse<PaymentResponse> listPayments(
         @QueryParam("status") String status,
         @QueryParam("machineId") UUID machineId,
         @QueryParam("page") @DefaultValue("0") int page,
         @QueryParam("size") @DefaultValue("50") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
+        int lim = Math.min(size, 200);
+        StringBuilder where = new StringBuilder("WHERE pt.tenant_id = :tid ");
+        if (status != null) where.append("AND pt.status = :status ");
+        if (machineId != null) where.append("AND pt.machine_id = :mid ");
 
-        StringBuilder sql = new StringBuilder(
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM payment_transaction pt " + where
+        ).setParameter("tid", tenantId);
+        if (status != null) countQuery.setParameter("status", status);
+        if (machineId != null) countQuery.setParameter("mid", machineId);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT pt.id, pt.provider_transaction_id, pt.provider, pt.amount_cents, " +
             "pt.currency, pt.status, pt.machine_id, m.asset_number, pt.payment_method, " +
             "pt.created_at, pt.confirmed_at " +
             "FROM payment_transaction pt " +
             "LEFT JOIN machine m ON m.id = pt.machine_id " +
-            "WHERE pt.tenant_id = :tid "
-        );
-        if (status != null) sql.append("AND pt.status = :status ");
-        if (machineId != null) sql.append("AND pt.machine_id = :mid ");
-        sql.append("ORDER BY pt.created_at DESC LIMIT :lim OFFSET :off");
+            where +
+            "ORDER BY pt.created_at DESC LIMIT :lim OFFSET :off";
 
-        var q = em.createNativeQuery(sql.toString())
+        var q = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
 
         if (status != null) q.setParameter("status", status);
         if (machineId != null) q.setParameter("mid", machineId);
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
-        return rows.stream().map(r -> new PaymentResponse(
+        var content = rows.stream().map(r -> new PaymentResponse(
             (UUID) r[0], (String) r[1], (String) r[2],
             r[3] != null ? ((Number) r[3]).longValue() : 0L,
             (String) r[4], (String) r[5], (UUID) r[6], (String) r[7], (String) r[8],
             r[9] != null ? ((java.sql.Timestamp) r[9]).toInstant() : null,
             r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null
         )).toList();
+        return PageResponse.of(content, page, lim, total);
     }
 
     @GET

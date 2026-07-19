@@ -49,7 +49,7 @@ export default function MaintenancePage() {
     queryKey: ['maintenance', statusFilter],
     queryFn: () =>
       api.get(`/maintenance?status=${statusFilter}&size=100`)
-         .then(r => r.data?.content ?? r.data ?? []),
+         .then(r => r.data?.content ?? []),
   });
 
   const updateTicket = useMutation({

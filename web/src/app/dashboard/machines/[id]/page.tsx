@@ -46,20 +46,20 @@ export default function MachineDetailPage() {
 
   const { data: tickets = [] } = useQuery<Ticket[]>({
     queryKey: ['machine-tickets', id],
-    queryFn: () => api.get('/maintenance', { params: { machineId: id, size: 10 } }).then(r => r.data),
+    queryFn: () => api.get('/maintenance', { params: { machineId: id, size: 10 } }).then(r => r.data?.content ?? []),
     enabled: tab === 'tickets',
   });
 
   const { data: alerts = [] } = useQuery<Alert[]>({
     queryKey: ['machine-alerts', id],
-    queryFn: () => api.get('/alerts', { params: { machineId: id, status: 'ALL', size: 20 } }).then(r => r.data),
+    queryFn: () => api.get('/alerts', { params: { machineId: id, status: 'ALL', size: 20 } }).then(r => r.data?.content ?? []),
     enabled: tab === 'alerts',
     refetchInterval: tab === 'alerts' ? 30_000 : false,
   });
 
   const { data: stock = [] } = useQuery<StockBalance[]>({
     queryKey: ['machine-stock', id],
-    queryFn: () => api.get('/inventory/balances', { params: { machineId: id } }).then(r => r.data),
+    queryFn: () => api.get('/inventory/balances', { params: { machineId: id } }).then(r => r.data?.content ?? []),
     enabled: tab === 'stock',
   });
 

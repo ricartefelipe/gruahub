@@ -56,7 +56,7 @@ export default function ReconciliationPage() {
     queryKey: ['reconciliation', statusFilter],
     queryFn: () =>
       api.get('/reconciliation' + (statusFilter ? `?status=${statusFilter}` : ''))
-         .then(r => r.data?.content ?? r.data ?? []),
+         .then(r => r.data?.content ?? []),
   });
 
   const resolve = useMutation({

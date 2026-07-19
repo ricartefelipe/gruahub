@@ -1,6 +1,7 @@
 package com.gruahub.locations.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -71,13 +72,24 @@ public class OperatingPointResource {
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE",
                    "TECHNICIAN", "ESTABLISHMENT_VIEWER"})
-    public List<OperatingPointResponse> listPoints(
+    public PageResponse<OperatingPointResponse> listPoints(
         @QueryParam("establishmentId") UUID establishmentId,
         @QueryParam("status") @DefaultValue("ACTIVE") String status,
         @QueryParam("page") @DefaultValue("0") int page,
         @QueryParam("size") @DefaultValue("50") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
+        int lim = Math.min(size, 200);
+        String where = "WHERE op.tenant_id = :tid AND op.status = :status " +
+            (establishmentId != null ? "AND op.establishment_id = :eid " : "");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM operating_point op " + where
+        )
+            .setParameter("tid", tenantId)
+            .setParameter("status", status);
+        if (establishmentId != null) countQuery.setParameter("eid", establishmentId);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
 
         String sql = "SELECT op.id, op.establishment_id, e.name as est_name, " +
             "op.name, op.address_street, op.address_city, op.address_state, " +
@@ -85,22 +97,21 @@ public class OperatingPointResource {
             "op.status, op.priority_score " +
             "FROM operating_point op " +
             "JOIN establishment e ON e.id = op.establishment_id " +
-            "WHERE op.tenant_id = :tid AND op.status = :status " +
-            (establishmentId != null ? "AND op.establishment_id = :eid " : "") +
+            where +
             "ORDER BY op.priority_score DESC NULLS LAST, op.name " +
             "LIMIT :lim OFFSET :off";
 
         var query = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
             .setParameter("status", status)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
 
         if (establishmentId != null) query.setParameter("eid", establishmentId);
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = query.getResultList();
-        return rows.stream().map(this::mapRow).toList();
+        return PageResponse.of(rows.stream().map(this::mapRow).toList(), page, lim, total);
     }
 
     @GET

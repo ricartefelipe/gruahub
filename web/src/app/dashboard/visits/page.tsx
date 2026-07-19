@@ -36,7 +36,7 @@ export default function VisitsPage() {
   const { data: visits = [], isLoading, isError, error } = useQuery<Visit[]>({
     queryKey: ['visits'],
     queryFn: () =>
-      api.get('/visits?size=100').then(r => r.data?.content ?? r.data ?? []),
+      api.get('/visits?size=100').then(r => r.data?.content ?? []),
     refetchInterval: 60_000,
   });
 
