@@ -1,11 +1,15 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
+import { useAuthStore } from '../src/store/authStore';
+import { resolveMachineId } from '../src/inventory/resolveMachine';
 
 export default function QrScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const { accessToken, tenantId } = useAuthStore();
   const { returnTo, visitId, pointName } = useLocalSearchParams<{
     returnTo?: string;
     visitId?: string;
@@ -34,31 +38,22 @@ export default function QrScanScreen() {
     );
   }
 
-  function handleBarCodeScanned({ data }: { data: string }) {
-    if (scanned) return;
+  async function handleBarCodeScanned({ data }: { data: string }) {
+    if (scanned || resolving) return;
     setScanned(true);
+    setResolving(true);
 
-    let machineId: string;
-    try {
-      const url = new URL(data);
-      if (url.protocol === 'gruahub:' && url.pathname.startsWith('//machine/')) {
-        machineId = url.pathname.replace('//machine/', '');
-      } else {
-        machineId = data.trim();
-      }
-    } catch {
-      machineId = data.trim();
-    }
+    const resolved = await resolveMachineId(data, accessToken ?? '', tenantId);
+    setResolving(false);
 
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(machineId)) {
-      Alert.alert(
-        'QR inválido',
-        `O código escaneado não é um ID de máquina válido.\n\nValor: ${data.slice(0, 50)}`,
-        [{ text: 'Tentar novamente', onPress: () => setScanned(false) }]
-      );
+    if ('error' in resolved) {
+      Alert.alert('QR inválido', resolved.error, [
+        { text: 'Tentar novamente', onPress: () => setScanned(false) },
+      ]);
       return;
     }
+
+    const { machineId } = resolved;
 
     if (returnTo === 'complete' && visitId) {
       router.replace({
@@ -68,10 +63,28 @@ export default function QrScanScreen() {
       return;
     }
 
+    if (returnTo === 'stock') {
+      router.replace({
+        pathname: '/stock/replenish',
+        params: { machineId },
+      });
+      return;
+    }
+
     Alert.alert(
       'Máquina identificada',
-      `ID: ${machineId.slice(0, 8)}…`,
-      [{ text: 'OK', onPress: () => router.back() }]
+      `ID: ${machineId.slice(0, 8)}…\n\nDeseja repor o estoque desta máquina?`,
+      [
+        { text: 'Só identificar', style: 'cancel', onPress: () => router.back() },
+        {
+          text: 'Repor estoque',
+          onPress: () =>
+            router.replace({
+              pathname: '/stock/replenish',
+              params: { machineId },
+            }),
+        },
+      ]
     );
   }
 
@@ -93,6 +106,12 @@ export default function QrScanScreen() {
       >
         <View style={styles.overlay}>
           <View style={styles.scanWindow} />
+          {resolving ? (
+            <View style={styles.resolvingBox}>
+              <ActivityIndicator color="#fff" />
+              <Text style={styles.resolvingText}>Identificando máquina…</Text>
+            </View>
+          ) : null}
         </View>
       </CameraView>
 
@@ -100,7 +119,7 @@ export default function QrScanScreen() {
         <Text style={styles.footerText}>
           Posicione o QR Code dentro da área marcada
         </Text>
-        {scanned && (
+        {scanned && !resolving && (
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => setScanned(false)}
@@ -139,6 +158,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'transparent',
   },
+  resolvingBox: {
+    position: 'absolute',
+    bottom: 40,
+    alignItems: 'center',
+    gap: 8,
+  },
+  resolvingText: { color: '#fff', fontSize: 13 },
   footer: {
     padding: 24, backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',

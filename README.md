@@ -108,7 +108,9 @@ Variáveis `EXPO_PUBLIC_*` (também documentadas em `mobile/.env.example`):
 
 Login demo do operador: `operador@diversao.demo` / `gruahub@2025`.
 
-Jornada: login SSO → rota do dia → iniciar visita → checklist → sangria → concluir → aba **Fila** (sync). Visitas sincronizadas aparecem no web em **Visitas**.
+Jornada: login SSO → rota do dia → iniciar visita (GPS real; se negar permissão, confirma sem coordenadas) → checklist → sangria e/ou reposição de estoque (QR → itens → `STOCK_IN` na fila) → concluir → aba **Fila** (sync). Visitas e movimentos aparecem no web em **Visitas** / **Estoque**.
+
+QR demo: UUID da máquina, `gruahub://machine/<uuid>`, patrimônio (`MAQUINA-001`) ou `qr_code` seed (`GH-MAQUINA-001`) — os dois últimos exigem rede para resolver.
 
 ```bash
 cd mobile && npm test && npm run typecheck

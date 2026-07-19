@@ -50,6 +50,7 @@ export default function RootLayout() {
           name="qr-scan"
           options={{ headerShown: false, presentation: 'modal' }}
         />
+        <Stack.Screen name="stock/replenish" options={{ headerShown: false }} />
       </Stack>
     </>
   );
