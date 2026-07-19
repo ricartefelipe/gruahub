@@ -52,7 +52,7 @@ case "${COMMAND,,}" in
         ok "Serviços iniciados. Aguarde health checks (~2 min)."
         printf '\n  Backend:  http://localhost:8080/q/swagger-ui\n'
         printf '  Web:      http://localhost:3000\n'
-        printf '  Keycloak: http://localhost:8180  (admin/admin)\n'
+        printf '  Keycloak: http://localhost:8180 (demo) | https://auth.localhost (prod-like)\n'
         printf '  EMQX:     http://localhost:18083 (admin/public)\n'
         printf '  MinIO:    http://localhost:9001  (minioadmin/minioadmin)\n\n'
         ;;

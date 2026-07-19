@@ -13,8 +13,9 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [x] Rate-limit in-memory em webhook e sandbox
 - [x] Rate-limit global da API (`GlobalRateLimitFilter`, env `GRUAHUB_RATE_LIMIT_GLOBAL_*`)
 - [x] HTTPS local via Caddy (Compose profiles `tls` / `prod-like`) + headers de segurança
-- [x] Overlay prod-like: sem publicar 8080/3000/Postgres/MinIO/dashboards no host
-- [x] Keycloak brute-force protection no realm demo
+- [x] Overlay prod-like: sem publicar 8080/3000/8180/Postgres/MinIO/dashboards no host
+- [x] Keycloak no edge Caddy (`https://auth.localhost`) + brute-force no realm demo
+- [x] Edge Caddy: rate-limit leve + WAF-lite; template Let's Encrypt (`Caddyfile.public.example`)
 - [x] Backup Postgres agendado (`pg_dump`, profiles `backup` / `prod-like`)
 - [x] Backup offsite S3-compatible opcional (`BACKUP_S3_*`) + restore drill
 - [x] Hook de segredos `*_FILE` (Docker secrets style) em backend/web/backup
@@ -32,8 +33,8 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [x] `contracts/openapi/` versionado (`openapi.yaml`/`openapi.json`; regenerar com `scripts/export-openapi.sh`)
 - [x] Exemplos MQTT em `contracts/mqtt/examples/` (CI valida contra `schema-v1.json`)
 - [x] E2E Playwright smoke em CI (`web/e2e/smoke.spec.ts`; specs autenticados ainda locais com Keycloak)
-- [ ] WAF / Keycloak atrás do Caddy (brute-force realm já ativo); rate-limit in-memory não cobre multi-instância
-- [ ] TLS público (Let's Encrypt / cert gerenciado); hoje só `tls internal` local
+- [ ] WAF comercial / rate-limit distribuído (edge Caddy leve + API in-memory já ativos; multi-instância aberto)
+- [ ] TLS público com DNS real (template LE pronto; CI só valida `tls internal`)
 - [ ] Push FCM ativo, SMS/e-mail (stubs/prod ainda abertos)
 - [ ] Vault / AWS Secrets Manager com rotação (hoje: `.env` + `*_FILE`); runbook DR de backup
 - [ ] Pagamento real / hardware físico / adaptadores de controlador

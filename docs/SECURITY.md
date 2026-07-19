@@ -55,7 +55,8 @@ Todos os recursos de domínio chamam `TenantContext.getTenantId()` nas queries S
 - **Rate limiting:** sliding window in-memory configurável (`gruahub.rate-limit.*`):
   - `GlobalRateLimitFilter` — `/api/*` (default 300/60s por IP; `GRUAHUB_RATE_LIMIT_GLOBAL_*`)
   - `WebhookRateLimitFilter` — webhook 30/60s por IP+provider; sandbox 60/60s por IP
-  - Retorna 429 com `Retry-After`. Não é WAF nem store distribuído (multi-instância ainda aberto).
+  - Retorna 429 com `Retry-After`. Não é WAF comercial nem store distribuído (multi-instância ainda aberto).
+  - Edge Caddy (profiles `tls`/`prod-like`): rate-limit por IP + bloqueio de paths de scanner; Keycloak em `https://auth.localhost` no prod-like (sem `:8180` no host).
 
 ## MQTT (EMQX)
 
