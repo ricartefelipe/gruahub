@@ -39,7 +39,7 @@ A plataforma cobre o ciclo completo: **máquina online → pagamento → crédit
 |------|-----------|---------|
 | Build | `./mvnw -B package -DskipTests` — sem erro | `backend/pom.xml` |
 | Unit tests | `BackendServiceTest` | `backend/src/test/java/...` |
-| Tenant isolation | `TenantIsolationIT` — cross-tenant retorna 403 | `backend/src/test/java/...` |
+| Tenant isolation | `TenantIsolationIT` — listagem escopada ao JWT; GET cross-tenant → 404; sem `tenant_id` → 403 | `backend/src/test/java/...` |
 | Idempotência | `IdempotencyIT` — pagamento/crédito/jogada duplicados rejeitados | `backend/src/test/java/...` |
 | IoT flow | `BackendIotFlowTest` — heartbeat via EMQX in-process | `backend/src/test/java/...` |
 | OIDC seguro | `issuer=any` apenas em `%dev`; prod valida issuer/audience | `backend/src/main/resources/application.properties` |

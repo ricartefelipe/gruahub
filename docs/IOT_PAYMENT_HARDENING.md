@@ -186,12 +186,12 @@ Se MQTT falhar: `outbox_event` permanece `PENDING` e o scheduler tenta novamente
 | `BackendServiceTest.java` | 24 testes | JsonUtil escaping, isolamento de tenant, máquina CRUD, audit, estoque |
 | `BackendIotFlowTest.java` | 8 testes | Exactly-once credit, outbox, scheduler MATCHED/PAYMENT_WITHOUT_CREDIT/DUPLICATE_EVENT, idempotência scheduler, ACK/consumeCredit idempotentes |
 
-### 8.2 Testes de Integração (@QuarkusIntegrationTest)
+### 8.2 Testes de Integração
 
-| Arquivo | Testes | Cobertura |
+| Arquivo | Tipo | Cobertura |
 |---|---|---|
-| `IdempotencyIT.java` | 4 testes | Webhook sem header → 400, sandbox confirm → 200, api root → 404, health UP |
-| `TenantIsolationIT.java` | 10 testes | Todos os endpoints protegidos → 401, health/metrics/openapi → públicos |
+| `IdempotencyIT.java` | `@QuarkusIntegrationTest` | Webhook sem header → 400, sandbox confirm → 200, api root → 404, health UP |
+| `TenantIsolationIT.java` | `@QuarkusTest` + `@TestSecurity`/`@OidcSecurity` | 401 sem token; 403 sem `tenant_id`; listagem escopada ao JWT; GET cross-tenant → 404 |
 
 ### 8.3 Simuladores
 

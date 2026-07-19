@@ -125,15 +125,16 @@ TOKEN_B=$(curl -s -X POST \
   -d "grant_type=password&client_id=gruahub-backend&username=financeiro@diversao.demo&password=gruahub@2025" \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-# Tentar acessar máquinas do Tenant A com token do Tenant B
+# Obter um id de máquina do Tenant A (com token A) e tentar ler com token B
+MACHINE_A_ID=<uuid-da-maquina-do-tenant-a>
 curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $TOKEN_B" \
-  http://localhost:8080/api/v1/machines
+  http://localhost:8080/api/v1/machines/$MACHINE_A_ID
 ```
 
-**Resultado esperado:** `403` — cross-tenant bloqueado pelo backend.
+**Resultado esperado:** `404` — recurso de outro tenant não é revelado (não 403, para não vazar existência).
 
-**Ponto de atenção:** Tenant derivado exclusivamente do JWT; nenhum parâmetro de URL controla o escopo.
+**Ponto de atenção:** Tenant derivado exclusivamente do JWT; listagens só retornam dados do tenant do token.
 
 ---
 

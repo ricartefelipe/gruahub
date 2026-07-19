@@ -31,7 +31,7 @@
 |---------|-----------|
 | Build | `./mvnw -B package -DskipTests` — zero erros, jar produzido em `target/quarkus-app/` |
 | Testes | `BackendServiceTest` (unit), `TenantIsolationIT`, `IdempotencyIT`, `BackendIotFlowTest` (ITs) — 100% pass |
-| Isolamento de tenant | `TenantIsolationIT` verifica HTTP 403 em cross-tenant explicitamente |
+| Isolamento de tenant | `TenantIsolationIT` prova listagem escopada ao JWT, GET cross-tenant → 404 e usuário sem `tenant_id` → 403 |
 | Autenticação | OIDC via Keycloak; issuer/audience validados em produção; `%dev` overrides são dev-only |
 | Webhook HMAC | `X-Webhook-Signature` validado com `MessageDigest.isEqual` (timing-safe) |
 | Idempotência | `IdempotencyIT` cobre pagamento duplicado, crédito duplicado e jogada duplicada |

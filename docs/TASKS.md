@@ -33,7 +33,7 @@ Atualizado automaticamente durante a execução. Use checkboxes para rastrear o 
 - [ ] Módulo `fleet`: Machine, MachineModel, Controller + state machine + REST + migrations
 - [ ] Testes unitários: state machine de máquina
 - [ ] Testes de integração: Testcontainers PostgreSQL + Keycloak
-- [ ] Isolamento de tenant (testes negativos)
+- [x] Isolamento de tenant (testes negativos)
 - [ ] OpenAPI disponível em `/q/openapi`
 
 ### Frontend Web
