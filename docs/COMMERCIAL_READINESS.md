@@ -22,8 +22,9 @@ Estes itens funcionam hoje, sem condicionantes:
 - Overlay `docker-compose.prod-like.yml`: app/admin/Keycloak sem portas no host (tráfego via Caddy)
 - Keycloak no edge (`https://auth.localhost`) + brute-force no realm demo (`failureFactor=5`)
 - Edge Caddy: rate-limit leve + bloqueio de paths de scanner; template Let's Encrypt em `Caddyfile.public.example`
-- Backup agendado do PostgreSQL (`pg_dump` no profile `backup` / `prod-like`)
+- Backup agendado do PostgreSQL (`pg_dump` no profile `backup` / `prod-like`) + runbook DR documentado
 - Segredos do Compose apenas via `${VAR}` / `infra/.env` (sem literais no YAML)
+- Push stub configurável (`noop` / `http-stub`) e health monitorável (Uptime Kuma opcional)
 
 ---
 
@@ -36,18 +37,18 @@ Estes itens funcionam hoje, sem condicionantes:
 | TLS/HTTPS em deploy real (Let's Encrypt / cert gerenciado) | Dados em trânsito sem criptografia em produção pública | 0,5–1 dia (DNS + trocar Caddyfile) | Parcial — HTTPS local + template LE pronto; cert público/DNS real não exercitado no CI |
 | Secrets em Vault / AWS Secrets Manager | Rotação manual; risco de exposure em CI logs | 2–4 dias | Parcial — `${VAR}` + hook `*_FILE`; Vault/SM ainda necessário para rotação gerenciada |
 | Rate limiting global / WAF / login | DDoS e enumeração de tenants | 1–2 dias (WAF comercial / store distribuído) | Parcial — API global + edge Caddy rate-limit/WAF-lite + Keycloak no edge/brute-force; sem WAF comercial |
-| Backup Postgres com offsite (S3) | Perda de dados se o volume local falhar | — | Parcial — local + upload S3-compat opcional + restore drill; falta política/runbook de DR |
+| Backup Postgres com offsite (S3) | Perda de dados se o volume local falhar | — | Parcial — local + S3 opcional + restore drill + runbook DR; falta PITR e retenção offsite obrigatória no job |
 | Sem auditoria de penetração | Vulnerabilidades desconhecidas | Externo — 2–4 semanas | Aberto |
 
 ### Importantes — degradam a experiência
 
-| Gap | Risco | Esforço estimado |
-|-----|-------|-----------------|
-| Push notifications FCM não ativado | Operadores não recebem alertas em tempo real | 2–3 dias (configuração FCM + Expo Notifications) |
-| SMS/e-mail não implementados | Alertas críticos não chegam fora do app | 3–5 dias (SendGrid/Twilio) |
-| Internacionalização ausente (somente pt-BR) | Clientes fora do Brasil bloqueados | 5–10 dias |
-| Escalonamento horizontal não testado | Falha silenciosa em multi-instância (outbox, locks, rate-limit in-memory) | 5–10 dias (CDC/Debezium ou Kafka + store distribuído) |
-| Sem SLA/monitoramento externo | Downtime sem alerta proativo | 1–2 dias (Uptime Robot, Grafana Cloud) |
+| Gap | Risco | Esforço estimado | Estado |
+|-----|-------|------------------|--------|
+| Push notifications FCM não ativado | Operadores não recebem alertas em tempo real | 1–2 dias (FCM + Expo Push + registry) | Parcial — stub `noop`/`http-stub` + hook mobile; sem Google FCM |
+| SMS/e-mail não implementados | Alertas críticos não chegam fora do app | 3–5 dias (SendGrid/Twilio) | Aberto |
+| Internacionalização ausente (somente pt-BR) | Clientes fora do Brasil bloqueados | 5–10 dias | Aberto |
+| Escalonamento horizontal não testado | Falha silenciosa em multi-instância (outbox, locks, rate-limit in-memory) | 5–10 dias (CDC/Debezium ou Kafka + store distribuído) | Aberto |
+| Sem SLA/monitoramento externo | Downtime sem alerta proativo | 0,5–1 dia (alerta Kuma / UptimeRobot) | Parcial — profile `monitoring` (Uptime Kuma) + doc uptime externo; sem SLA |
 
 ### Escopo futuro — não bloqueiam go-live
 
@@ -79,8 +80,11 @@ Entregue no Compose / backend (ver `DEPLOYMENT.md`):
 9. **Secrets `*_FILE`** — hook Docker-secrets-style no backend/web/backup (sem Vault)
 10. **Keycloak no edge** — `auth.localhost` via Caddy; issuer/JWKS alinhados (`KEYCLOAK_EDGE_ISSUER` + backchannel `KEYCLOAK_URL`)
 11. **Edge rate-limit / WAF-lite** — módulo `caddy-ratelimit` + bloqueio de paths óbvios; template LE em `Caddyfile.public.example`
+12. **Push stub** — `PushNotifier` (`noop` / `http-stub`) + hook mobile Expo; sem FCM Google
+13. **Runbook DR** — retenção/offsite/restore documentados em `DEPLOYMENT.md` com scripts existentes
+14. **Monitoramento** — profile Compose `monitoring` (Uptime Kuma em `:3002`) + orientação de uptime externo
 
-Ainda aberto nesta frente: Vault/SM com rotação, cert público real (DNS), WAF comercial / rate-limit distribuído, runbook DR formal, FCM/SMS/e-mail, pen-test, pagamento real, hardware, NF-e.
+Ainda aberto nesta frente: Vault/SM com rotação, cert público real (DNS), WAF comercial / rate-limit distribuído, FCM/Expo Push + SMS/e-mail, PITR, pen-test, pagamento real, hardware, NF-e.
 
 ---
 
@@ -91,13 +95,13 @@ Mês 1 (Hardening de infra) — em andamento:
   ├── HTTPS/TLS local (Caddy) ✅ / Let's Encrypt com DNS real ⬜ (template pronto)
   ├── Perímetro prod-like (sem 8080/3000/8180 no host) ✅ / Keycloak no edge ✅
   ├── Segredos via .env + *_FILE ✅ / Vault ou SM com rotação ⬜
-  ├── Backup PostgreSQL local + S3 opcional + restore drill ✅ / runbook DR ⬜
+  ├── Backup PostgreSQL local + S3 opcional + restore drill ✅ / runbook DR ✅ / PITR ⬜
   └── Rate limiting API + edge Caddy + Keycloak brute-force ✅ / WAF comercial ⬜
 
 Mês 2 (Notificações + Monitoramento):
-  ├── FCM + Expo Notifications ativo
-  ├── E-mail/SMS via SendGrid/Twilio
-  ├── Grafana Cloud / Uptime Robot
+  ├── Push stub noop/http-stub + hook Expo ✅ / FCM Google + registry ⬜
+  ├── E-mail/SMS via SendGrid/Twilio ⬜
+  ├── Uptime Kuma (profile monitoring) ✅ / alerta externo SLA ⬜
   └── Auditoria de penetração (externa)
 
 Mês 3 (Piloto com cliente beta):

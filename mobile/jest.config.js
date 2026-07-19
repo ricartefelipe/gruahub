@@ -24,6 +24,7 @@ module.exports = {
     }],
   },
   moduleNameMapper: {
+    '^expo-notifications$': '<rootDir>/src/__mocks__/expo-notifications.ts',
     // IMPORTANTE: usar anchors ^...$ para não conflitar com jest.mock() automático.
     // NÃO chamar jest.mock('expo-sqlite') no código de teste — o moduleNameMapper
     // já substitui o módulo real pelo mock in-memory; jest.mock() sobrescreveria

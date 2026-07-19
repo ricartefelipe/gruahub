@@ -1,5 +1,6 @@
 package com.gruahub.iot.application;
 
+import com.gruahub.notifications.domain.PushNotifier;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,6 +11,7 @@ import org.jboss.logging.Logger;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 @ApplicationScoped
 public class HeartbeatTimeoutScheduler {
@@ -21,6 +23,9 @@ public class HeartbeatTimeoutScheduler {
 
     @Inject
     EntityManager em;
+
+    @Inject
+    PushNotifier pushNotifier;
 
     @Scheduled(cron = "${gruahub.scheduler.heartbeat-timeout-cron:*/30 * * * * ?}")
     @Transactional
@@ -59,7 +64,8 @@ public class HeartbeatTimeoutScheduler {
                     .setParameter("tid", tenantId)
                     .executeUpdate();
 
-            em.createNativeQuery(
+            String offlineMsg = "Máquina sem heartbeat por mais de " + heartbeatTimeoutSeconds + "s";
+            int inserted = em.createNativeQuery(
                     "INSERT INTO alert (id, tenant_id, alert_type, severity, machine_id, " +
                     "title, message, status, created_at) " +
                     "SELECT gen_random_uuid(), :tid, 'MACHINE_OFFLINE', 'WARNING', :mid, " +
@@ -71,13 +77,33 @@ public class HeartbeatTimeoutScheduler {
                     ")")
                     .setParameter("tid", tenantId)
                     .setParameter("mid", machineId)
-                    .setParameter("msg", "Máquina sem heartbeat por mais de " + heartbeatTimeoutSeconds + "s")
+                    .setParameter("msg", offlineMsg)
                     .setParameter("now", now)
                     .executeUpdate();
+
+            if (inserted > 0) {
+                pushNotifier.notify(new PushNotifier.PushMessage(
+                        toUuid(tenantId),
+                        toUuid(machineId),
+                        "MACHINE_OFFLINE",
+                        "WARNING",
+                        "Máquina Offline",
+                        offlineMsg));
+            }
         }
 
         if (!timedOut.isEmpty()) {
             LOG.infof("Heartbeat timeout: marked %d machine(s) OFFLINE", timedOut.size());
         }
+    }
+
+    private static UUID toUuid(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof UUID uuid) {
+            return uuid;
+        }
+        return UUID.fromString(value.toString());
     }
 }
