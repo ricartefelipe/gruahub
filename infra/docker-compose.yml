@@ -90,12 +90,15 @@ services:
       - emqx_data:/opt/emqx/data
       - emqx_log:/opt/emqx/log
       - ./emqx/acl.conf:/opt/emqx/etc/acl.conf:ro
+      - ./emqx/docker-entrypoint-wrapper.sh:/docker-entrypoint-wrapper.sh:ro
+    entrypoint: ["/bin/sh", "/docker-entrypoint-wrapper.sh"]
+    command: ["/opt/emqx/bin/emqx", "foreground"]
     healthcheck:
-      test: ["CMD", "/opt/emqx/bin/emqx", "ping"]
+      test: ["CMD", "sh", "-c", "/opt/emqx/bin/emqx ping && test -f /tmp/emqx-admin-synced"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 12
+      start_period: 40s
 
   emqx-users:
     image: curlimages/curl:8.7.1
@@ -233,6 +236,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      HOSTNAME: "0.0.0.0"
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
@@ -247,7 +251,7 @@ services:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000"]
       interval: 10s
       timeout: 5s
       retries: 10

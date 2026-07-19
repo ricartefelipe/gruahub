@@ -126,7 +126,7 @@ switch ($Command.ToLower()) {
         Write-Host "`n  Backend:  http://localhost:8080/q/swagger-ui"
         Write-Host "  Web:      http://localhost:3000"
         Write-Host "  Keycloak: http://localhost:8180 (demo) | https://auth.localhost (prod-like)"
-        Write-Host "  EMQX:     http://localhost:18083 (admin/public)"
+        Write-Host "  EMQX:     http://localhost:18083 (admin / EMQX_DASHBOARD_PASSWORD)"
         Write-Host "  MinIO:    http://localhost:9001  (minioadmin/minioadmin)`n"
     }
 
