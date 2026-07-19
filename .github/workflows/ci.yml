@@ -260,15 +260,32 @@ jobs:
         run: npm audit --audit-level=critical || true
 
   # ─────────────────────────────────────────────────────────────
-  # Docker Compose smoke test (infra only, main branch only)
+  # Docker Compose smoke (infra mínima: postgres, keycloak, emqx, minio)
+  # Roda em push/PR para main|master|develop. Sem profile simulators.
   # ─────────────────────────────────────────────────────────────
   docker-compose:
-    name: Docker Compose (infrastructure only)
+    name: Docker Compose (infrastructure smoke)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    timeout-minutes: 12
+    if: >
+      (github.event_name == 'push' &&
+        (github.ref == 'refs/heads/main' ||
+         github.ref == 'refs/heads/master' ||
+         github.ref == 'refs/heads/develop')) ||
+      (github.event_name == 'pull_request' &&
+        (github.base_ref == 'main' ||
+         github.base_ref == 'master' ||
+         github.base_ref == 'develop'))
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Prepare env from example
+        working-directory: infra
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env
+          fi
 
       - name: Validate compose config
         working-directory: infra
