@@ -69,7 +69,7 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Modo</Text>
-          <Text style={styles.rowValue}>📵 Offline-first</Text>
+          <Text style={styles.rowValue}>Offline-first</Text>
         </View>
       </View>
 
@@ -83,7 +83,7 @@ export default function ProfileScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.syncButtonText}>
-            {syncing ? '⏳ Sincronizando...' : '🔄 Sincronizar Agora'}
+            {syncing ? 'Sincronizando...' : 'Sincronizar agora'}
           </Text>
         </TouchableOpacity>
 

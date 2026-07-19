@@ -1,17 +1,16 @@
-/**
- * Tela de scanner QR Code — identifica máquina por QR e redireciona para ação.
- * Usa expo-camera (CameraView) que inclui leitura de QR.
- */
-
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 export default function QrScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const { action } = useLocalSearchParams<{ action?: string }>();
+  const { returnTo, visitId, pointName } = useLocalSearchParams<{
+    returnTo?: string;
+    visitId?: string;
+    pointName?: string;
+  }>();
 
   if (!permission) {
     return (
@@ -26,7 +25,7 @@ export default function QrScanScreen() {
       <View style={styles.center}>
         <Text style={styles.text}>Câmera necessária para escanear QR Code.</Text>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>Conceder Permissão</Text>
+          <Text style={styles.buttonText}>Conceder permissão</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
           <Text style={styles.cancelText}>Voltar</Text>
@@ -39,7 +38,6 @@ export default function QrScanScreen() {
     if (scanned) return;
     setScanned(true);
 
-    // QR Code esperado: formato "gruahub://machine/{machineId}" ou apenas o UUID
     let machineId: string;
     try {
       const url = new URL(data);
@@ -52,7 +50,6 @@ export default function QrScanScreen() {
       machineId = data.trim();
     }
 
-    // Valida UUID básico
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidPattern.test(machineId)) {
       Alert.alert(
@@ -63,12 +60,18 @@ export default function QrScanScreen() {
       return;
     }
 
-    // Navega de volta com o machineId
-    router.back();
-    // Dependendo da ação solicitada, poderia navegar para replenishment ou maintenance
+    if (returnTo === 'complete' && visitId) {
+      router.replace({
+        pathname: '/visits/complete',
+        params: { visitId, pointName: pointName ?? '', machineId },
+      });
+      return;
+    }
+
     Alert.alert(
       'Máquina identificada',
-      `ID: ${machineId.slice(0, 8)}…\n\nUse este ID para registrar a operação.`
+      `ID: ${machineId.slice(0, 8)}…`,
+      [{ text: 'OK', onPress: () => router.back() }]
     );
   }
 
@@ -76,7 +79,7 @@ export default function QrScanScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Fechar scanner">
-          <Text style={styles.closeText}>✕ Fechar</Text>
+          <Text style={styles.closeText}>Fechar</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Escanear QR Code</Text>
         <Text style={styles.subtitle}>Aponte para o QR Code da máquina</Text>
@@ -135,7 +138,6 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: '#2563eb',
     borderRadius: 12,
     backgroundColor: 'transparent',
-    shadowColor: '#2563eb', shadowRadius: 8, shadowOpacity: 0.8, shadowOffset: { width: 0, height: 0 },
   },
   footer: {
     padding: 24, backgroundColor: 'rgba(0,0,0,0.6)',

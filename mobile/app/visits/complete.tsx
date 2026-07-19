@@ -1,8 +1,3 @@
-/**
- * Conclusão da visita — sangria, reposição e checkout.
- * Todas as operações vão para a fila offline.
- */
-
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Alert, ScrollView, KeyboardAvoidingView, Platform,
@@ -14,23 +9,16 @@ import { enqueue } from '../../src/db/offlineQueue';
 import { OPERATION_TYPES } from '../../src/db/schema';
 
 export default function CompleteVisitScreen() {
-  const { visitId, pointName } = useLocalSearchParams<{
-    visitId: string; pointName: string;
+  const { visitId, pointName, machineId: machineIdParam } = useLocalSearchParams<{
+    visitId: string; pointName: string; machineId?: string;
   }>();
 
-  // Sangria (cash collection)
   const [cashCollectedCents, setCashCollectedCents] = useState('');
   const [cashNotes, setCashNotes] = useState('');
-
-  // Reposição
-  const [replenishSku, setReplenishSku] = useState('');
-  const [replenishQty, setReplenishQty] = useState('');
-  const replenishments: Array<{ sku: string; qty: number }> = [];
-
+  const [machineId, setMachineId] = useState(machineIdParam ?? '');
   const [completing, setCompleting] = useState(false);
 
   function parseCentavos(value: string): number {
-    // Aceita "R$ 12,50" ou "12.50" ou "1250"
     const digits = value.replace(/\D/g, '');
     return parseInt(digits, 10) || 0;
   }
@@ -39,21 +27,19 @@ export default function CompleteVisitScreen() {
     setCompleting(true);
     try {
       const ops: Promise<void>[] = [];
-
-      // Sangria
       const cents = parseCentavos(cashCollectedCents);
-      if (cents > 0) {
+
+      if (cents > 0 && machineId) {
         ops.push(
           enqueue(uuidv4(), OPERATION_TYPES.CASH_COLLECTION, {
             visitId,
+            machineId,
             amountCents: cents,
             notes: cashNotes.trim(),
-            collectedAt: new Date().toISOString(),
           })
         );
       }
 
-      // Checkout da visita
       ops.push(
         enqueue(uuidv4(), OPERATION_TYPES.COMPLETE_VISIT, {
           visitId,
@@ -64,13 +50,19 @@ export default function CompleteVisitScreen() {
 
       await Promise.all(ops);
 
+      const tip =
+        cents > 0 && !machineId
+          ? ' Sangria registrada na visita; para cash_collection separado, identifique a máquina via QR.'
+          : '';
+
       Alert.alert(
-        'Visita concluída!',
-        'Os dados foram salvos localmente e serão sincronizados ao reconectar.',
+        'Visita concluída',
+        `Dados salvos localmente e serão sincronizados ao reconectar.${tip}`,
         [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
       );
-    } catch (err: any) {
-      Alert.alert('Erro', 'Falha ao concluir a visita: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'erro desconhecido';
+      Alert.alert('Erro', 'Falha ao concluir a visita: ' + message);
     } finally {
       setCompleting(false);
     }
@@ -94,9 +86,8 @@ export default function CompleteVisitScreen() {
           <Text style={styles.subtitle}>{pointName}</Text>
         </View>
 
-        {/* Sangria */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💰 Sangria (Coleção de Caixa)</Text>
+          <Text style={styles.sectionTitle}>Sangria (coleção de caixa)</Text>
           <Text style={styles.label}>Valor coletado</Text>
           <TextInput
             style={styles.input}
@@ -117,28 +108,36 @@ export default function CompleteVisitScreen() {
             textAlignVertical="top"
             accessibilityLabel="Observações da sangria"
           />
-        </View>
-
-        {/* Reposição — simplificada: apenas indicar o SKU e qtd */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📦 Reposição de Estoque</Text>
+          <Text style={styles.label}>Máquina (opcional para cash_collection)</Text>
           <Text style={styles.hint}>
-            Para registrar reposição, use a tela de QR Code para identificar a máquina e
-            registrar os itens reposto. A reposição será sincronizada com o inventário.
+            {machineId
+              ? `Máquina: ${machineId.slice(0, 8)}…`
+              : 'Sem máquina: o valor ainda vai na conclusão da visita.'}
           </Text>
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => router.push('/qr-scan')}
-            accessibilityLabel="Escanear QR Code da máquina para registrar reposição"
+            onPress={() =>
+              router.push({
+                pathname: '/qr-scan',
+                params: { returnTo: 'complete', visitId, pointName },
+              })
+            }
+            accessibilityLabel="Escanear QR Code da máquina"
             accessibilityRole="button"
           >
-            <Text style={styles.secondaryButtonText}>📷 Escanear QR Code da Máquina</Text>
+            <Text style={styles.secondaryButtonText}>
+              {machineId ? 'Trocar máquina (QR)' : 'Identificar máquina (QR)'}
+            </Text>
           </TouchableOpacity>
+          {machineId ? (
+            <TouchableOpacity onPress={() => setMachineId('')} style={{ marginTop: 8 }}>
+              <Text style={styles.clearMachine}>Limpar máquina</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
-        {/* Sumário */}
         <View style={styles.summary}>
-          <Text style={styles.summaryTitle}>Resumo da Visita</Text>
+          <Text style={styles.summaryTitle}>Resumo da visita</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Sangria</Text>
             <Text style={styles.summaryValue}>
@@ -149,7 +148,7 @@ export default function CompleteVisitScreen() {
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Status sync</Text>
-            <Text style={[styles.summaryValue, styles.syncBadge]}>📵 Pendente</Text>
+            <Text style={[styles.summaryValue, styles.syncBadge]}>Pendente (fila local)</Text>
           </View>
         </View>
 
@@ -161,7 +160,7 @@ export default function CompleteVisitScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.completeButtonText}>
-            {completing ? 'Finalizando...' : '✓ Finalizar Visita'}
+            {completing ? 'Finalizando...' : 'Finalizar visita'}
           </Text>
         </TouchableOpacity>
 
@@ -194,6 +193,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryButtonText: { color: '#2563eb', fontWeight: '600', fontSize: 14 },
+  clearMachine: { color: '#dc2626', fontSize: 13, textAlign: 'center' },
   summary: {
     margin: 16, backgroundColor: '#fff', borderRadius: 12, padding: 16,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,

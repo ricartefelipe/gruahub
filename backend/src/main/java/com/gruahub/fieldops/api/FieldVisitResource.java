@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -162,11 +163,10 @@ public class FieldVisitResource {
         UUID tenantId = TenantContext.getTenantId();
         UUID clientOpId = req.clientOperationId();
 
-        // Deduplicação offline-first
         Long existing = (Long) em.createNativeQuery(
             "SELECT COUNT(*) FROM field_visit WHERE client_operation_id = :coid AND tenant_id = :tid"
         )
-            .setParameter("coid", clientOpId)
+            .setParameter("coid", clientOpId.toString())
             .setParameter("tid", tenantId)
             .getSingleResult();
 
@@ -188,7 +188,7 @@ public class FieldVisitResource {
         )
             .setParameter("id", visitId)
             .setParameter("tid", tenantId)
-            .setParameter("coid", clientOpId)
+            .setParameter("coid", clientOpId.toString())
             .setParameter("pid", req.operatingPointId())
             .setParameter("name", req.responsibleName())
             .setParameter("notes", req.notes())
@@ -260,12 +260,11 @@ public class FieldVisitResource {
         UUID tenantId = TenantContext.getTenantId();
         UUID clientOpId = req.clientOperationId();
 
-        // Idempotência
         Long count = (Long) em.createNativeQuery(
             "SELECT COUNT(*) FROM visit_checklist_result " +
             "WHERE client_operation_id = :coid AND tenant_id = :tid"
         )
-            .setParameter("coid", clientOpId)
+            .setParameter("coid", clientOpId.toString())
             .setParameter("tid", tenantId)
             .getSingleResult();
 
@@ -276,8 +275,6 @@ public class FieldVisitResource {
         }
 
         UUID resultId = UUID.randomUUID();
-        // Converte itens para JSONB usando JsonUtil para escapar chaves corretamente.
-        // String.format com dados não escapados poderia injetar JSON se o key contiver aspas.
         String itemsJson = JsonUtil.checklistArray(req.items());
 
         em.createNativeQuery(
@@ -289,7 +286,7 @@ public class FieldVisitResource {
             .setParameter("id", resultId)
             .setParameter("tid", tenantId)
             .setParameter("vid", req.visitId())
-            .setParameter("coid", clientOpId)
+            .setParameter("coid", clientOpId.toString())
             .setParameter("items", itemsJson)
             .setParameter("completedAt", req.completedAt())
             .executeUpdate();
@@ -301,11 +298,26 @@ public class FieldVisitResource {
 
     private VisitResponse mapVisitRow(Object[] r) {
         return new VisitResponse(
-            (UUID) r[0], (UUID) r[1], (String) r[2], (String) r[3], (String) r[4],
-            r[5] != null ? ((java.sql.Timestamp) r[5]).toInstant() : null,
-            r[6] != null ? ((java.sql.Timestamp) r[6]).toInstant() : null,
+            toUuid(r[0]), toUuid(r[1]), (String) r[2], (String) r[3], (String) r[4],
+            toInstant(r[5]),
+            toInstant(r[6]),
             r[7] != null ? ((Number) r[7]).longValue() : null,
-            r[8] != null ? ((java.sql.Timestamp) r[8]).toInstant() : null
+            toInstant(r[8])
         );
+    }
+
+    private static UUID toUuid(Object value) {
+        if (value == null) return null;
+        if (value instanceof UUID uuid) return uuid;
+        return UUID.fromString(value.toString());
+    }
+
+    private static Instant toInstant(Object value) {
+        if (value == null) return null;
+        if (value instanceof Instant instant) return instant;
+        if (value instanceof java.sql.Timestamp ts) return ts.toInstant();
+        if (value instanceof java.util.Date date) return date.toInstant();
+        if (value instanceof OffsetDateTime odt) return odt.toInstant();
+        throw new IllegalArgumentException("Unsupported temporal type: " + value.getClass());
     }
 }

@@ -83,7 +83,7 @@ export default function StartVisitScreen() {
 
         <View style={styles.offlineNote}>
           <Text style={styles.offlineNoteText}>
-            📵 Modo offline ativo — a visita será sincronizada ao reconectar.
+            Modo offline-first: a visita vai para a fila local e sincroniza ao reconectar.
           </Text>
         </View>
 
