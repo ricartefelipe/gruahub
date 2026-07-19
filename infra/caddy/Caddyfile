@@ -1,0 +1,24 @@
+{
+	auto_https disable_redirects
+	local_certs
+}
+
+https://localhost {
+	tls internal
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle /q/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+http://localhost {
+	redir https://localhost{uri} permanent
+}
