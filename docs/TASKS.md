@@ -35,10 +35,14 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [x] E2E Playwright smoke em CI (`web/e2e/smoke.spec.ts`; specs autenticados ainda locais com Keycloak)
 - [ ] WAF comercial / rate-limit distribuído (edge Caddy leve + API in-memory já ativos; multi-instância aberto)
 - [ ] TLS público com DNS real (template LE pronto; CI só valida `tls internal`)
-- [ ] Push FCM ativo, SMS/e-mail (stubs/prod ainda abertos)
-- [ ] Vault / AWS Secrets Manager com rotação (hoje: `.env` + `*_FILE`); runbook DR de backup
+- [x] Push stub honesto (`PushNotifier` noop/http-stub + hook mobile Expo token); FCM Google completo ainda aberto
+- [x] Runbook DR de backup/restore/retenção em `DEPLOYMENT.md` (alinhado a `pg-backup*` / restore drill)
+- [x] Monitoramento mínimo: profile Compose `monitoring` (Uptime Kuma) + doc de uptime externo em health
+- [ ] FCM/Expo Push Service em produção + registry de devices; SMS/e-mail
+- [ ] Vault / AWS Secrets Manager com rotação (hoje: `.env` + `*_FILE`)
 - [ ] Pagamento real / hardware físico / adaptadores de controlador
 - [ ] Escala horizontal (outbox polling, locks in-memory, rate-limit in-memory)
+- [ ] PITR / retenção S3 automatizada no job de backup; alerta Kuma pré-configurado no compose
 
 ## Fora do MVP (comercial longo)
 

@@ -41,14 +41,17 @@ docker compose ps
 # Prod-like: Caddy HTTPS + backup + sem publicar 8080/3000/8180/admin no host
 ./scripts/up-prod-like.sh up -d --build
 
-# ou só TLS / só backup (portas de debug ainda no host):
+# ou só TLS / só backup / só monitoramento (portas de debug ainda no host):
 docker compose --profile tls up -d --build
 docker compose --profile backup up -d
+docker compose --profile monitoring up -d
 ```
 
 - HTTPS: `https://localhost` + OIDC `https://auth.localhost` (certificado interno — `curl -k`)
 - Prod-like: `KEYCLOAK_EDGE_ISSUER` default `https://auth.localhost/realms/gruahub`
-- Backup: volume `postgres_backups`; offsite opcional via `BACKUP_S3_*`; drill `pg-restore-drill.sh`
+- Backup: volume `postgres_backups`; offsite opcional via `BACKUP_S3_*`; drill `pg-restore-drill.sh`; runbook DR em `DEPLOYMENT.md`
+- Monitoramento: Uptime Kuma em `http://localhost:3002` (profile `monitoring`)
+- Push: stub `GRUAHUB_PUSH_PROVIDER=noop|http-stub` (não é FCM completo)
 - Segredos: preferir `infra/.env`; produção pode usar `VAR_FILE` (ver `DEPLOYMENT.md`)
 - Detalhes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) e [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md)
 
@@ -221,7 +224,7 @@ Principais decisões:
 
 Ver [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
 
-TL;DR: sem hardware real, pagamentos sandbox apenas, sem nota fiscal, sem Kubernetes, sem Kafka, sem push notifications reais.
+TL;DR: sem hardware real, pagamentos sandbox apenas, sem nota fiscal, sem Kubernetes, sem Kafka, push só stub (sem FCM Google).
 
 ---
 

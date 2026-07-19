@@ -220,6 +220,93 @@ docker compose --profile backup run --rm postgres-backup /scripts/pg-restore-dri
 
 O drill restaura o dump mais recente num DB temporário `${POSTGRES_DB}_restore_drill`, valida schemas/tabelas de aplicação e apaga o DB. Não substitui restore de desastre em produção — é smoke de integridade do artefato.
 
+### Runbook DR (backup / restore / retenção)
+
+Expectativa honesta do MVP (não é SLA contratual):
+
+| Item | Valor sugerido | Notas |
+|------|----------------|-------|
+| RPO | ≈ intervalo do job (`BACKUP_INTERVAL_SECONDS`, default 24h) | Sem PITR/WAL archiving |
+| RTO | horas (restore manual + validação) | Depende do tamanho do dump e do host |
+| Retenção local | `BACKUP_RETENTION_DAYS` (default 7) | `find -mtime` no volume `postgres_backups` |
+| Offsite | obrigatório em piloto público | `BACKUP_S3_*`; retenção no bucket é política do provedor (lifecycle), não automatizada pelo job |
+
+**Antes de um incidente (rotina):**
+
+1. Profile `backup` ou `prod-like` ativo com `postgres-backup` saudável
+2. Offsite configurado (`BACKUP_S3_ENDPOINT` + credenciais) — volume local sozinho não basta contra perda do host
+3. Drill semanal (ou após mudança de schema): `docker compose --profile backup run --rm postgres-backup /scripts/pg-restore-drill.sh`
+4. Guardar fora do host: credenciais DB, Keycloak admin, e caminho do último dump conhecido
+
+**Restore de desastre (produção — cuidado):**
+
+```bash
+cd infra
+# 1) Identificar artefato (local ou baixar do S3/MinIO)
+# ls do volume, ou: mc cp backup-s3/bucket/prefix/arquivo.sql.gz ./
+
+# 2) Parar writers (backend/web) para evitar escrita durante restore
+docker compose stop backend web
+
+# 3) Restaurar no database real (NÃO usar o drill DB)
+# Exemplo destrutivo — confirma backup + janela de manutenção:
+gunzip -c /caminho/gruahub_YYYYMMDDTHHMMSSZ.sql.gz \
+  | docker compose exec -T postgres \
+      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1
+
+# 4) Subir apps e validar
+docker compose start backend web
+curl -sf http://localhost:8080/q/health/ready
+# login OIDC + smoke de frota/alertas
+```
+
+Scripts alinhados: `pg-backup.sh` (dump + retenção local + upload opcional), `pg-backup-loop.sh` (agendamento), `pg-restore-drill.sh` (smoke não destrutivo). Não há script de restore destrutivo versionado de propósito — o passo 3 exige decisão humana.
+
+Ainda aberto: PITR, retenção S3 automatizada no job, failover multi-região, Vault/SM com rotação.
+
+### Push notifications (stub)
+
+Backend: porta `PushNotifier` com providers:
+
+| `GRUAHUB_PUSH_PROVIDER` | Comportamento |
+|-------------------------|---------------|
+| `noop` (default) | Log `[PUSH-NOOP]` — sem entrega externa |
+| `http-stub` | POST JSON em `GRUAHUB_PUSH_HTTP_STUB_URL` (webhook de teste) |
+
+Disparo atual: alerta novo `MACHINE_OFFLINE` no `HeartbeatTimeoutScheduler`. **Não** é integração FCM/Google completa (sem service account, sem device registry, sem Expo Push Service em produção).
+
+Mobile: hook `usePushNotifications` pede permissão e obtém token Expo (log local). Registry no backend e credenciais FCM/EAS ainda abertos.
+
+### Monitoramento (uptime)
+
+Health já exposto:
+
+```bash
+curl -sf http://localhost:8080/q/health/live
+curl -sf http://localhost:8080/q/health/ready
+# via Caddy: curl -k -sf https://localhost/q/health/ready
+```
+
+**Opção A — Uptime Kuma (Compose profile `monitoring`):**
+
+```bash
+cd infra
+docker compose --profile monitoring up -d
+# UI: http://localhost:3002
+```
+
+Monitores sugeridos (criar na UI na primeira subida):
+
+| Nome | Tipo | URL / alvo |
+|------|------|------------|
+| backend-ready | HTTP(s) | `http://backend:8080/q/health/ready` (rede compose) |
+| web | HTTP(s) | `http://web:3000/api/health` |
+| edge-ready | HTTP(s) | `https://caddy/q/health/ready` só se Caddy estiver no profile; ou `https://host.docker.internal/...` |
+
+Configure alerta mínimo na UI (e-mail/Discord/Telegram) — Kuma persiste em volume `uptime_kuma_data`.
+
+**Opção B — uptime externo** (sem profile): aponte UptimeRobot / Better Stack / similar para `https://<host-publico>/q/health/ready` com intervalo 1–5 min e alerta por e-mail/Slack. Não substitui métricas APM; só disponibilidade.
+
 ### Segredos via `*_FILE` (Docker secrets style)
 
 Sem Vault completo: qualquer `VAR_FILE` apontando para um arquivo montado preenche `VAR` se `VAR` estiver vazio (`infra/scripts/load-secret-files.sh`).
@@ -266,6 +353,10 @@ Além dos profiles locais, um deploy público deve:
 | `AWS_SECRET_ACCESS_KEY`           | Segredo MinIO/S3                       |
 | `NEXTAUTH_SECRET`                 | Segredo de sessão Next.js              |
 | `KEYCLOAK_SECRET`                 | Client secret do cliente gruahub-web   |
+| `GRUAHUB_PUSH_PROVIDER`           | `noop` ou `http-stub` (default `noop`) |
+| `GRUAHUB_PUSH_HTTP_STUB_URL`      | URL POST do stub (só com `http-stub`)  |
+| `BACKUP_RETENTION_DAYS`           | Retenção local dos dumps (default 7)   |
+| `BACKUP_S3_ENDPOINT`              | Offsite S3-compatible (opcional)       |
 
 ## Health Checks e Readiness
 
@@ -276,6 +367,8 @@ curl http://localhost:8080/q/health/ready  # 200 UP
 
 # Database
 curl http://localhost:8080/q/health | jq '.checks[] | select(.name == "Database connections health check")'
+
+# Uptime local (profile monitoring): http://localhost:3002
 ```
 
 ## Rollback de Migração

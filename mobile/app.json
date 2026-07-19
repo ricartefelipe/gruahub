@@ -15,6 +15,13 @@
       "expo-router",
       "expo-sqlite",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1e40af"
+        }
+      ],
+      [
         "expo-camera",
         { "cameraPermission": "GruaHub precisa da câmera para ler QR codes das máquinas." }
       ],

@@ -105,7 +105,9 @@ Todo evento sensível é registrado na tabela `audit_log` com:
 - [ ] Habilitar Content-Security-Policy no Next.js (`next.config.js`)
 - [x] Rate limiting global da API (`GlobalRateLimitFilter`)
 - [x] Brute-force protection no realm Keycloak demo (`failureFactor=5`)
-- [ ] Keycloak atrás do proxy/edge (hoje `:8180` ainda no host no prod-like)
+- [x] Keycloak no edge Caddy no prod-like (`auth.localhost`; sem `:8180` no host)
 - [ ] TLS público (Let's Encrypt); local já coberto pelo profile `tls` / headers HSTS no Caddy
+- [x] Push stub (`noop` / `http-stub`) — sem FCM Google; não expor secrets de push no client
+- [x] Health público mínimo (`/q/health/*`) monitorável (Uptime Kuma profile `monitoring` ou uptime externo)
 - [ ] Revisar e reduzir TTL dos tokens de acesso (padrão Keycloak: 5 min)
 - [ ] Configurar alertas de falha de autenticação no SIEM

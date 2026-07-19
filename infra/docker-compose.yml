@@ -11,6 +11,7 @@ volumes:
   minio_data:
   caddy_data:
   caddy_config:
+  uptime_kuma_data:
 
 services:
 
@@ -193,6 +194,8 @@ services:
       GRUAHUB_RATE_LIMIT_GLOBAL_ENABLED: ${GRUAHUB_RATE_LIMIT_GLOBAL_ENABLED:-true}
       GRUAHUB_RATE_LIMIT_GLOBAL_MAX: ${GRUAHUB_RATE_LIMIT_GLOBAL_MAX:-300}
       GRUAHUB_RATE_LIMIT_GLOBAL_WINDOW_SECONDS: ${GRUAHUB_RATE_LIMIT_GLOBAL_WINDOW_SECONDS:-60}
+      GRUAHUB_PUSH_PROVIDER: ${GRUAHUB_PUSH_PROVIDER:-noop}
+      GRUAHUB_PUSH_HTTP_STUB_URL: ${GRUAHUB_PUSH_HTTP_STUB_URL:-}
       LOG_JSON: ${LOG_JSON:-true}
       QUARKUS_LIQUIBASE_CONTEXTS: ${QUARKUS_LIQUIBASE_CONTEXTS:-demo}
       DB_PASSWORD_FILE: ${DB_PASSWORD_FILE:-}
@@ -310,6 +313,20 @@ services:
       web:
         condition: service_healthy
       keycloak:
+        condition: service_healthy
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: gruahub-uptime-kuma
+    restart: unless-stopped
+    networks: [gruahub]
+    profiles: [monitoring]
+    ports:
+      - "3002:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+    depends_on:
+      backend:
         condition: service_healthy
 
   postgres-backup:
