@@ -1,8 +1,3 @@
-/**
- * Rota do Dia — tela inicial do app mobile.
- * Conecta ao endpoint correto: GET /api/v1/routes (RoutingResource.java @Path("/api/v1/routes"))
- */
-
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl,
   ActivityIndicator,
@@ -16,55 +11,60 @@ import { apiGet, ApiError } from '../../src/api/apiClient';
 
 interface RouteStop {
   id: string;
+  operatingPointId: string;
   pointName: string;
   address: string;
   score: number;
-  machines?: number;
   reason: string;
 }
 
-async function fetchTodayRoute(accessToken: string, tenantId: string): Promise<RouteStop[]> {
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+function pageContent<T>(body: unknown): T[] {
+  if (Array.isArray(body)) return body as T[];
+  if (body && typeof body === 'object' && Array.isArray((body as { content?: unknown }).content)) {
+    return (body as { content: T[] }).content;
+  }
+  return [];
+}
 
-  // 1. Buscar plano de rota do dia — endpoint correto: /api/v1/routes
+async function fetchTodayRoute(accessToken: string, tenantId: string): Promise<RouteStop[]> {
+  const today = new Date().toISOString().slice(0, 10);
+
   const planRes = await apiGet(`/api/v1/routes?date=${today}&page=0&size=1`, {
     accessToken,
     tenantId: tenantId || undefined,
   });
   const planData = await planRes.json();
-  const plans: Array<{ id: string }> = planData.content ?? planData.items ?? planData ?? [];
+  const plans = pageContent<{ id: string }>(planData);
   if (plans.length === 0) return [];
 
   const planId = plans[0].id;
-
-  // 2. Buscar paradas do plano — /api/v1/routes/{id}/stops
   const stopsRes = await apiGet(`/api/v1/routes/${planId}/stops`, {
     accessToken,
     tenantId: tenantId || undefined,
   });
-  const stops: Array<{
+  const stopsBody = await stopsRes.json();
+  const stops = pageContent<{
     id: string;
+    operatingPointId?: string;
     operatingPointName?: string;
     pointName?: string;
     address?: string;
     priorityScore?: number;
     score?: number;
-    machineCount?: number;
     priorityExplanation?: string;
-    visitReason?: string;
     reason?: string;
-  }> = await stopsRes.json();
+  }>(stopsBody);
 
-  const stopsArr = Array.isArray(stops) ? stops : ((stops as any).content ?? []);
-
-  return stopsArr.map((s) => ({
-    id: s.id,
-    pointName: s.operatingPointName ?? s.pointName ?? 'Ponto',
-    address: s.address ?? '',
-    score: s.priorityScore ?? s.score ?? 0,
-    machines: s.machineCount,
-    reason: s.priorityExplanation ?? s.visitReason ?? s.reason ?? '',
-  }));
+  return stops
+    .filter((s) => !!s.operatingPointId)
+    .map((s) => ({
+      id: s.id,
+      operatingPointId: s.operatingPointId as string,
+      pointName: s.operatingPointName ?? s.pointName ?? 'Ponto',
+      address: s.address ?? '',
+      score: s.priorityScore ?? s.score ?? 0,
+      reason: s.priorityExplanation ?? s.reason ?? '',
+    }));
 }
 
 export default function RouteScreen() {
@@ -76,7 +76,6 @@ export default function RouteScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
 
-  // Verifica conectividade
   useEffect(() => {
     Network.getNetworkStateAsync()
       .then((s) => setIsOnline(s.isConnected ?? true))
@@ -129,7 +128,6 @@ export default function RouteScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Rota do Dia</Text>
         <Text style={styles.subtitle}>{userEmail || 'Operador'}</Text>
-        {/* Indicador de rede */}
         <View style={styles.netRow}>
           <View style={[styles.netDot, isOnline ? styles.netDotOnline : styles.netDotOffline]} />
           <Text style={styles.netLabel}>{isOnline ? 'Online' : 'Offline — dados em cache'}</Text>
@@ -150,7 +148,7 @@ export default function RouteScreen() {
         }
         renderItem={({ item, index }) => (
           <Link
-            href={`/visits/start?pointId=${item.id}&pointName=${encodeURIComponent(item.pointName)}`}
+            href={`/visits/start?pointId=${item.operatingPointId}&pointName=${encodeURIComponent(item.pointName)}`}
             asChild
           >
             <TouchableOpacity
@@ -188,7 +186,9 @@ export default function RouteScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
-              {error ? 'Não foi possível carregar a rota.' : 'Nenhuma parada planejada para hoje.'}
+              {error
+                ? 'Não foi possível carregar a rota.'
+                : 'Nenhuma parada para hoje. No web: Rotas → Gerar rota de hoje (ou reinicie o backend com seed demo).'}
             </Text>
           </View>
         }

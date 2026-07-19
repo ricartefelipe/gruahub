@@ -377,8 +377,8 @@ export const financeApi = {
 };
 
 export const routesApi = {
-  list: (page = 0, size = 30) =>
-    apiClient.get<PageResponse<Route>>('/routes', { params: { page, size } }),
+  list: (page = 0, size = 30, date?: string) =>
+    apiClient.get<PageResponse<Route>>('/routes', { params: { page, size, ...(date ? { date } : {}) } }),
   stops: (routeId: string) =>
     apiClient.get<PageResponse<RouteStop>>(`/routes/${routeId}/stops`),
   generate: (maxStops = 10) =>
