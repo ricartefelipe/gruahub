@@ -1,0 +1,13 @@
+{
+  "messageId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "schemaVersion": 1,
+  "tenantId": "11111111-0000-0000-0000-000000000001",
+  "machineId": "66666666-0000-0000-0000-000000000001",
+  "sequence": 43,
+  "type": "play_started",
+  "occurredAt": "2026-07-19T12:01:00.000Z",
+  "payload": {
+    "creditGrantId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "playSessionId": "d4e5f6a7-b8c9-0123-def0-234567890123"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "topic_patterns": {
+    "device_to_backend": "v1/{tenantId}/machines/{machineId}/{type}",
+    "backend_to_device": "v1/{tenantId}/machines/{machineId}/commands",
+    "type_values": ["telemetry", "events", "status", "command-acks"],
+    "qos": {
+      "commands": 1,
+      "financial_events": 1,
+      "heartbeat": 0
+    }
+  },
+  "security": {
+    "acl": {
+      "backend_client": {
+        "clientId": "gruahub-backend",
+        "subscribe": ["v1/#"],
+        "publish": ["v1/#"]
+      },
+      "device_client": {
+        "clientId": "sim-machine (pattern: machine-{machineId})",
+        "subscribe": ["v1/{tenantId}/machines/{machineId}/commands"],
+        "publish": [
+          "v1/{tenantId}/machines/{machineId}/telemetry",
+          "v1/{tenantId}/machines/{machineId}/events",
+          "v1/{tenantId}/machines/{machineId}/status",
+          "v1/{tenantId}/machines/{machineId}/command-acks"
+        ]
+      }
+    },
+    "notes": [
+      "Dispositivos NÃO podem publicar em tópicos de outros dispositivos",
+      "Dispositivos NÃO podem subscrever em tópicos de outros dispositivos",
+      "Autenticação via username/password na conexão MQTT",
+      "TLS obrigatório em produção (não configurado no MVP sandbox)"
+    ]
+  }
+}

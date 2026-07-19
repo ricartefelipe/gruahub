@@ -1,0 +1,15 @@
+{
+  "messageId": "a7b8c9d0-e1f2-3456-0123-567890123456",
+  "schemaVersion": 1,
+  "tenantId": "11111111-0000-0000-0000-000000000001",
+  "machineId": "66666666-0000-0000-0000-000000000001",
+  "sequence": 46,
+  "type": "command_ack",
+  "occurredAt": "2026-07-19T12:03:00.000Z",
+  "payload": {
+    "commandId": "b8c9d0e1-f2a3-4567-1234-678901234567",
+    "commandType": "GRANT_CREDIT",
+    "creditGrantId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "success": true
+  }
+}

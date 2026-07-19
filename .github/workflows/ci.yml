@@ -184,10 +184,10 @@ jobs:
           npm run build
 
   # ─────────────────────────────────────────────────────────────
-  # Contracts — MQTT JSON Schema validation
+  # Contracts — MQTT JSON Schema + OpenAPI
   # ─────────────────────────────────────────────────────────────
   contracts:
-    name: Contracts (MQTT JSON Schema)
+    name: Contracts (MQTT + OpenAPI)
     runs-on: ubuntu-latest
 
     steps:
@@ -198,25 +198,37 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install ajv-cli
-        run: npm install -g ajv-cli@5
+      - name: Install validators
+        run: npm install -g ajv-cli@5 ajv-formats @redocly/cli@1
 
-      - name: Validate schema self-consistency
+      - name: Compile MQTT schema
         run: |
           ajv compile \
             --spec=draft7 \
+            -c ajv-formats \
             -s contracts/mqtt/schema-v1.json
 
-      - name: Validate heartbeat example (if present)
+      - name: Validate MQTT examples
         run: |
-          if [ -f contracts/mqtt/examples/heartbeat.json ]; then
+          shopt -s nullglob
+          examples=(contracts/mqtt/examples/*.json)
+          if [ ${#examples[@]} -eq 0 ]; then
+            echo "No MQTT examples found" >&2
+            exit 1
+          fi
+          for f in "${examples[@]}"; do
             ajv validate \
               --spec=draft7 \
+              -c ajv-formats \
               -s contracts/mqtt/schema-v1.json \
-              -d contracts/mqtt/examples/heartbeat.json
-          else
-            echo "No example files found — skipping example validation"
-          fi
+              -d "$f"
+          done
+
+      - name: Validate OpenAPI
+        run: |
+          test -f contracts/openapi/openapi.yaml
+          test -f contracts/openapi/openapi.json
+          redocly lint contracts/openapi/openapi.yaml --extends=minimal
 
   # ─────────────────────────────────────────────────────────────
   # Security — Static analysis (OWASP + npm audit)

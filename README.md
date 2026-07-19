@@ -167,7 +167,8 @@ gruahub/
 │   └── emqx/acl.conf
 │
 ├── contracts/
-│   └── mqtt/schema-v1.json     # Contrato MQTT completo
+│   ├── mqtt/                   # schema-v1, broker-policy, examples/
+│   └── openapi/                # openapi.yaml + openapi.json (export Quarkus)
 │
 └── docs/
     ├── ARCHITECTURE.md         # Diagrama de sistema, módulos, fluxos

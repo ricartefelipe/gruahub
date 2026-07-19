@@ -1,0 +1,15 @@
+{
+  "messageId": "f6a7b8c9-d0e1-2345-f012-456789012345",
+  "schemaVersion": 1,
+  "tenantId": "11111111-0000-0000-0000-000000000001",
+  "machineId": "66666666-0000-0000-0000-000000000001",
+  "sequence": 45,
+  "type": "error_report",
+  "occurredAt": "2026-07-19T12:02:00.000Z",
+  "payload": {
+    "errorCode": "MOTOR_FAULT",
+    "errorMessage": "Motor overcurrent detected",
+    "doorOpen": false,
+    "motorFault": true
+  }
+}

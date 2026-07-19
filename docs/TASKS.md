@@ -22,9 +22,9 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 
 ## Aberto / parcial (honesto)
 
-- [ ] `contracts/openapi/` gerado e versionado no repo (hoje: OpenAPI runtime Quarkus `/q/openapi`)
-- [ ] Exemplos MQTT versionados em `contracts/mqtt/examples/` (CI valida schema; exemplo opcional)
-- [ ] E2E Playwright em CI (specs existem em `web/e2e/`; precisam stack Docker)
+- [x] `contracts/openapi/` versionado (`openapi.yaml`/`openapi.json`; regenerar com `scripts/export-openapi.sh`)
+- [x] Exemplos MQTT em `contracts/mqtt/examples/` (CI valida contra `schema-v1.json`)
+- [ ] E2E Playwright em CI (specs em `web/e2e/`; smoke ainda não no pipeline)
 - [ ] Rate limiting global / WAF / login (só webhook+sandbox hoje)
 - [ ] TLS/HTTPS no compose (HTTP local de propósito)
 - [ ] Push FCM ativo, SMS/e-mail
