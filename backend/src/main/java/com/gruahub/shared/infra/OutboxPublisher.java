@@ -108,7 +108,7 @@ public class OutboxPublisher {
             if (commandId != null) {
                 em.createNativeQuery(
                         "UPDATE device_command SET status = 'PUBLISHED', published_at = :now " +
-                        "WHERE command_id = :cid AND tenant_id = :tid::uuid AND status = 'PENDING'")
+                        "WHERE command_id = :cid AND tenant_id = CAST(:tid AS uuid) AND status = 'PENDING'")
                         .setParameter("now", Instant.now())
                         .setParameter("cid", commandId)
                         .setParameter("tid", tenantIdStr != null ? tenantIdStr : tenantId)
@@ -117,7 +117,7 @@ public class OutboxPublisher {
                 // Atualizar credit_grant para SENT
                 if (aggregateId != null) {
                     em.createNativeQuery(
-                            "UPDATE credit_grant SET status = 'SENT', sent_at = :now WHERE id = :id::uuid AND status = 'PENDING'")
+                            "UPDATE credit_grant SET status = 'SENT', sent_at = :now WHERE id = CAST(:id AS uuid) AND status = 'PENDING'")
                             .setParameter("now", Instant.now())
                             .setParameter("id",  aggregateId)
                             .executeUpdate();
@@ -141,7 +141,7 @@ public class OutboxPublisher {
         em.createNativeQuery(
                 "INSERT INTO outbox_event " +
                 "(id, aggregate_type, aggregate_id, event_type, payload, tenant_id) " +
-                "VALUES (:id, :aggType, :aggId, :evType, :payload::jsonb, :tenantId)")
+                "VALUES (:id, :aggType, :aggId, :evType, CAST(:payload AS jsonb), :tenantId)")
                 .setParameter("id",      UUID.randomUUID())
                 .setParameter("aggType", aggregateType)
                 .setParameter("aggId",   aggregateId)

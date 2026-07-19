@@ -37,3 +37,7 @@ databaseChangeLog:
       file: db/changelog/018-iot-payment-fixes.yaml
   - include:
       file: db/changelog/099-seed-demo.yaml
+  - include:
+      file: db/changelog/019-schedulers-demo-hardening.yaml
+  - include:
+      file: db/changelog/020-seed-demo-route-today.yaml

@@ -1,0 +1,35 @@
+services:
+  postgres:
+    ports: !reset []
+
+  emqx:
+    ports: !override
+      - "1883:1883"
+      - "8883:8883"
+
+  minio:
+    ports: !reset []
+
+  keycloak:
+    ports: !reset []
+    environment:
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: ${KC_HOSTNAME:-auth.localhost}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+
+  backend:
+    ports: !reset []
+    environment:
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+      QUARKUS_OIDC_TOKEN_ISSUER: ${KEYCLOAK_EDGE_ISSUER:-https://auth.localhost/realms/gruahub}
+      GRUAHUB_CORS_ORIGINS: ${GRUAHUB_CORS_ORIGINS:-https://localhost}
+
+  web:
+    ports: !reset []
+    environment:
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://localhost}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://localhost}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_EDGE_ISSUER:-https://auth.localhost/realms/gruahub}

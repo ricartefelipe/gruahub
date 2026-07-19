@@ -9,7 +9,7 @@ Plataforma B2B multi-tenant para gestão de máquinas de pelúcia e gruas: telem
 | **Backend** | Quarkus 3.8 + Java 21 | 8080 |
 | **Frontend Web** | Next.js 14 App Router | 3000 |
 | **App Mobile** | Expo 51 / React Native | — |
-| **Keycloak** | v24 (auth) | 8180 |
+| **Keycloak** | v24 (auth) | 8180 (demo) / `https://auth.localhost` (prod-like) |
 | **PostgreSQL** | v16 | 5432 |
 | **EMQX** | v5.7 (MQTT) | 1883 / 8083 |
 | **MinIO** | S3-compatible | 9000 |
@@ -25,6 +25,7 @@ Plataforma B2B multi-tenant para gestão de máquinas de pelúcia e gruas: telem
 ### 1. Subir infraestrutura
 
 ```bash
+cp infra/.env.example infra/.env   # segredos obrigatórios — sem defaults no compose
 cd infra
 docker compose up -d
 ```
@@ -33,6 +34,26 @@ Aguarde todos os serviços ficarem `healthy` (30–60 s):
 ```bash
 docker compose ps
 ```
+
+#### Profiles comerciais (opcional)
+
+```bash
+# Prod-like: Caddy HTTPS + backup + sem publicar 8080/3000/8180/admin no host
+./scripts/up-prod-like.sh up -d --build
+
+# ou só TLS / só backup / só monitoramento (portas de debug ainda no host):
+docker compose --profile tls up -d --build
+docker compose --profile backup up -d
+docker compose --profile monitoring up -d
+```
+
+- HTTPS: `https://localhost` + OIDC `https://auth.localhost` (certificado interno — `curl -k`)
+- Prod-like: `KEYCLOAK_EDGE_ISSUER` default `https://auth.localhost/realms/gruahub`
+- Backup: volume `postgres_backups`; offsite opcional via `BACKUP_S3_*`; drill `pg-restore-drill.sh`; runbook DR em `DEPLOYMENT.md`
+- Monitoramento: Uptime Kuma em `http://localhost:3002` (profile `monitoring`)
+- Push: stub `GRUAHUB_PUSH_PROVIDER=noop|http-stub` (não é FCM completo)
+- Segredos: preferir `infra/.env`; produção pode usar `VAR_FILE` (ver `DEPLOYMENT.md`)
+- Detalhes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) e [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md)
 
 ### 2. Subir o backend
 
@@ -97,8 +118,8 @@ Todos com senha `gruahub@2025`:
 1. **Login web** → `gestor@diversao.demo`
 2. **Dashboard** → ver status online/offline das 5 máquinas seed
 3. **Simulador de máquina** → envia heartbeats; MAQUINA-001 fica online
-4. **Simulador de pagamento** → `npm start confirm` → pagamento confirmado via webhook
-5. **Backend** → `POST /api/v1/payments/sandbox/confirm/{id}` → crédito concedido via MQTT
+4. **Simulador de pagamento** → `npm start full-flow` → `sandbox/initiate` + `sandbox/confirm` (header `X-Sandbox-Secret`)
+5. **Backend** → crédito concedido e comando MQTT publicado
 6. **Simulador de máquina** → recebe GRANT_CREDIT → ACK → PLAY_STARTED → PLAY_COMPLETED
 7. **Dashboard → Conciliação** → caso MATCHED aparece automaticamente
 8. **App mobile** → login → rota do dia → iniciar visita → checklist → sangria → concluir
@@ -116,7 +137,7 @@ gruahub/
 │       ├── shared/             # TenantContext, Money, filtros, outbox
 │       ├── identity/           # Tenant, ExternalUser
 │       ├── fleet/              # Machine, MachineModel, Controller
-│       ├── iot/                # MQTT, IotEventService, HeartbeatScheduler
+│       ├── iot/                # MQTT, IotEventService, HeartbeatTimeoutScheduler
 │       ├── payments/           # PaymentTransaction, SandboxProvider, webhook
 │       ├── plays/              # CreditGrant, PlaySession, CreditService
 │       ├── reconciliation/     # ReconciliationCase, ReconciliationScheduler
@@ -159,14 +180,17 @@ gruahub/
 │   └── payment-simulator/      # Node/TS — simula webhooks de pagamento
 │
 ├── infra/
-│   ├── docker-compose.yml      # Todos os serviços
+│   ├── docker-compose.yml      # Serviços + profiles tls/backup/prod-like/simulators
+│   ├── caddy/Caddyfile         # HTTPS local
+│   ├── scripts/pg-backup*.sh   # Backup Postgres
 │   ├── Dockerfile.backend
 │   ├── Dockerfile.web
 │   ├── keycloak/realm-gruahub.json
 │   └── emqx/acl.conf
 │
 ├── contracts/
-│   └── mqtt/schema-v1.json     # Contrato MQTT completo
+│   ├── mqtt/                   # schema-v1, broker-policy, examples/
+│   └── openapi/                # openapi.yaml + openapi.json (export Quarkus)
 │
 └── docs/
     ├── ARCHITECTURE.md         # Diagrama de sistema, módulos, fluxos
@@ -200,14 +224,15 @@ Principais decisões:
 
 Ver [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md).
 
-TL;DR: sem hardware real, pagamentos sandbox apenas, sem nota fiscal, sem Kubernetes, sem Kafka, sem push notifications reais.
+TL;DR: sem hardware real, pagamentos sandbox apenas, sem nota fiscal, sem Kubernetes, sem Kafka, push só stub (sem FCM Google).
 
 ---
 
 ## Segurança
 
-- Secrets somente por variáveis de ambiente — nunca em código
-- `.env.example` sem segredos reais
+- Secrets somente por variáveis de ambiente — nunca em código / Compose sem senhas literais
+- `.env.example` / `infra/.env.example` com placeholders; produção → Vault/SM
+- Rate-limit global em `/api/*` + limites mais estritos em webhook/sandbox
 - Webhooks com HMAC-SHA256 e replay protection via inbox
 - ACL MQTT por dispositivo
 - `tenant_id` derivado do JWT (nunca aceito do cliente)

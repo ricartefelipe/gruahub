@@ -62,13 +62,13 @@ com exposição planejada para internet em produção.
 
 ### T-007 — Information Disclosure (Tenant Leakage)
 **Ameaça:** Requisição de Tenant A retorna dados do Tenant B.
-**Mitigação:** Todas as queries filtram por `tenant_id = :tid` derivado do JWT. Testes de isolamento em `TenantIsolationIT`.
+**Mitigação:** Todas as queries filtram por `tenant_id = :tid` derivado do JWT. `TenantIsolationIT` cobre listagem escopada, GET cross-tenant (404) e ausência de claim `tenant_id` (403).
 **Status:** Mitigado.
 
 ### T-008 — Denial of Service (Webhook Flood)
 **Ameaça:** Atacante envia milhares de requisições ao endpoint de webhook, esgotando threads.
-**Mitigação:** `WebhookRateLimitFilter` — sliding window 30 req/60s por IP+provider. Retorna 429.
-**Status:** Mitigado (MVP). Para produção: adicionar WAF / CDN rate limiting na camada de rede.
+**Mitigação:** `GlobalRateLimitFilter` em `/api/*` + `WebhookRateLimitFilter` (limites mais baixos em webhook e sandbox). Retorna 429. Sem WAF/login throttle.
+**Status:** Mitigado (MVP parcial). Rate limit global / WAF ainda é gap comercial.
 
 ### T-009 — Elevation of Privilege (JWT Forgery)
 **Ameaça:** Atacante forja um JWT com role `PLATFORM_ADMIN`.

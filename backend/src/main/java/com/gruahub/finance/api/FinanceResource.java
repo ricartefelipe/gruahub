@@ -1,6 +1,7 @@
 package com.gruahub.finance.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -21,11 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para liquidações financeiras e comissões.
- * As liquidações são calculadas pelo SettlementScheduler (job periódico)
- * ou criadas manualmente pelo FINANCE/TENANT_ADMIN.
- */
 @Path("/api/v1/finance")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -69,38 +65,44 @@ public class FinanceResource {
     @GET
     @Path("/settlements")
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
-    public List<SettlementResponse> listSettlements(
+    public PageResponse<SettlementResponse> listSettlements(
         @QueryParam("status") String status,
         @QueryParam("page") @DefaultValue("0") int page,
         @QueryParam("size") @DefaultValue("50") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
-        StringBuilder sql = new StringBuilder(
+        int lim = Math.min(size, 200);
+        StringBuilder where = new StringBuilder("WHERE s.tenant_id = :tid ");
+        if (status != null) where.append("AND s.status = :status ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM settlement s " + where
+        ).setParameter("tid", tenantId);
+        if (status != null) countQuery.setParameter("status", status);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT s.id, s.operating_point_id, op.name, " +
             "s.period_start, s.period_end, s.status, " +
             "s.gross_revenue_cents, " +
-            // commission_pct adicionado em 017; fallback calculado se NULL
             "COALESCE(s.commission_pct, ROUND(s.commission_cents::numeric * 100 / NULLIF(s.gross_revenue_cents, 0), 2)), " +
             "s.commission_cents, " +
-            // net_revenue_cents adicionado em 017; fallback net_amount_cents (coluna original)
             "COALESCE(s.net_revenue_cents, s.net_amount_cents), " +
             "s.created_at " +
             "FROM settlement s " +
             "JOIN operating_point op ON op.id = s.operating_point_id " +
-            "WHERE s.tenant_id = :tid "
-        );
-        if (status != null) sql.append("AND s.status = :status ");
-        sql.append("ORDER BY s.period_start DESC LIMIT :lim OFFSET :off");
+            where +
+            "ORDER BY s.period_start DESC LIMIT :lim OFFSET :off";
 
-        var q = em.createNativeQuery(sql.toString())
+        var q = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
         if (status != null) q.setParameter("status", status);
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
-        return rows.stream().map(this::mapSettlementRow).toList();
+        return PageResponse.of(rows.stream().map(this::mapSettlementRow).toList(), page, lim, total);
     }
 
     @PUT
@@ -110,7 +112,6 @@ public class FinanceResource {
     public SettlementResponse approveSettlement(@PathParam("id") UUID id) {
         UUID tenantId = TenantContext.getTenantId();
         int updated = em.createNativeQuery(
-            // Aceita DRAFT (default da migração) e PENDING (criado pelo scheduler)
             "UPDATE settlement SET status = 'APPROVED', updated_at = NOW() " +
             "WHERE id = :id AND tenant_id = :tid AND status IN ('PENDING', 'DRAFT')"
         )

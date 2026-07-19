@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.*;
  *   <li>Outbox enqueued: INSERT em outbox_event dentro da mesma transação</li>
  *   <li>Scheduler MATCHED: pagamento + crédito + play → caso MATCHED</li>
  *   <li>Scheduler PAYMENT_WITHOUT_CREDIT: sem crédito após janela → caso detectado</li>
- *   <li>Scheduler DUPLICATE_EVENT: dois plays para o mesmo crédito</li>
+ *   <li>Constraint de play_session: caminho feliz gera MATCHED, sem DUPLICATE_EVENT</li>
  *   <li>Idempotência do scheduler: segunda execução não cria casos duplicados</li>
  * </ol>
  * <p>
@@ -67,12 +67,9 @@ class BackendIotFlowTest {
     @Test
     @TestTransaction
     void credit_grant_is_exactly_once_for_same_payment() {
-        UUID paymentId = UUID.randomUUID();
-
-        // Cria máquina no banco para satisfazer FK
         insertMachine(MACHINE_ID, TENANT_ID, 200L);
+        UUID paymentId = insertPaymentTransaction("CONFIRMED");
 
-        // Primeira chamada deve criar o crédito
         UUID firstCreditId = creditService.grantCreditForPayment(
                 TENANT_ID, MACHINE_ID, paymentId, 200L, 1);
         assertThat(firstCreditId).isNotNull();
@@ -98,8 +95,8 @@ class BackendIotFlowTest {
     @Test
     @TestTransaction
     void credit_grant_enqueues_outbox_event() {
-        UUID paymentId = UUID.randomUUID();
         insertMachine(MACHINE_ID, TENANT_ID, 200L);
+        UUID paymentId = insertPaymentTransaction("CONFIRMED");
 
         UUID creditId = creditService.grantCreditForPayment(
                 TENANT_ID, MACHINE_ID, paymentId, 200L, 1);
@@ -167,30 +164,28 @@ class BackendIotFlowTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 5. Scheduler DUPLICATE_EVENT — dois plays COMPLETED para o mesmo crédito
+    // 5. Constraint uq_play_session_credit_grant — sem DUPLICATE_EVENT no caminho feliz
     // ═══════════════════════════════════════════════════════════════════════════
 
     @Test
     @TestTransaction
-    void scheduler_creates_duplicate_event_case_for_multiple_plays() {
+    void scheduler_does_not_flag_duplicate_when_single_play_exists() {
         insertMachine(MACHINE_ID, TENANT_ID, 200L);
 
         UUID paymentId = insertPaymentTransaction("CONFIRMED");
         UUID creditId  = insertCreditGrant(paymentId, "CONSUMED");
-
-        // Dois plays COMPLETED para o mesmo credit_grant (viola constraint — inserção direta no teste)
         insertPlaySession(creditId, "COMPLETED");
-        insertPlaySessionDirect(creditId, "COMPLETED"); // direto sem constraint para simular anomalia
 
         reconciliationScheduler.setClock(Clock.systemUTC());
         reconciliationScheduler.runReconciliation();
 
-        Number count = (Number) em.createNativeQuery(
+        Number dupCount = (Number) em.createNativeQuery(
                 "SELECT COUNT(*) FROM reconciliation_case " +
                 "WHERE credit_grant_id = :cid AND status = 'DUPLICATE_EVENT'")
                 .setParameter("cid", creditId)
                 .getSingleResult();
-        assertThat(count.longValue()).isGreaterThanOrEqualTo(1L);
+        assertThat(dupCount.longValue()).isEqualTo(0L);
+        assertThat(queryReconciliationStatus(paymentId)).isEqualTo("MATCHED");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -266,6 +261,13 @@ class BackendIotFlowTest {
 
     private void insertMachine(UUID machineId, UUID tenantId, long playPriceCents) {
         em.createNativeQuery(
+                "INSERT INTO tenant (id, name, slug, status, settings, created_at, updated_at, version) " +
+                "VALUES (:tid, 'IoT Flow Tenant', 'iot-flow-tenant', 'ACTIVE', CAST('{}' AS jsonb), NOW(), NOW(), 0) " +
+                "ON CONFLICT (id) DO NOTHING")
+                .setParameter("tid", tenantId)
+                .executeUpdate();
+
+        em.createNativeQuery(
                 "INSERT INTO machine (id, tenant_id, asset_number, name, " +
                 "play_price_cents, currency, status, created_at, updated_at) " +
                 "VALUES (:id, :tid, :asset, 'Test Machine', :price, 'BRL', 'ACTIVE', NOW(), NOW()) " +
@@ -339,7 +341,7 @@ class BackendIotFlowTest {
         em.createNativeQuery(
                 "INSERT INTO play_session " +
                 "(id, tenant_id, machine_id, credit_grant_id, status, " +
-                " started_at, ended_at, created_at) " +
+                " started_at, completed_at, created_at) " +
                 "VALUES (:id, :tid, :mid, :cid, :status, " +
                 "NOW(), CASE WHEN :status = 'COMPLETED' THEN NOW() ELSE NULL END, NOW())")
                 .setParameter("id",     playId)
@@ -348,32 +350,6 @@ class BackendIotFlowTest {
                 .setParameter("cid",    creditGrantId)
                 .setParameter("status", status)
                 .executeUpdate();
-        return playId;
-    }
-
-    /**
-     * Insere um segundo play_session contornando a unique constraint
-     * (para simular anomalia DUPLICATE_EVENT sem remover a constraint de produção).
-     */
-    private UUID insertPlaySessionDirect(UUID creditGrantId, String status) {
-        UUID playId = UUID.randomUUID();
-        try {
-            em.createNativeQuery(
-                    "INSERT INTO play_session " +
-                    "(id, tenant_id, machine_id, credit_grant_id, status, " +
-                    " started_at, created_at) " +
-                    "VALUES (:id, :tid, :mid, :cid, :status, NOW(), NOW())")
-                    .setParameter("id",     playId)
-                    .setParameter("tid",    TENANT_ID)
-                    .setParameter("mid",    MACHINE_ID)
-                    .setParameter("cid",    creditGrantId)
-                    .setParameter("status", status)
-                    .executeUpdate();
-        } catch (Exception e) {
-            // Se a constraint proibir (migration 018 adicionou UNIQUE), o teste
-            // ainda é válido — o scheduler não deve criar DUPLICATE_EVENT se não houver duplicata.
-            // Anotar como expected e deixar o teste seguir.
-        }
         return playId;
     }
 

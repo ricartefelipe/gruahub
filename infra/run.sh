@@ -52,13 +52,13 @@ case "${COMMAND,,}" in
         ok "Serviços iniciados. Aguarde health checks (~2 min)."
         printf '\n  Backend:  http://localhost:8080/q/swagger-ui\n'
         printf '  Web:      http://localhost:3000\n'
-        printf '  Keycloak: http://localhost:8180  (admin/admin)\n'
+        printf '  Keycloak: http://localhost:8180 (demo) | https://auth.localhost (prod-like)\n'
         printf '  EMQX:     http://localhost:18083 (admin/public)\n'
         printf '  MinIO:    http://localhost:9001  (minioadmin/minioadmin)\n\n'
         ;;
     infra)
         step "Subindo apenas infraestrutura (sem backend/web)..."
-        docker compose up -d postgres keycloak emqx minio minio-setup
+        docker compose up -d postgres keycloak emqx emqx-users minio minio-setup
         ok "Infra iniciada."
         printf '\n  Para rodar o backend em modo dev (hot-reload):\n'
         printf '  cd backend && ./mvnw quarkus:dev\n\n'

@@ -7,7 +7,7 @@
 2. **Segredos apenas por variáveis de ambiente / secret store.** `.env.example` não contém valores reais.
 3. **Sem PAN/CVV.** A plataforma nunca manipula dados brutos de cartão.
 4. **Logs sem dados sensíveis.** Tokens, credenciais, payloads financeiros integrais e dados pessoais desnecessários nunca aparecem em logs.
-5. **Mocks e fakes apenas em testes e sandbox.** Produção usa adaptadores reais.
+5. **Mocks e fakes apenas em testes e sandbox.** Produção usa adaptadores reais. Endpoints `/api/v1/payments/sandbox/*` só existem com `GRUAHUB_SANDBOX_ENABLED=true` e exigem JWT (roles `PLATFORM_ADMIN` / `TENANT_ADMIN` / `FINANCE`) ou header `X-Sandbox-Secret`.
 
 ## Autenticação e Autorização
 
@@ -52,7 +52,11 @@ Todos os recursos de domínio chamam `TenantContext.getTenantId()` nas queries S
 
 - **Assinatura HMAC-SHA256:** header `X-Signature` = `HMAC-SHA256(body, GRUAHUB_SANDBOX_WEBHOOK_SECRET)`
 - **Replay protection:** `Idempotency-Key` header verificado contra tabela `webhook_event` (unique constraint)
-- **Rate limiting:** `WebhookRateLimitFilter` — sliding window 30 req/60s por IP+provider. Retorna 429 com `Retry-After`.
+- **Rate limiting:** sliding window in-memory configurável (`gruahub.rate-limit.*`):
+  - `GlobalRateLimitFilter` — `/api/*` (default 300/60s por IP; `GRUAHUB_RATE_LIMIT_GLOBAL_*`)
+  - `WebhookRateLimitFilter` — webhook 30/60s por IP+provider; sandbox 60/60s por IP
+  - Retorna 429 com `Retry-After`. Não é WAF comercial nem store distribuído (multi-instância ainda aberto).
+  - Edge Caddy (profiles `tls`/`prod-like`): rate-limit por IP + bloqueio de paths de scanner; Keycloak em `https://auth.localhost` no prod-like (sem `:8180` no host).
 
 ## MQTT (EMQX)
 
@@ -94,10 +98,16 @@ Todo evento sensível é registrado na tabela `audit_log` com:
 - [ ] Habilitar TLS no EMQX (porta 8883)
 - [ ] Configurar ACL MQTT por dispositivo (emqx_acl.conf)
 - [ ] Revogar credenciais de demonstração (seed)
-- [ ] Ativar `quarkus.http.proxy.proxy-address-forwarding=true` atrás de proxy reverso
-- [ ] Mover todos os segredos para AWS Secrets Manager / Vault
-- [ ] Configurar CORS com origens explícitas (`quarkus.http.cors.origins`)
+- [x] Ativar `quarkus.http.proxy.proxy-address-forwarding=true` atrás de proxy reverso
+- [x] Caminho `*_FILE` (Docker secrets style) no Compose/entrypoints
+- [ ] Mover rotação de segredos para AWS Secrets Manager / Vault (hoje: `.env` / `${VAR}` / `*_FILE`)
+- [x] Configurar CORS com origens explícitas (`GRUAHUB_CORS_ORIGINS` / default inclui `https://localhost`)
 - [ ] Habilitar Content-Security-Policy no Next.js (`next.config.js`)
-- [ ] Ativar rate limiting também no endpoint de login (via Keycloak ou proxy)
+- [x] Rate limiting global da API (`GlobalRateLimitFilter`)
+- [x] Brute-force protection no realm Keycloak demo (`failureFactor=5`)
+- [x] Keycloak no edge Caddy no prod-like (`auth.localhost`; sem `:8180` no host)
+- [ ] TLS público (Let's Encrypt); local já coberto pelo profile `tls` / headers HSTS no Caddy
+- [x] Push stub (`noop` / `http-stub`) — sem FCM Google; não expor secrets de push no client
+- [x] Health público mínimo (`/q/health/*`) monitorável (Uptime Kuma profile `monitoring` ou uptime externo)
 - [ ] Revisar e reduzir TTL dos tokens de acesso (padrão Keycloak: 5 min)
 - [ ] Configurar alertas de falha de autenticação no SIEM

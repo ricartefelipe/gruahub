@@ -1,6 +1,7 @@
 package com.gruahub.audit.api;
 
 import com.gruahub.shared.domain.TenantContext;
+import com.gruahub.shared.api.PageResponse;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -40,7 +41,7 @@ public class AuditResource {
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
-    public List<AuditEventResponse> listEvents(
+    public PageResponse<AuditEventResponse> listEvents(
         @QueryParam("action") String action,
         @QueryParam("resourceType") String resourceType,
         @QueryParam("actorId") String actorId,
@@ -48,21 +49,30 @@ public class AuditResource {
         @QueryParam("size") @DefaultValue("100") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
+        int lim = Math.min(size, 500);
+        StringBuilder where = new StringBuilder("WHERE tenant_id = :tid ");
+        if (action != null) where.append("AND action LIKE :action ");
+        if (resourceType != null) where.append("AND resource_type = :rt ");
+        if (actorId != null) where.append("AND actor_user_id = :aid ");
 
-        StringBuilder sql = new StringBuilder(
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM audit_event " + where
+        ).setParameter("tid", tenantId);
+        if (action != null) countQuery.setParameter("action", action + "%");
+        if (resourceType != null) countQuery.setParameter("rt", resourceType);
+        if (actorId != null) countQuery.setParameter("aid", actorId);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT id, tenant_id, actor_user_id, actor_email, action, resource_type, " +
             "resource_id, metadata, correlation_id, ip_address, occurred_at " +
-            "FROM audit_event WHERE tenant_id = :tid "
-        );
-        if (action != null) sql.append("AND action LIKE :action ");
-        if (resourceType != null) sql.append("AND resource_type = :rt ");
-        if (actorId != null) sql.append("AND actor_user_id = :aid ");
-        sql.append("ORDER BY occurred_at DESC LIMIT :lim OFFSET :off");
+            "FROM audit_event " + where +
+            "ORDER BY occurred_at DESC LIMIT :lim OFFSET :off";
 
-        var q = em.createNativeQuery(sql.toString())
+        var q = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 500))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
 
         if (action != null) q.setParameter("action", action + "%");
         if (resourceType != null) q.setParameter("rt", resourceType);
@@ -70,11 +80,12 @@ public class AuditResource {
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
-        return rows.stream().map(r -> new AuditEventResponse(
+        var content = rows.stream().map(r -> new AuditEventResponse(
             (UUID) r[0], (UUID) r[1], (String) r[2], (String) r[3],
             (String) r[4], (String) r[5], (String) r[6], (String) r[7],
             (String) r[8], (String) r[9],
             r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null
         )).toList();
+        return PageResponse.of(content, page, lim, total);
     }
 }

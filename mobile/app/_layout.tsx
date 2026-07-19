@@ -6,11 +6,13 @@ import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { getDb } from '../src/db/offlineQueue';
+import { usePushNotifications } from '../src/hooks/usePushNotifications';
 import { useAuthStore } from '../src/store/authStore';
 
 export default function RootLayout() {
   const [dbReady, setDbReady] = useState(false);
   const { restoreSession, isRestoring } = useAuthStore();
+  usePushNotifications();
 
   useEffect(() => {
     // 1. Inicializa banco SQLite (crash recovery + migrations incrementais)

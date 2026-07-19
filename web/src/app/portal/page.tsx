@@ -70,7 +70,7 @@ export default function PortalPage() {
     queryKey: ['portal-visits'],
     queryFn: () =>
       api.get('/visits', { params: { size: 10, status: 'COMPLETED' } })
-         .then(r => r.data?.content ?? r.data ?? []),
+         .then(r => r.data?.content ?? []),
     refetchInterval: 60_000,
   });
 
@@ -78,14 +78,14 @@ export default function PortalPage() {
     queryKey: ['portal-alerts'],
     queryFn: () =>
       api.get('/alerts', { params: { status: 'OPEN', size: 20 } })
-         .then(r => r.data?.content ?? r.data ?? []),
+         .then(r => r.data?.content ?? []),
     refetchInterval: 30_000,
   });
 
   const { data: machines = [], isLoading: loadingMachines } = useQuery<MachineRow[]>({
     queryKey: ['portal-machines'],
     queryFn: () =>
-      api.get('/machines', { params: { size: 100 } }).then(r => r.data?.content ?? r.data),
+      api.get('/machines', { params: { size: 100 } }).then(r => r.data?.content ?? []),
     refetchInterval: 30_000,
   });
 

@@ -16,18 +16,20 @@
 ## Limitações Técnicas do MVP
 
 - **Outbox via polling:** Latência de até 1s entre evento de domínio e publicação. Suficiente para demonstração; em produção substituir por CDC (Debezium) ou Kafka.
-- **Push notifications:** Preparado via FCM mas não configurado no ambiente local. Notificações funcionam apenas dentro do sistema.
-- **SMS / e-mail:** Portas preparadas, não implementadas no MVP.
+- **Push notifications:** Stub `noop` / `http-stub` no backend + permissão/token Expo no mobile. Sem FCM Google, sem Expo Push Service em produção, sem registry de devices.
+- **SMS / e-mail:** Não implementados no MVP.
 - **Multi-idioma:** Interface em `pt-BR` apenas. Internacionalização não implementada.
 - **Algoritmo de roteirização geoespacial:** Integração com mapas (Google Maps, OSRM) é opcional e não configurada localmente.
 - **Assinatura digital qualificada:** Confirmação de responsável na visita é simples (checkbox/código), sem certificado digital.
 - **Escalabilidade horizontal do backend:** Monólito modular em instância única. Escalonamento horizontal requer adaptação do outbox e locks distribuídos.
 - **Suporte a múltiplos controladores:** Contrato MQTT genérico. Controladores específicos (Eletek, Sega, etc.) exigem adaptadores não implementados.
-- **Certificados TLS em produção:** Docker Compose usa HTTP simples. HTTPS requer reverse proxy (Traefik, Nginx) configurado externamente.
+- **TLS em produção pública:** HTTPS local via Caddy (`tls internal`) + template `Caddyfile.public.example` para Let's Encrypt. DNS real / cert ACME não são exercitados no CI.
+- **Edge / WAF:** rate-limit leve e bloqueio de paths no Caddy; não substitui WAF comercial nem store distribuído multi-instância.
+- **Backup / DR:** `pg_dump` local + upload S3-compatible opcional + restore drill + runbook em `DEPLOYMENT.md`. Sem PITR; retenção offsite depende de lifecycle do bucket; restore destrutivo é manual.
 
 ## Status de Implementação
 
-Consulte `docs/TASKS.md` para o status detalhado de cada item.
+Consulte `docs/TASKS.md` (estado real) e `docs/MVP_READINESS.md`.
 
 | Componente | Status |
 |-----------|--------|

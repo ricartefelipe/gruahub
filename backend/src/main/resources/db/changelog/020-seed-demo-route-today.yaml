@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-001-seed-demo-route-today
+      author: gruahub
+      context: demo
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO route_plan (
+                id, tenant_id, operator_user_id, scheduled_date, planned_date, status
+              ) VALUES (
+                '99999999-0000-0000-0000-000000000001',
+                '11111111-0000-0000-0000-000000000001',
+                'aaaaaaaa-0000-0000-0000-000000000001',
+                CURRENT_DATE,
+                CURRENT_DATE,
+                'PLANNED'
+              )
+              ON CONFLICT (id) DO UPDATE SET
+                scheduled_date = EXCLUDED.scheduled_date,
+                planned_date = EXCLUDED.planned_date,
+                status = 'PLANNED';
+
+              INSERT INTO route_stop (
+                id, route_plan_id, tenant_id, operating_point_id,
+                sequence_order, stop_order, priority_score, priority_explanation, status
+              ) VALUES (
+                '99999999-0000-0000-0000-000000000011',
+                '99999999-0000-0000-0000-000000000001',
+                '11111111-0000-0000-0000-000000000001',
+                '33333333-0000-0000-0000-000000000001',
+                1, 1, 90,
+                '"Alta prioridade — shopping com volume diário"'::jsonb,
+                'PENDING'
+              )
+              ON CONFLICT (id) DO UPDATE SET
+                route_plan_id = EXCLUDED.route_plan_id,
+                operating_point_id = EXCLUDED.operating_point_id,
+                sequence_order = EXCLUDED.sequence_order,
+                stop_order = EXCLUDED.stop_order,
+                priority_score = EXCLUDED.priority_score,
+                status = 'PENDING';
+
+              INSERT INTO route_stop (
+                id, route_plan_id, tenant_id, operating_point_id,
+                sequence_order, stop_order, priority_score, priority_explanation, status
+              ) VALUES (
+                '99999999-0000-0000-0000-000000000012',
+                '99999999-0000-0000-0000-000000000001',
+                '11111111-0000-0000-0000-000000000001',
+                '33333333-0000-0000-0000-000000000002',
+                2, 2, 70,
+                '"Prioridade média — supermercado"'::jsonb,
+                'PENDING'
+              )
+              ON CONFLICT (id) DO UPDATE SET
+                route_plan_id = EXCLUDED.route_plan_id,
+                operating_point_id = EXCLUDED.operating_point_id,
+                sequence_order = EXCLUDED.sequence_order,
+                stop_order = EXCLUDED.stop_order,
+                priority_score = EXCLUDED.priority_score,
+                status = 'PENDING';

@@ -1,6 +1,7 @@
 package com.gruahub.fieldops.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -86,34 +87,43 @@ public class FieldVisitResource {
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
-    public List<VisitResponse> listVisits(
+    public PageResponse<VisitResponse> listVisits(
         @QueryParam("operatingPointId") UUID pointId,
         @QueryParam("status") String status,
         @QueryParam("page") @DefaultValue("0") int page,
         @QueryParam("size") @DefaultValue("50") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
-        StringBuilder sql = new StringBuilder(
+        int lim = Math.min(size, 200);
+        StringBuilder where = new StringBuilder("WHERE v.tenant_id = :tid ");
+        if (pointId != null) where.append("AND v.operating_point_id = :pid ");
+        if (status != null) where.append("AND v.status = :status ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM field_visit v " + where
+        ).setParameter("tid", tenantId);
+        if (pointId != null) countQuery.setParameter("pid", pointId);
+        if (status != null) countQuery.setParameter("status", status);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT v.id, v.operating_point_id, op.name, v.status, v.responsible_name, " +
             "v.checkin_at, v.checkout_at, v.cash_collected_cents, v.created_at " +
             "FROM field_visit v " +
             "JOIN operating_point op ON op.id = v.operating_point_id " +
-            "WHERE v.tenant_id = :tid "
-        );
-        if (pointId != null) sql.append("AND v.operating_point_id = :pid ");
-        if (status != null) sql.append("AND v.status = :status ");
-        sql.append("ORDER BY v.checkin_at DESC LIMIT :lim OFFSET :off");
+            where +
+            "ORDER BY v.checkin_at DESC LIMIT :lim OFFSET :off";
 
-        var q = em.createNativeQuery(sql.toString())
+        var q = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
         if (pointId != null) q.setParameter("pid", pointId);
         if (status != null) q.setParameter("status", status);
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
-        return rows.stream().map(this::mapVisitRow).toList();
+        return PageResponse.of(rows.stream().map(this::mapVisitRow).toList(), page, lim, total);
     }
 
     @GET
@@ -174,7 +184,7 @@ public class FieldVisitResource {
             "(id, tenant_id, client_operation_id, operating_point_id, status, " +
             " responsible_name, notes, checkin_at, checkin_latitude, checkin_longitude) " +
             "VALUES (:id, :tid, :coid, :pid, 'IN_PROGRESS', :name, :notes, " +
-            " COALESCE(:checkinAt::timestamptz, NOW()), :lat, :lng)"
+            " COALESCE(CAST(:checkinAt AS timestamptz), NOW()), :lat, :lng)"
         )
             .setParameter("id", visitId)
             .setParameter("tid", tenantId)
@@ -222,7 +232,7 @@ public class FieldVisitResource {
 
         em.createNativeQuery(
             "UPDATE field_visit SET status = 'COMPLETED', " +
-            "checkout_at = COALESCE(:co::timestamptz, NOW()), " +
+            "checkout_at = COALESCE(CAST(:co AS timestamptz), NOW()), " +
             "cash_collected_cents = :cash, updated_at = NOW() " +
             "WHERE id = :id AND tenant_id = :tid"
         )
@@ -273,8 +283,8 @@ public class FieldVisitResource {
         em.createNativeQuery(
             "INSERT INTO visit_checklist_result " +
             "(id, tenant_id, visit_id, client_operation_id, items, completed_at) " +
-            "VALUES (:id, :tid, :vid, :coid, :items::jsonb, " +
-            "COALESCE(:completedAt::timestamptz, NOW()))"
+            "VALUES (:id, :tid, :vid, :coid, CAST(:items AS jsonb), " +
+            "COALESCE(CAST(:completedAt AS timestamptz), NOW()))"
         )
             .setParameter("id", resultId)
             .setParameter("tid", tenantId)

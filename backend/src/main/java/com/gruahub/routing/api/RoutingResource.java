@@ -1,6 +1,7 @@
 package com.gruahub.routing.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -18,18 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para planos de rota.
- * Rotas são geradas pelo RoutePlanScheduler (ordenadas por priority_score)
- * ou manualmente pelo TENANT_ADMIN.
- *
- * Notas de schema:
- *  - route_plan.operator_user_id  → UUID NOT NULL (migração 012)
- *  - route_plan.scheduled_date    → date NOT NULL  (migração 012)
- *  - route_plan.planned_date      → date nullable  (migração 017, alias)
- *  - route_stop.sequence_order    → int  NOT NULL  (migração 012)
- *  - route_stop.stop_order        → int  nullable  (migração 017, alias)
- */
 @Path("/api/v1/routes")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -72,16 +61,28 @@ public class RoutingResource {
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
-    public List<RoutePlanResponse> listPlans(
+    public PageResponse<RoutePlanResponse> listPlans(
         @QueryParam("page") @DefaultValue("0") int page,
-        @QueryParam("size") @DefaultValue("30") int size
+        @QueryParam("size") @DefaultValue("30") int size,
+        @QueryParam("date") String date
     ) {
         UUID tenantId = TenantContext.getTenantId();
+        int lim = Math.min(size, 100);
+        LocalDate filterDate = (date != null && !date.isBlank()) ? LocalDate.parse(date) : null;
+        String dateClause = filterDate != null
+            ? " AND COALESCE(rp.planned_date, rp.scheduled_date) = CAST(:date AS date) "
+            : "";
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> rows = em.createNativeQuery(
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM route_plan rp WHERE rp.tenant_id = :tid" + dateClause
+        ).setParameter("tid", tenantId);
+        if (filterDate != null) {
+            countQuery.setParameter("date", filterDate.toString());
+        }
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        var listQuery = em.createNativeQuery(
             "SELECT rp.id, rp.operator_user_id, " +
-            // planned_date (017) tem prioridade; fallback para scheduled_date (012)
             "COALESCE(rp.planned_date, rp.scheduled_date), " +
             "rp.status, " +
             "COUNT(rs.id) as total, " +
@@ -89,18 +90,23 @@ public class RoutingResource {
             "rp.created_at " +
             "FROM route_plan rp " +
             "LEFT JOIN route_stop rs ON rs.route_plan_id = rp.id " +
-            "WHERE rp.tenant_id = :tid " +
+            "WHERE rp.tenant_id = :tid " + dateClause +
             "GROUP BY rp.id, rp.operator_user_id, rp.planned_date, rp.scheduled_date, " +
             "rp.status, rp.created_at " +
             "ORDER BY COALESCE(rp.planned_date, rp.scheduled_date) DESC " +
             "LIMIT :lim OFFSET :off"
         )
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 100))
-            .setParameter("off", page * size)
-            .getResultList();
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
+        if (filterDate != null) {
+            listQuery.setParameter("date", filterDate.toString());
+        }
 
-        return rows.stream().map(r -> new RoutePlanResponse(
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = listQuery.getResultList();
+
+        var content = rows.stream().map(r -> new RoutePlanResponse(
             (UUID) r[0],
             r[1] != null ? r[1].toString() : null,
             r[2] != null ? r[2].toString() : null,
@@ -109,19 +115,19 @@ public class RoutingResource {
             ((Number) r[5]).intValue(),
             r[6] != null ? r[6].toString() : null
         )).toList();
+        return PageResponse.of(content, page, lim, total);
     }
 
     @GET
     @Path("/{id}/stops")
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
-    public List<RouteStopResponse> listStops(@PathParam("id") UUID routePlanId) {
+    public PageResponse<RouteStopResponse> listStops(@PathParam("id") UUID routePlanId) {
         UUID tenantId = TenantContext.getTenantId();
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery(
             "SELECT rs.id, rs.route_plan_id, rs.operating_point_id, op.name, " +
             "CONCAT(op.address_street, ', ', op.address_city, '/', op.address_state), " +
-            // stop_order (017) tem prioridade; fallback para sequence_order (012)
             "COALESCE(rs.stop_order, rs.sequence_order), " +
             "rs.priority_score, rs.priority_explanation::text, rs.status " +
             "FROM route_stop rs " +
@@ -134,12 +140,13 @@ public class RoutingResource {
             .setParameter("tid", tenantId)
             .getResultList();
 
-        return rows.stream().map(r -> new RouteStopResponse(
+        var content = rows.stream().map(r -> new RouteStopResponse(
             (UUID) r[0], (UUID) r[1], (UUID) r[2], (String) r[3], (String) r[4],
             ((Number) r[5]).intValue(),
             r[6] != null ? ((Number) r[6]).intValue() : 0,
             (String) r[7], (String) r[8]
         )).toList();
+        return PageResponse.of(content, 0, Math.max(content.size(), 1), content.size());
     }
 
     /**

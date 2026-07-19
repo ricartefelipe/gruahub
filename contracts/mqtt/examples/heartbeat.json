@@ -1,0 +1,17 @@
+{
+  "messageId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "schemaVersion": 1,
+  "tenantId": "11111111-0000-0000-0000-000000000001",
+  "machineId": "66666666-0000-0000-0000-000000000001",
+  "sequence": 42,
+  "type": "heartbeat",
+  "occurredAt": "2026-07-19T12:00:00.000Z",
+  "payload": {
+    "online": true,
+    "doorOpen": false,
+    "motorFault": false,
+    "creditsAvailable": 0,
+    "uptimeSeconds": 86400,
+    "firmwareVersion": "1.2.3-sim"
+  }
+}

@@ -88,7 +88,7 @@ backend/src/main/java/com/gruahub/
   shared/               ← TenantContext, AuditService, PageResponse, etc.
   tenant/               ← Tenant entity, TenantResource
   fleet/                ← Machine, MachineService, MachineResource
-  iot/                  ← MqttListener, HeartbeatScheduler, MachineStateProcessor
+  iot/                  ← MqttClientService, HeartbeatTimeoutScheduler, CommandTtlScheduler
   payments/             ← PaymentWebhookResource, SandboxPaymentProvider
   plays/                ← PlayEvent, PlayResource
   fieldops/             ← FieldVisit, FieldVisitResource

@@ -1,0 +1,78 @@
+{
+	auto_https disable_redirects
+	local_certs
+	order rate_limit before basicauth
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		-Server
+	}
+}
+
+(edge_rate_limit) {
+	rate_limit {
+		zone edge_global {
+			key {remote_host}
+			events 200
+			window 1m
+		}
+		zone edge_auth {
+			match {
+				path /realms/*/protocol/openid-connect/*
+				path /realms/*/login-actions/*
+			}
+			key {remote_host}
+			events 40
+			window 1m
+		}
+	}
+}
+
+(waf_lite) {
+	@scanner path_regexp (?i)^/(\.env|\.git|wp-admin|wp-login|phpmyadmin|xmlrpc\.php)
+	respond @scanner 404
+}
+
+https://localhost {
+	tls internal
+	import security_headers
+	import edge_rate_limit
+	import waf_lite
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle /q/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+https://auth.localhost {
+	tls internal
+	import security_headers
+	import edge_rate_limit
+	import waf_lite
+
+	reverse_proxy keycloak:8080 {
+		header_up Host {host}
+	}
+}
+
+http://localhost {
+	redir https://localhost{uri} permanent
+}
+
+http://auth.localhost {
+	redir https://auth.localhost{uri} permanent
+}

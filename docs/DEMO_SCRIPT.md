@@ -64,17 +64,37 @@ curl -sf http://localhost:8180/realms/gruahub/.well-known/openid-configuration \
 3. Em terminal, disparar pagamento simulado:
 
 ```bash
-# Disparar webhook de pagamento aprovado
-curl -X POST http://localhost:8081/simulate/payment \
+# Fluxo sandbox: initiate → confirm (requer GRUAHUB_SANDBOX_ENABLED=true no compose)
+export SANDBOX_SECRET="${SANDBOX_SECRET:-sandbox-webhook-secret-gruahub-demo}"
+export TENANT_ID=11111111-0000-0000-0000-000000000001
+export MACHINE_ID=66666666-0000-0000-0000-000000000001
+
+TX=$(curl -sf -X POST http://localhost:8080/api/v1/payments/sandbox/initiate \
   -H "Content-Type: application/json" \
-  -d '{"tenant": "tenant-a", "machine_id": "DEMO-001", "amount": 200, "status": "approved"}'
+  -H "X-Tenant-Id: $TENANT_ID" \
+  -H "X-Machine-Id: $MACHINE_ID" \
+  -H "X-Sandbox-Secret: $SANDBOX_SECRET" \
+  -d '{}' | python3 -c "import sys,json; print(json.load(sys.stdin)['transactionId'])")
+
+curl -sf -X POST "http://localhost:8080/api/v1/payments/sandbox/confirm/$TX" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: $TENANT_ID" \
+  -H "X-Machine-Id: $MACHINE_ID" \
+  -H "X-Sandbox-Secret: $SANDBOX_SECRET" \
+  -d '{}'
+```
+
+Alternativa com o simulador (profile `simulators`):
+
+```bash
+cd simulators/payment-simulator && npm start full-flow
 ```
 
 4. Voltar para o browser → **Pagamentos** → confirmar novo pagamento aparece.
-5. Navegar para **Jogadas** → confirmar jogada criada automaticamente.
-6. Navegar para **Crédito** → mostrar saldo atualizado.
+5. Navegar para **Conciliação** → caso tende a `MATCHED` após ACK/play do simulador de máquina.
+6. Dashboard da máquina → crédito/jogada atualizados.
 
-**Ponto de atenção:** Demonstra outbox/webhook HMAC → crédito → jogada em cadeia transacional.
+**Ponto de atenção:** Sandbox exige JWT (roles TENANT_ADMIN/FINANCE/PLATFORM_ADMIN) ou header `X-Sandbox-Secret`. Em produção o flag fica desligado (`GRUAHUB_SANDBOX_ENABLED=false`).
 
 ---
 
@@ -90,7 +110,7 @@ docker compose logs machine-sim --tail=20
 
 1. No browser, navegar para uma máquina.
 2. Mostrar que `última_jogada` atualiza após `play_completed` chegar.
-3. Abrir painel EMQX: `http://localhost:18083` (admin / public) → **Topics** → mostrar tópico `machine/+/telemetry`.
+3. Abrir painel EMQX: `http://localhost:18083` (admin / public) → **Topics** → mostrar tópico `v1/+/machines/+/telemetry`.
 
 **Ponto de atenção:** MQTT schema-v1.json é validado na chegada; mensagens malformadas são rejeitadas com log de erro.
 
@@ -105,15 +125,16 @@ TOKEN_B=$(curl -s -X POST \
   -d "grant_type=password&client_id=gruahub-backend&username=financeiro@diversao.demo&password=gruahub@2025" \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-# Tentar acessar máquinas do Tenant A com token do Tenant B
+# Obter um id de máquina do Tenant A (com token A) e tentar ler com token B
+MACHINE_A_ID=<uuid-da-maquina-do-tenant-a>
 curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $TOKEN_B" \
-  http://localhost:8080/api/v1/machines
+  http://localhost:8080/api/v1/machines/$MACHINE_A_ID
 ```
 
-**Resultado esperado:** `403` — cross-tenant bloqueado pelo backend.
+**Resultado esperado:** `404` — recurso de outro tenant não é revelado (não 403, para não vazar existência).
 
-**Ponto de atenção:** Tenant derivado exclusivamente do JWT; nenhum parâmetro de URL controla o escopo.
+**Ponto de atenção:** Tenant derivado exclusivamente do JWT; listagens só retornam dados do tenant do token.
 
 ---
 

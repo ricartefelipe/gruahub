@@ -35,13 +35,13 @@ export default function LocationsPage() {
   const { data: establishments = [], isLoading: estLoading, isError: estError, error: estErrorObj } = useQuery<Establishment[]>({
     queryKey: ['establishments'],
     queryFn: () =>
-      api.get('/establishments?size=100').then(r => r.data?.content ?? r.data ?? []),
+      api.get('/establishments?size=100').then(r => r.data?.content ?? []),
   });
 
   const { data: points = [], isLoading: ptLoading, isError: ptError, error: ptErrorObj } = useQuery<OperatingPoint[]>({
     queryKey: ['operating-points'],
     queryFn: () =>
-      api.get('/operating-points?size=100').then(r => r.data?.content ?? r.data ?? []),
+      api.get('/operating-points?size=100').then(r => r.data?.content ?? []),
     enabled: activeTab === 'points',
   });
 

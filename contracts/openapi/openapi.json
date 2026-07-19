@@ -1,0 +1,3314 @@
+{
+  "openapi" : "3.0.3",
+  "info" : {
+    "title" : "GruaHub API",
+    "description" : "Plataforma multitenant para gestão de máquinas de pelúcia",
+    "version" : "1.0.0"
+  },
+  "servers" : [ {
+    "url" : "http://localhost:8080",
+    "description" : "Auto generated value"
+  }, {
+    "url" : "http://0.0.0.0:8080",
+    "description" : "Auto generated value"
+  } ],
+  "tags" : [ {
+    "name" : "Machines",
+    "description" : "Gestão da frota de máquinas"
+  }, {
+    "name" : "Payments",
+    "description" : "Pagamentos e webhooks"
+  } ],
+  "paths" : {
+    "/api/v1/alerts" : {
+      "get" : {
+        "tags" : [ "Alert Resource" ],
+        "parameters" : [ {
+          "name" : "machineId",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "severity",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "default" : "OPEN",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseAlertResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "TECHNICIAN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/alerts/summary/open-count" : {
+      "get" : {
+        "tags" : [ "Alert Resource" ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : { }
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "TECHNICIAN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/alerts/{id}" : {
+      "get" : {
+        "tags" : [ "Alert Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AlertResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "TECHNICIAN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/alerts/{id}/acknowledge" : {
+      "post" : {
+        "tags" : [ "Alert Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AcknowledgeRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AlertResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "TECHNICIAN" ]
+        } ]
+      }
+    },
+    "/api/v1/audit" : {
+      "get" : {
+        "tags" : [ "Audit Resource" ],
+        "parameters" : [ {
+          "name" : "action",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "actorId",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "resourceType",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 100,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseAuditEventResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/establishments" : {
+      "get" : {
+        "tags" : [ "Establishment Resource" ],
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "default" : "ACTIVE",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseEstablishmentResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN" ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Establishment Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EstablishmentRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN" ]
+        } ]
+      }
+    },
+    "/api/v1/establishments/{id}" : {
+      "get" : {
+        "tags" : [ "Establishment Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EstablishmentResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN", "ESTABLISHMENT_VIEWER" ]
+        } ]
+      },
+      "put" : {
+        "tags" : [ "Establishment Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EstablishmentRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EstablishmentResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN" ]
+        } ]
+      },
+      "delete" : {
+        "tags" : [ "Establishment Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN" ]
+        } ]
+      }
+    },
+    "/api/v1/finance/cash-collections" : {
+      "post" : {
+        "tags" : [ "Finance Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CashCollectionRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/finance/settlements" : {
+      "get" : {
+        "tags" : [ "Finance Resource" ],
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseSettlementResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/finance/settlements/{id}/approve" : {
+      "put" : {
+        "tags" : [ "Finance Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SettlementResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/finance/settlements/{id}/mark-paid" : {
+      "put" : {
+        "tags" : [ "Finance Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SettlementResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/inventory/balances" : {
+      "get" : {
+        "tags" : [ "Inventory Resource" ],
+        "parameters" : [ {
+          "name" : "machineId",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 100,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseStockBalanceResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN" ]
+        } ]
+      }
+    },
+    "/api/v1/inventory/movements" : {
+      "get" : {
+        "tags" : [ "Inventory Resource" ],
+        "parameters" : [ {
+          "name" : "machineId",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "movementType",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseStockMovementResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE" ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Inventory Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StockMovementRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR" ]
+        } ]
+      }
+    },
+    "/api/v1/machines" : {
+      "get" : {
+        "tags" : [ "Machines" ],
+        "summary" : "Listar máquinas do tenant",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 20,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseMachineResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER", "FIELD_OPERATOR", "TECHNICIAN", "FINANCE" ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Machines" ],
+        "summary" : "Cadastrar nova máquina",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateMachineRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER" ]
+        } ]
+      }
+    },
+    "/api/v1/machines/summary/status" : {
+      "get" : {
+        "tags" : [ "Machines" ],
+        "summary" : "Resumo de status da frota (online/offline/manutenção)",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MachineStatusSummary"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/machines/{id}" : {
+      "get" : {
+        "tags" : [ "Machines" ],
+        "summary" : "Detalhe de uma máquina",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MachineResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER", "FIELD_OPERATOR", "TECHNICIAN", "FINANCE" ]
+        } ]
+      },
+      "patch" : {
+        "tags" : [ "Machines" ],
+        "summary" : "Atualizar dados da máquina",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateMachineRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MachineResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER" ]
+        } ]
+      }
+    },
+    "/api/v1/machines/{id}/status" : {
+      "post" : {
+        "tags" : [ "Machines" ],
+        "summary" : "Alterar status operacional da máquina",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/MachineStatus"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MachineResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER", "TECHNICIAN" ]
+        } ]
+      }
+    },
+    "/api/v1/maintenance" : {
+      "get" : {
+        "tags" : [ "Maintenance Resource" ],
+        "parameters" : [ {
+          "name" : "machineId",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "priority",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseTicketResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "TECHNICIAN", "FIELD_OPERATOR" ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Maintenance Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateTicketRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "TECHNICIAN", "FIELD_OPERATOR" ]
+        } ]
+      }
+    },
+    "/api/v1/maintenance/{id}" : {
+      "get" : {
+        "tags" : [ "Maintenance Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "TECHNICIAN", "FIELD_OPERATOR" ]
+        } ]
+      },
+      "put" : {
+        "tags" : [ "Maintenance Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateTicketRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "TECHNICIAN" ]
+        } ]
+      }
+    },
+    "/api/v1/operating-points" : {
+      "get" : {
+        "tags" : [ "Operating Point Resource" ],
+        "parameters" : [ {
+          "name" : "establishmentId",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "default" : "ACTIVE",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseOperatingPointResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN", "ESTABLISHMENT_VIEWER" ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Operating Point Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OperatingPointRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN" ]
+        } ]
+      }
+    },
+    "/api/v1/operating-points/{id}" : {
+      "get" : {
+        "tags" : [ "Operating Point Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OperatingPointResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN", "ESTABLISHMENT_VIEWER" ]
+        } ]
+      },
+      "put" : {
+        "tags" : [ "Operating Point Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OperatingPointRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OperatingPointResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN" ]
+        } ]
+      }
+    },
+    "/api/v1/payments" : {
+      "get" : {
+        "tags" : [ "Payment Resource" ],
+        "parameters" : [ {
+          "name" : "machineId",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponsePaymentResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/payments/sandbox/confirm/{transactionId}" : {
+      "post" : {
+        "tags" : [ "Payments" ],
+        "summary" : "[SANDBOX] Confirmar pagamento fictício",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "X-Machine-Id",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "X-Tenant-Id",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/sandbox/fail/{transactionId}" : {
+      "post" : {
+        "tags" : [ "Payments" ],
+        "summary" : "[SANDBOX] Falhar pagamento fictício",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/sandbox/initiate" : {
+      "post" : {
+        "tags" : [ "Payments" ],
+        "summary" : "[SANDBOX] Criar transação de pagamento fictícia",
+        "parameters" : [ {
+          "name" : "X-Machine-Id",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "X-Tenant-Id",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/webhook/{provider}" : {
+      "post" : {
+        "tags" : [ "Payments" ],
+        "summary" : "Receber webhook de pagamento",
+        "parameters" : [ {
+          "name" : "provider",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Idempotency-Key",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "X-Signature",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "X-Tenant-Id",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "format" : "binary",
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/{id}" : {
+      "get" : {
+        "tags" : [ "Payment Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/reconciliation" : {
+      "get" : {
+        "tags" : [ "Reconciliation Resource" ],
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseReconciliationCaseResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/reconciliation/summary" : {
+      "get" : {
+        "tags" : [ "Reconciliation Resource" ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : { }
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/reconciliation/{id}" : {
+      "get" : {
+        "tags" : [ "Reconciliation Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReconciliationCaseResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/reconciliation/{id}/resolve" : {
+      "post" : {
+        "tags" : [ "Reconciliation Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ManualResolveRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReconciliationCaseResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/reports/generate" : {
+      "post" : {
+        "tags" : [ "Report Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GenerateReportRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE", "FIELD_OPERATOR" ]
+        } ]
+      }
+    },
+    "/api/v1/routes" : {
+      "get" : {
+        "tags" : [ "Routing Resource" ],
+        "parameters" : [ {
+          "name" : "date",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 30,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseRoutePlanResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/routes/generate" : {
+      "post" : {
+        "tags" : [ "Routing Resource" ],
+        "parameters" : [ {
+          "name" : "maxStops",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 10,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN" ]
+        } ]
+      }
+    },
+    "/api/v1/routes/{id}/stops" : {
+      "get" : {
+        "tags" : [ "Routing Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseRouteStopResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/visits" : {
+      "get" : {
+        "tags" : [ "Field Visit Resource" ],
+        "parameters" : [ {
+          "name" : "operatingPointId",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseVisitResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE" ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Field Visit Resource" ],
+        "parameters" : [ {
+          "name" : "Idempotency-Key",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartVisitRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR" ]
+        } ]
+      }
+    },
+    "/api/v1/visits/checklist" : {
+      "post" : {
+        "tags" : [ "Field Visit Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChecklistRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR" ]
+        } ]
+      }
+    },
+    "/api/v1/visits/complete" : {
+      "post" : {
+        "tags" : [ "Field Visit Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CompleteVisitRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR" ]
+        } ]
+      }
+    },
+    "/api/v1/visits/{id}" : {
+      "get" : {
+        "tags" : [ "Field Visit Resource" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VisitResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE" ]
+        } ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "AcknowledgeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "note" : {
+            "type" : "string"
+          }
+        }
+      },
+      "AlertResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineAssetNumber" : {
+            "type" : "string"
+          },
+          "alertType" : {
+            "type" : "string"
+          },
+          "severity" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "acknowledgedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "acknowledgedBy" : {
+            "type" : "string"
+          }
+        }
+      },
+      "AuditEventResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "tenantId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "actorUserId" : {
+            "type" : "string"
+          },
+          "actorEmail" : {
+            "type" : "string"
+          },
+          "action" : {
+            "type" : "string"
+          },
+          "resourceType" : {
+            "type" : "string"
+          },
+          "resourceId" : {
+            "type" : "string"
+          },
+          "metadata" : {
+            "type" : "string"
+          },
+          "correlationId" : {
+            "type" : "string"
+          },
+          "ipAddress" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "CashCollectionRequest" : {
+        "required" : [ "clientOperationId", "visitId", "machineId" ],
+        "type" : "object",
+        "properties" : {
+          "clientOperationId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "visitId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "amountCents" : {
+            "format" : "int64",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "notes" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ChecklistItem" : {
+        "type" : "object",
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "checked" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ChecklistRequest" : {
+        "required" : [ "visitId", "clientOperationId" ],
+        "type" : "object",
+        "properties" : {
+          "visitId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "clientOperationId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ChecklistItem"
+            }
+          },
+          "completedAt" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CompleteVisitRequest" : {
+        "required" : [ "visitId", "clientOperationId" ],
+        "type" : "object",
+        "properties" : {
+          "visitId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "clientOperationId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "checkoutAt" : {
+            "type" : "string"
+          },
+          "cashCollectedCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }
+      },
+      "CreateMachineRequest" : {
+        "required" : [ "assetNumber", "name", "playPriceCents" ],
+        "type" : "object",
+        "properties" : {
+          "assetNumber" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "name" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "playPriceCents" : {
+            "format" : "int64",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "qrCode" : {
+            "type" : "string"
+          },
+          "machineModelId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "controllerId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "bonusPlays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "prizeCapacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "notes" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CreateTicketRequest" : {
+        "required" : [ "clientOperationId", "machineId", "title", "priority" ],
+        "type" : "object",
+        "properties" : {
+          "clientOperationId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "title" : {
+            "maxLength" : 200,
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "description" : {
+            "maxLength" : 2000,
+            "type" : "string"
+          },
+          "priority" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "symptomCode" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EstablishmentRequest" : {
+        "required" : [ "name" ],
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "maxLength" : 120,
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "externalCode" : {
+            "maxLength" : 40,
+            "type" : "string"
+          }
+        }
+      },
+      "EstablishmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "externalCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "GenerateReportRequest" : {
+        "required" : [ "reportType" ],
+        "type" : "object",
+        "properties" : {
+          "reportType" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "parameters" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "Instant" : {
+        "format" : "date-time",
+        "type" : "string",
+        "example" : "2022-03-10T16:15:50Z"
+      },
+      "LocalDate" : {
+        "format" : "date",
+        "type" : "string",
+        "example" : "2022-03-10"
+      },
+      "MachineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "tenantId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "assetNumber" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "qrCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/MachineStatus"
+          },
+          "playPriceCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "bonusPlays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "prizeCapacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "machineModelId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "controllerId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "installedAt" : {
+            "$ref" : "#/components/schemas/LocalDate"
+          },
+          "lastSeenAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "createdAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "updatedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "notes" : {
+            "type" : "string"
+          }
+        }
+      },
+      "MachineStatus" : {
+        "enum" : [ "DRAFT", "ACTIVE", "OFFLINE", "MAINTENANCE", "DISABLED", "RETIRED" ],
+        "type" : "string"
+      },
+      "MachineStatusSummary" : {
+        "type" : "object",
+        "properties" : {
+          "online" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "offline" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "maintenance" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }
+      },
+      "ManualResolveRequest" : {
+        "required" : [ "resolution" ],
+        "type" : "object",
+        "properties" : {
+          "resolution" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "note" : {
+            "type" : "string"
+          }
+        }
+      },
+      "OperatingPointRequest" : {
+        "required" : [ "establishmentId", "name" ],
+        "type" : "object",
+        "properties" : {
+          "establishmentId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "name" : {
+            "maxLength" : 120,
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "addressStreet" : {
+            "maxLength" : 200,
+            "type" : "string"
+          },
+          "addressCity" : {
+            "maxLength" : 80,
+            "type" : "string"
+          },
+          "addressState" : {
+            "maxLength" : 2,
+            "type" : "string"
+          },
+          "addressZip" : {
+            "maxLength" : 9,
+            "type" : "string"
+          },
+          "latitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "longitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "commissionPct" : {
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "contractType" : {
+            "maxLength" : 30,
+            "type" : "string"
+          }
+        }
+      },
+      "OperatingPointResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "establishmentId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "establishmentName" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "addressStreet" : {
+            "type" : "string"
+          },
+          "addressCity" : {
+            "type" : "string"
+          },
+          "addressState" : {
+            "type" : "string"
+          },
+          "latitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "longitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "commissionPct" : {
+            "type" : "number"
+          },
+          "contractType" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "priorityScore" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }
+      },
+      "PageResponseAlertResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AlertResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseAuditEventResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AuditEventResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseEstablishmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EstablishmentResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseMachineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MachineResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseOperatingPointResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OperatingPointResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponsePaymentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PaymentResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseReconciliationCaseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReconciliationCaseResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseRoutePlanResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RoutePlanResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseRouteStopResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RouteStopResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseSettlementResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SettlementResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseStockBalanceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/StockBalanceResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseStockMovementResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/StockMovementResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseTicketResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TicketResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseVisitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VisitResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PaymentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "providerTransactionId" : {
+            "type" : "string"
+          },
+          "provider" : {
+            "type" : "string"
+          },
+          "amountCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineAssetNumber" : {
+            "type" : "string"
+          },
+          "paymentMethod" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "confirmedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "ReconciliationCaseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "paymentTransactionId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "creditGrantId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "playSessionId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "statusReason" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "updatedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "resolvedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "resolvedBy" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RoutePlanResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatorUserId" : {
+            "type" : "string"
+          },
+          "plannedDate" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "totalStops" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "completedStops" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RouteStopResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "routePlanId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointName" : {
+            "type" : "string"
+          },
+          "address" : {
+            "type" : "string"
+          },
+          "stopOrder" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "priorityScore" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "priorityExplanation" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SettlementResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointName" : {
+            "type" : "string"
+          },
+          "periodStart" : {
+            "type" : "string"
+          },
+          "periodEnd" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "grossRevenueCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "commissionPct" : {
+            "type" : "number"
+          },
+          "commissionCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "netRevenueCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "StartVisitRequest" : {
+        "required" : [ "visitId", "clientOperationId", "operatingPointId", "responsibleName" ],
+        "type" : "object",
+        "properties" : {
+          "visitId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "clientOperationId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "responsibleName" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "checkinAt" : {
+            "type" : "string"
+          },
+          "checkinLatitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "checkinLongitude" : {
+            "format" : "double",
+            "type" : "number"
+          }
+        }
+      },
+      "StockBalanceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineAssetNumber" : {
+            "type" : "string"
+          },
+          "prizeId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "prizeName" : {
+            "type" : "string"
+          },
+          "sku" : {
+            "type" : "string"
+          },
+          "currentQuantity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "occupancyPct" : {
+            "format" : "double",
+            "type" : "number"
+          }
+        }
+      },
+      "StockMovementRequest" : {
+        "required" : [ "clientOperationId", "machineId", "prizeId", "movementType" ],
+        "type" : "object",
+        "properties" : {
+          "clientOperationId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "prizeId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "movementType" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "quantityDelta" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "notes" : {
+            "type" : "string"
+          }
+        }
+      },
+      "StockMovementResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineAssetNumber" : {
+            "type" : "string"
+          },
+          "prizeId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "prizeName" : {
+            "type" : "string"
+          },
+          "movementType" : {
+            "type" : "string"
+          },
+          "quantityDelta" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "quantityBefore" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "quantityAfter" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "clientOperationId" : {
+            "type" : "string"
+          },
+          "occurredAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "notes" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TicketResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "machineAssetNumber" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "type" : "string"
+          },
+          "symptomCode" : {
+            "type" : "string"
+          },
+          "assignedTo" : {
+            "type" : "string"
+          },
+          "resolutionNotes" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "updatedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "resolvedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "UUID" : {
+        "format" : "uuid",
+        "pattern" : "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
+        "type" : "string"
+      },
+      "UpdateMachineRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "playPriceCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "bonusPlays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "prizeCapacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "operatingPointId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "controllerId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "notes" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UpdateTicketRequest" : {
+        "required" : [ "status" ],
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "resolutionNotes" : {
+            "maxLength" : 2000,
+            "type" : "string"
+          },
+          "assignedTo" : {
+            "type" : "string"
+          }
+        }
+      },
+      "VisitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "operatingPointName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "responsibleName" : {
+            "type" : "string"
+          },
+          "checkinAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "checkoutAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "cashCollectedCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "SecurityScheme" : {
+        "type" : "openIdConnect",
+        "description" : "Authentication",
+        "openIdConnectUrl" : "http://localhost:8180/realms/gruahub/.well-known/openid-configuration"
+      }
+    }
+  }
+}

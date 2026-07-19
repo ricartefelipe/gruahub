@@ -25,7 +25,11 @@ import { v4 as uuidv4 } from 'uuid';
 // ================================================================
 const BROKER_URL     = process.env.MQTT_BROKER_URL      || 'tcp://localhost:1883';
 const USERNAME       = process.env.MQTT_USERNAME        || 'sim-machine';
-const PASSWORD       = process.env.MQTT_PASSWORD        || 'sim-machine-pass';
+const PASSWORD       = process.env.MQTT_PASSWORD;
+if (!PASSWORD) {
+  console.error('[Machine Simulator] MQTT_PASSWORD is required (see infra/.env.example)');
+  process.exit(1);
+}
 const TENANT_ID      = process.env.TENANT_ID            || '11111111-0000-0000-0000-000000000001';
 const MACHINE_IDS_RAW = process.env.MACHINE_IDS         || '66666666-0000-0000-0000-000000000001';
 const HEARTBEAT_MS   = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '30000', 10);

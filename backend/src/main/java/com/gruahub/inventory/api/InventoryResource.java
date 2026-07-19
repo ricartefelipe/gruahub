@@ -1,6 +1,7 @@
 package com.gruahub.inventory.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -80,72 +81,92 @@ public class InventoryResource {
     @GET
     @Path("/balances")
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN"})
-    public List<StockBalanceResponse> listBalances(
+    public PageResponse<StockBalanceResponse> listBalances(
         @QueryParam("machineId") UUID machineId,
         @QueryParam("page") @DefaultValue("0") int page,
         @QueryParam("size") @DefaultValue("100") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
-        StringBuilder sql = new StringBuilder(
+        int lim = Math.min(size, 500);
+        StringBuilder where = new StringBuilder("WHERE b.tenant_id = :tid ");
+        if (machineId != null) where.append("AND b.machine_id = :mid ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM machine_stock_balance b " + where
+        ).setParameter("tid", tenantId);
+        if (machineId != null) countQuery.setParameter("mid", machineId);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT b.machine_id, m.asset_number, b.prize_id, p.name, p.sku, " +
-            "b.current_quantity, b.capacity, " +
-            "CASE WHEN b.capacity > 0 THEN (b.current_quantity * 100.0 / b.capacity) ELSE 0 END as pct " +
+            "b.quantity, COALESCE(b.minimum_quantity, 5), " +
+            "CASE WHEN COALESCE(b.minimum_quantity, 5) > 0 " +
+            "THEN (b.quantity * 100.0 / GREATEST(COALESCE(b.minimum_quantity, 5), b.quantity, 1)) " +
+            "ELSE 0 END as pct " +
             "FROM machine_stock_balance b " +
             "JOIN machine m ON m.id = b.machine_id " +
             "JOIN prize p ON p.id = b.prize_id " +
-            "WHERE b.tenant_id = :tid "
-        );
-        if (machineId != null) sql.append("AND b.machine_id = :mid ");
-        sql.append("ORDER BY pct ASC LIMIT :lim OFFSET :off");
+            where +
+            "ORDER BY pct ASC LIMIT :lim OFFSET :off";
 
-        var q = em.createNativeQuery(sql.toString())
+        var q = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 500))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
         if (machineId != null) q.setParameter("mid", machineId);
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
-        return rows.stream().map(r -> new StockBalanceResponse(
+        var content = rows.stream().map(r -> new StockBalanceResponse(
             (UUID) r[0], (String) r[1], (UUID) r[2], (String) r[3], (String) r[4],
             ((Number) r[5]).intValue(), ((Number) r[6]).intValue(),
             ((Number) r[7]).doubleValue()
         )).toList();
+        return PageResponse.of(content, page, lim, total);
     }
 
     @GET
     @Path("/movements")
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
-    public List<StockMovementResponse> listMovements(
+    public PageResponse<StockMovementResponse> listMovements(
         @QueryParam("machineId") UUID machineId,
         @QueryParam("movementType") String movementType,
         @QueryParam("page") @DefaultValue("0") int page,
         @QueryParam("size") @DefaultValue("50") int size
     ) {
         UUID tenantId = TenantContext.getTenantId();
-        StringBuilder sql = new StringBuilder(
+        int lim = Math.min(size, 200);
+        StringBuilder where = new StringBuilder("WHERE sm.tenant_id = :tid ");
+        if (machineId != null) where.append("AND sm.machine_id = :mid ");
+        if (movementType != null) where.append("AND sm.movement_type = :mt ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM stock_movement sm " + where
+        ).setParameter("tid", tenantId);
+        if (machineId != null) countQuery.setParameter("mid", machineId);
+        if (movementType != null) countQuery.setParameter("mt", movementType);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT sm.id, sm.machine_id, m.asset_number, sm.prize_id, p.name, " +
             "sm.movement_type, sm.quantity_delta, sm.quantity_before, sm.quantity_after, " +
             "sm.client_operation_id, sm.occurred_at, sm.notes " +
             "FROM stock_movement sm " +
             "JOIN machine m ON m.id = sm.machine_id " +
             "JOIN prize p ON p.id = sm.prize_id " +
-            "WHERE sm.tenant_id = :tid "
-        );
-        if (machineId != null) sql.append("AND sm.machine_id = :mid ");
-        if (movementType != null) sql.append("AND sm.movement_type = :mt ");
-        sql.append("ORDER BY sm.occurred_at DESC LIMIT :lim OFFSET :off");
+            where +
+            "ORDER BY sm.occurred_at DESC LIMIT :lim OFFSET :off";
 
-        var q = em.createNativeQuery(sql.toString())
+        var q = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
         if (machineId != null) q.setParameter("mid", machineId);
         if (movementType != null) q.setParameter("mt", movementType);
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
-        return rows.stream().map(this::mapMovRow).toList();
+        return PageResponse.of(rows.stream().map(this::mapMovRow).toList(), page, lim, total);
     }
 
     // ── Mutations ────────────────────────────────────────────────────────────────
@@ -178,19 +199,15 @@ public class InventoryResource {
             ? -Math.abs(req.quantityDelta())
             : Math.abs(req.quantityDelta());
 
-        // UPSERT atômico no saldo.
-        // INSERT ON CONFLICT DO UPDATE é atômico no PostgreSQL — elimina a race
-        // condition de SELECT→INSERT/UPDATE separados sob carga concorrente.
-        // RETURNING retorna o novo current_quantity (após GREATEST clamp).
         Number newQty = (Number) em.createNativeQuery(
             "INSERT INTO machine_stock_balance " +
-            "  (id, tenant_id, machine_id, prize_id, current_quantity, capacity, version) " +
-            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 300, 0) " +
-            "ON CONFLICT (machine_id, prize_id, tenant_id) DO UPDATE " +
-            "  SET current_quantity = GREATEST(0, machine_stock_balance.current_quantity + :delta), " +
+            "  (id, tenant_id, machine_id, prize_id, quantity, minimum_quantity, version) " +
+            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 5, 0) " +
+            "ON CONFLICT (machine_id, prize_id) DO UPDATE " +
+            "  SET quantity = GREATEST(0, machine_stock_balance.quantity + :delta), " +
             "      updated_at = NOW(), " +
             "      version = machine_stock_balance.version + 1 " +
-            "RETURNING current_quantity"
+            "RETURNING quantity"
         )
             .setParameter("newId", UUID.randomUUID())
             .setParameter("tid", tenantId)

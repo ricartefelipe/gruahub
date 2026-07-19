@@ -15,4 +15,4 @@ COPY --from=builder --chown=gruahub:gruahub /build/.next/static ./.next/static
 COPY --from=builder --chown=gruahub:gruahub /build/public ./public
 EXPOSE 3000
 STOPSIGNAL SIGTERM
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "if [ -f /scripts/load-secret-files.sh ]; then . /scripts/load-secret-files.sh; fi; exec node server.js"]

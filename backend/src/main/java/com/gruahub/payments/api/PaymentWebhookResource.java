@@ -55,6 +55,9 @@ public class PaymentWebhookResource {
         if (body == null || body.length == 0) {
             return Response.status(400).entity(Map.of("error", "Empty body")).build();
         }
+        if (tenantIdHeader == null || tenantIdHeader.isBlank()) {
+            return Response.status(400).entity(Map.of("error", "Invalid tenant ID")).build();
+        }
 
         try {
             UUID tenantId = UUID.fromString(tenantIdHeader);
@@ -79,6 +82,7 @@ public class PaymentWebhookResource {
      */
     @POST
     @Path("/sandbox/initiate")
+    @SandboxEndpoint
     @Transactional
     @Operation(summary = "[SANDBOX] Criar transação de pagamento fictícia")
     public Response sandboxInitiate(
@@ -123,6 +127,7 @@ public class PaymentWebhookResource {
      */
     @POST
     @Path("/sandbox/confirm/{transactionId}")
+    @SandboxEndpoint
     @Operation(summary = "[SANDBOX] Confirmar pagamento fictício")
     public Response sandboxConfirm(
             @PathParam("transactionId")  String transactionId,
@@ -152,6 +157,7 @@ public class PaymentWebhookResource {
      */
     @POST
     @Path("/sandbox/fail/{transactionId}")
+    @SandboxEndpoint
     @Operation(summary = "[SANDBOX] Falhar pagamento fictício")
     public Response sandboxFail(@PathParam("transactionId") String transactionId) {
         sandboxProvider.sandboxFail(transactionId);

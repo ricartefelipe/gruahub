@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
@@ -27,6 +28,9 @@ import java.util.UUID;
 public class CreditService {
 
     private static final Logger LOG = Logger.getLogger(CreditService.class);
+
+    @ConfigProperty(name = "gruahub.mqtt.command-ttl-seconds", defaultValue = "300")
+    int commandTtlSeconds;
 
     @Inject
     EntityManager em;
@@ -87,13 +91,13 @@ public class CreditService {
                 "INSERT INTO device_command " +
                 "(id, command_id, tenant_id, machine_id, command_type, payload, " +
                 " status, expires_at, created_at) " +
-                "VALUES (gen_random_uuid(), :cmdId, :tid, :mid, 'GRANT_CREDIT', :payload::jsonb, " +
+                "VALUES (gen_random_uuid(), :cmdId, :tid, :mid, 'GRANT_CREDIT', CAST(:payload AS jsonb), " +
                 "'PENDING', :expiry, :now)")
                 .setParameter("cmdId",   commandId)
                 .setParameter("tid",     tenantId)
                 .setParameter("mid",     machineId)
                 .setParameter("payload", cmdPayload)
-                .setParameter("expiry",  Instant.now().plusSeconds(300)) // TTL 5 min
+                .setParameter("expiry",  Instant.now().plusSeconds(commandTtlSeconds))
                 .setParameter("now",     Instant.now())
                 .executeUpdate();
 
@@ -160,11 +164,11 @@ public class CreditService {
                     "creditGrantId": "%s",
                     "playsGranted": %d,
                     "amountCents": %d,
-                    "ttlSeconds": 300
+                    "ttlSeconds": %d
                   }
                 }""",
                 commandId, tenantId, machineId,
                 Instant.now().toString(),
-                commandId, creditId, plays, amountCents);
+                commandId, creditId, plays, amountCents, commandTtlSeconds);
     }
 }

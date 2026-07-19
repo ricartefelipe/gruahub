@@ -1,6 +1,7 @@
 package com.gruahub.reconciliation.api;
 
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -66,7 +67,7 @@ public class ReconciliationResource {
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
-    public List<ReconciliationCaseResponse> listCases(
+    public PageResponse<ReconciliationCaseResponse> listCases(
         @QueryParam("status") String status,
         @QueryParam("page") @DefaultValue("0") int page,
         @QueryParam("size") @DefaultValue("50") int size
@@ -74,24 +75,32 @@ public class ReconciliationResource {
         UUID tenantId = TenantContext.getTenantId();
         LOG.debugf("[%s] GET /reconciliation status=%s", tenantId, status);
 
-        StringBuilder sql = new StringBuilder(
+        int lim = Math.min(size, 200);
+        StringBuilder where = new StringBuilder("WHERE tenant_id = :tid ");
+        if (status != null) where.append("AND status = :status ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM reconciliation_case " + where
+        ).setParameter("tid", tenantId);
+        if (status != null) countQuery.setParameter("status", status);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
             "SELECT id, payment_transaction_id, credit_grant_id, play_session_id, " +
             "status, status_reason, created_at, updated_at, resolved_at, resolved_by " +
-            "FROM reconciliation_case WHERE tenant_id = :tid "
-        );
-        if (status != null) sql.append("AND status = :status ");
-        sql.append("ORDER BY created_at DESC LIMIT :lim OFFSET :off");
+            "FROM reconciliation_case " + where +
+            "ORDER BY created_at DESC LIMIT :lim OFFSET :off";
 
-        var query = em.createNativeQuery(sql.toString())
+        var query = em.createNativeQuery(sql)
             .setParameter("tid", tenantId)
-            .setParameter("lim", Math.min(size, 200))
-            .setParameter("off", page * size);
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
 
         if (status != null) query.setParameter("status", status);
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = query.getResultList();
-        return rows.stream().map(this::mapRow).toList();
+        return PageResponse.of(rows.stream().map(this::mapRow).toList(), page, lim, total);
     }
 
     @GET
