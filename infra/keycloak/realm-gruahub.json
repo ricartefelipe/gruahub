@@ -117,10 +117,16 @@
       "redirectUris": [
         "gruahub://*",
         "exp://*",
-        "http://localhost:8081*",
-        "http://127.0.0.1:8081*"
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        "http://192.168.*:*"
       ],
-      "webOrigins": ["*"],
+      "webOrigins": [
+        "*",
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        "http://192.168.*:*"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
       },
