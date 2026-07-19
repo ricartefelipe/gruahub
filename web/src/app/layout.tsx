@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { Providers } from './providers';
+import { themeBootstrapScript } from '@/lib/theme-script';
 import './globals.css';
 
 const inter = localFont({
@@ -16,7 +17,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+      </head>
       <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>

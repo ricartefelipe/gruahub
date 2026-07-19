@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -42,8 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!session) return null;
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-gray-100 dark:bg-slate-900">
       <aside className="w-64 bg-gray-900 text-white flex flex-col flex-shrink-0">
         <div className="p-4 border-b border-gray-700">
           <h1 className="text-xl font-bold text-blue-400">GruaHub</h1>
@@ -69,6 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="p-4 border-t border-gray-700">
+          <ThemeToggle />
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className="w-full text-sm text-gray-400 hover:text-white transition-colors
@@ -80,8 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto dark:bg-slate-900">
         <div className="p-6">{children}</div>
       </main>
     </div>
