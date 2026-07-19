@@ -3,7 +3,7 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, exchangeCodeAsync } from 'expo-auth-session';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import {
@@ -13,6 +13,7 @@ import {
   KEYCLOAK_URL,
   isLocalhostUrl,
 } from '../../src/config/env';
+import { ThemeColors, useTheme } from '../../src/theme';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,13 +35,41 @@ function parseJwtPayload(token: string): Record<string, unknown> {
   }
 }
 
+function formatTokenExchangeError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const tokenErr = err as {
+      code?: string;
+      description?: string;
+      message?: string;
+    };
+    const code = typeof tokenErr.code === 'string' ? tokenErr.code : '';
+    const description =
+      typeof tokenErr.description === 'string' ? tokenErr.description : '';
+    if (code || description) {
+      return [code, description].filter(Boolean).join(' — ');
+    }
+    if (typeof tokenErr.message === 'string' && tokenErr.message) {
+      return tokenErr.message;
+    }
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return 'Falha desconhecida no endpoint /token.';
+}
+
 export default function LoginScreen() {
   const { setAuth, accessToken } = useAuthStore();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [exchanging, setExchanging] = useState(false);
+  const exchangedCodesRef = useRef(new Set<string>());
+  const codeVerifierRef = useRef<string | null>(null);
 
-  const redirectUri = makeRedirectUri({ scheme: 'gruahub', path: 'auth' });
+  const redirectUri = useMemo(
+    () => makeRedirectUri({ scheme: 'gruahub', path: 'auth' }),
+    []
+  );
 
-  const [request, response, promptAsync] = useAuthRequest(
+  const [request, , promptAsync] = useAuthRequest(
     {
       clientId: KEYCLOAK_CLIENT_ID,
       scopes: ['openid', 'profile', 'email', 'offline_access'],
@@ -56,70 +85,91 @@ export default function LoginScreen() {
     }
   }, [accessToken]);
 
-  useEffect(() => {
-    if (response?.type === 'error') {
+  async function exchangeAuthCode(code: string, codeVerifier: string) {
+    if (exchangedCodesRef.current.has(code)) return;
+    exchangedCodesRef.current.add(code);
+    setExchanging(true);
+    try {
+      const tokenResponse = await exchangeCodeAsync(
+        {
+          clientId: KEYCLOAK_CLIENT_ID,
+          code,
+          redirectUri,
+          extraParams: { code_verifier: codeVerifier },
+        },
+        discovery
+      );
+
+      const claims = parseJwtPayload(tokenResponse.accessToken);
+      const tenantId = (claims['tenant_id'] as string) ?? '';
+      const userEmail =
+        (claims['email'] as string) ??
+        (claims['preferred_username'] as string) ?? '';
+      const userId = (claims['sub'] as string) ?? '';
+      const expiresAt = Date.now() + (tokenResponse.expiresIn ?? 300) * 1000;
+      const refreshToken = tokenResponse.refreshToken ?? '';
+
+      if (!tenantId) {
+        Alert.alert(
+          'Login incompleto',
+          'O token não contém tenant_id. Confirme os protocol mappers do client gruahub-mobile no Keycloak.'
+        );
+      }
+
+      await setAuth({
+        accessToken: tokenResponse.accessToken,
+        refreshToken,
+        expiresAt,
+        tenantId,
+        userEmail,
+        userId,
+      });
+
+      router.replace('/(tabs)');
+    } catch (err: unknown) {
+      exchangedCodesRef.current.delete(code);
+      const detail = formatTokenExchangeError(err);
+      console.warn('[Auth] Token exchange falhou:', detail, err);
       Alert.alert(
         'Erro de autenticação',
-        response.error?.message ??
-          'Falha no login Keycloak. Verifique EXPO_PUBLIC_KEYCLOAK_URL e o client gruahub-mobile.'
+        `Não foi possível trocar o código por token.\n${detail}\n\nRedirect: ${redirectUri}`
       );
-      return;
+    } finally {
+      setExchanging(false);
     }
-
-    if (response?.type !== 'success' || !request?.codeVerifier) return;
-
-    const { code } = response.params;
-    setExchanging(true);
-
-    exchangeCodeAsync(
-      {
-        clientId: KEYCLOAK_CLIENT_ID,
-        code,
-        redirectUri,
-        extraParams: { code_verifier: request.codeVerifier },
-      },
-      discovery
-    )
-      .then(async (tokenResponse) => {
-        const claims = parseJwtPayload(tokenResponse.accessToken);
-        const tenantId = (claims['tenant_id'] as string) ?? '';
-        const userEmail =
-          (claims['email'] as string) ??
-          (claims['preferred_username'] as string) ?? '';
-        const userId = (claims['sub'] as string) ?? '';
-        const expiresAt = Date.now() + (tokenResponse.expiresIn ?? 300) * 1000;
-        const refreshToken = tokenResponse.refreshToken ?? '';
-
-        if (!tenantId) {
-          Alert.alert(
-            'Login incompleto',
-            'O token não contém tenant_id. Confirme os protocol mappers do client gruahub-mobile no Keycloak.'
-          );
-        }
-
-        await setAuth({
-          accessToken: tokenResponse.accessToken,
-          refreshToken,
-          expiresAt,
-          tenantId,
-          userEmail,
-          userId,
-        });
-
-        router.replace('/(tabs)');
-      })
-      .catch(() => {
-        Alert.alert(
-          'Erro de autenticação',
-          'Não foi possível trocar o código por token. Verifique se a redirect URI está autorizada no Keycloak.'
-        );
-      })
-      .finally(() => setExchanging(false));
-  }, [response]);
+  }
 
   async function handleLogin() {
     try {
-      await promptAsync();
+      if (!request?.codeVerifier) {
+        Alert.alert(
+          'Erro de autenticação',
+          'PKCE ainda não está pronto. Aguarde e tente novamente.'
+        );
+        return;
+      }
+      codeVerifierRef.current = request.codeVerifier;
+      const result = await promptAsync();
+      if (result.type === 'error') {
+        Alert.alert(
+          'Erro de autenticação',
+          result.error?.message ??
+            'Falha no login Keycloak. Verifique EXPO_PUBLIC_KEYCLOAK_URL e o client gruahub-mobile.'
+        );
+        return;
+      }
+      if (result.type === 'success') {
+        const code = result.params.code;
+        const codeVerifier = codeVerifierRef.current;
+        if (!code || !codeVerifier) {
+          Alert.alert(
+            'Erro de autenticação',
+            'Retorno OAuth sem código ou code_verifier. Tente novamente.'
+          );
+          return;
+        }
+        await exchangeAuthCode(code, codeVerifier);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Não foi possível abrir o navegador.';
       Alert.alert('Erro', message);
@@ -146,7 +196,7 @@ export default function LoginScreen() {
         </Text>
 
         {isLoading ? (
-          <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 24 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
         ) : (
           <TouchableOpacity
             style={styles.button}
@@ -177,35 +227,64 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1, backgroundColor: '#1e40af', alignItems: 'center',
-    justifyContent: 'center', padding: 24,
-  },
-  brand: { alignItems: 'center', marginBottom: 40 },
-  appName: { fontSize: 36, fontWeight: 'bold', color: '#fff' },
-  tagline: { fontSize: 14, color: '#bfdbfe', marginTop: 6 },
-  card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '100%',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 12, elevation: 8,
-  },
-  cardTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 8 },
-  cardDesc: { fontSize: 14, color: '#6b7280', lineHeight: 20 },
-  button: {
-    backgroundColor: '#2563eb', borderRadius: 10, padding: 16,
-    alignItems: 'center', marginTop: 24,
-  },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  envHint: {
-    marginTop: 16, fontSize: 11, color: '#9ca3af', lineHeight: 16,
-  },
-  deviceHint: {
-    marginTop: 8, fontSize: 12, color: '#b45309', lineHeight: 17,
-  },
-  offlineNote: {
-    marginTop: 24, backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 10, padding: 14,
-  },
-  offlineNoteText: { color: '#bfdbfe', fontSize: 13, lineHeight: 18, textAlign: 'center' },
-  version: { marginTop: 32, color: '#93c5fd', fontSize: 11 },
-});
+function createStyles(colors: ThemeColors, isDark: boolean) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.header,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    brand: { alignItems: 'center', marginBottom: 40 },
+    appName: { fontSize: 36, fontWeight: 'bold', color: colors.headerText },
+    tagline: { fontSize: 14, color: colors.headerMuted, marginTop: 6 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 24,
+      width: '100%',
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 8,
+      borderWidth: isDark ? 1 : 0,
+      borderColor: colors.border,
+    },
+    cardTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 },
+    cardDesc: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    envHint: {
+      marginTop: 16,
+      fontSize: 11,
+      color: colors.textMuted,
+      lineHeight: 16,
+    },
+    deviceHint: {
+      marginTop: 8,
+      fontSize: 12,
+      color: isDark ? '#fbbf24' : '#b45309',
+      lineHeight: 17,
+    },
+    offlineNote: {
+      marginTop: 24,
+      backgroundColor: 'rgba(255,255,255,0.12)',
+      borderRadius: 10,
+      padding: 14,
+    },
+    offlineNoteText: {
+      color: colors.headerMuted,
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center',
+    },
+    version: { marginTop: 32, color: colors.primaryMuted, fontSize: 11 },
+  });
+}

@@ -8,9 +8,10 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, Alert,
 } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getDb, retryManual } from '../../src/db/offlineQueue';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
+import { ThemeColors, useTheme } from '../../src/theme';
 
 interface QueueEntry {
   id: string;
@@ -30,6 +31,14 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
   SYNCED:            { label: 'Sincronizado',    color: '#166534', bg: '#dcfce7' },
   FAILED_RETRYABLE:  { label: 'Falha (retry)',   color: '#c2410c', bg: '#ffedd5' },
   FAILED_PERMANENT:  { label: 'Falha permanente',color: '#991b1b', bg: '#fee2e2' },
+};
+
+const STATUS_LABELS_DARK: Record<string, { label: string; color: string; bg: string }> = {
+  PENDING:           { label: 'Pendente',        color: '#fde68a', bg: '#78350f' },
+  SYNCING:           { label: 'Sincronizando',   color: '#93c5fd', bg: '#1e3a8a' },
+  SYNCED:            { label: 'Sincronizado',    color: '#86efac', bg: '#14532d' },
+  FAILED_RETRYABLE:  { label: 'Falha (retry)',   color: '#fdba74', bg: '#7c2d12' },
+  FAILED_PERMANENT:  { label: 'Falha permanente',color: '#fca5a5', bg: '#7f1d1d' },
 };
 
 const OP_LABELS: Record<string, string> = {
@@ -57,6 +66,9 @@ export default function QueueScreen() {
     pending: 0, syncing: 0, synced: 0, failedRetryable: 0, failedPermanent: 0,
   });
   const { sync } = useSyncQueue();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const statusLabels = isDark ? STATUS_LABELS_DARK : STATUS_LABELS;
 
   const loadEntries = useCallback(async () => {
     const db = await getDb();
@@ -137,11 +149,10 @@ export default function QueueScreen() {
         <Text style={styles.subtitle}>Puxe para forçar sincronização</Text>
       </View>
 
-      {/* Stats bar */}
       <View style={styles.statsBar}>
         {statKeys.map(({ key, label, value }) => {
-          const meta = STATUS_LABELS[statusForKey[key]] ??
-            { label, color: '#374151', bg: '#f3f4f6' };
+          const meta = statusLabels[statusForKey[key]] ??
+            { label, color: colors.text, bg: colors.background };
           return (
             <View key={key} style={[styles.statChip, { backgroundColor: meta.bg }]}>
               <Text style={[styles.statCount, { color: meta.color }]}>{value}</Text>
@@ -155,11 +166,11 @@ export default function QueueScreen() {
         data={entries}
         keyExtractor={item => item.id}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         renderItem={({ item }) => {
-          const statusMeta = STATUS_LABELS[item.status] ??
-            { label: item.status, color: '#374151', bg: '#f3f4f6' };
+          const statusMeta = statusLabels[item.status] ??
+            { label: item.status, color: colors.text, bg: colors.background };
           const isPermanent = item.status === 'FAILED_PERMANENT';
 
           return (
@@ -224,42 +235,62 @@ export default function QueueScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { backgroundColor: '#1e40af', padding: 20, paddingTop: 60 },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  subtitle: { fontSize: 13, color: '#bfdbfe', marginTop: 4 },
-  statsBar: {
-    flexDirection: 'row', gap: 6, padding: 10,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
-  },
-  statChip: { flex: 1, borderRadius: 8, padding: 7, alignItems: 'center' },
-  statCount: { fontSize: 16, fontWeight: 'bold' },
-  statLabel: { fontSize: 9, marginTop: 1, textAlign: 'center' },
-  list: { padding: 12, gap: 8 },
-  card: {
-    backgroundColor: '#fff', borderRadius: 10, padding: 14,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', gap: 8,
-  },
-  opType: { fontSize: 14, fontWeight: '600', color: '#111827', flex: 1 },
-  badge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
-  badgeText: { fontSize: 10, fontWeight: '700' },
-  opId: { fontSize: 11, color: '#9ca3af', marginTop: 4 },
-  meta: { marginTop: 8, gap: 2 },
-  metaText: { fontSize: 12, color: '#6b7280' },
-  error: {
-    marginTop: 8, fontSize: 12, color: '#dc2626',
-    backgroundColor: '#fef2f2', borderRadius: 6, padding: 6,
-  },
-  retryButton: {
-    marginTop: 10, backgroundColor: '#2563eb', borderRadius: 8,
-    padding: 10, alignItems: 'center',
-  },
-  retryButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  empty: { padding: 40, alignItems: 'center' },
-  emptyText: { color: '#9ca3af', fontSize: 15 },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { backgroundColor: colors.header, padding: 20, paddingTop: 60 },
+    title: { fontSize: 20, fontWeight: 'bold', color: colors.headerText },
+    subtitle: { fontSize: 13, color: colors.headerMuted, marginTop: 4 },
+    statsBar: {
+      flexDirection: 'row',
+      gap: 6,
+      padding: 10,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    statChip: { flex: 1, borderRadius: 8, padding: 7, alignItems: 'center' },
+    statCount: { fontSize: 16, fontWeight: 'bold' },
+    statLabel: { fontSize: 9, marginTop: 1, textAlign: 'center' },
+    list: { padding: 12, gap: 8 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      padding: 14,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.04,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 8,
+    },
+    opType: { fontSize: 14, fontWeight: '600', color: colors.text, flex: 1 },
+    badge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
+    badgeText: { fontSize: 10, fontWeight: '700' },
+    opId: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
+    meta: { marginTop: 8, gap: 2 },
+    metaText: { fontSize: 12, color: colors.textSecondary },
+    error: {
+      marginTop: 8,
+      fontSize: 12,
+      color: colors.dangerText,
+      backgroundColor: colors.errorBannerBg,
+      borderRadius: 6,
+      padding: 6,
+    },
+    retryButton: {
+      marginTop: 10,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      padding: 10,
+      alignItems: 'center',
+    },
+    retryButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+    empty: { padding: 40, alignItems: 'center' },
+    emptyText: { color: colors.textMuted, fontSize: 15 },
+  });
+}

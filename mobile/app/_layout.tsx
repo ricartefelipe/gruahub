@@ -1,3 +1,4 @@
+import 'react-native-get-random-values';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
@@ -5,10 +6,12 @@ import { StatusBar } from 'expo-status-bar';
 import { getDb } from '../src/db/offlineQueue';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
 import { useAuthStore } from '../src/store/authStore';
+import { ThemeProvider, useTheme } from '../src/theme';
 
-export default function RootLayout() {
+function RootNavigator() {
   const [dbReady, setDbReady] = useState(false);
   const { restoreSession, isRestoring } = useAuthStore();
+  const { colors } = useTheme();
   usePushNotifications();
 
   useEffect(() => {
@@ -24,11 +27,11 @@ export default function RootLayout() {
 
   if (!dbReady || isRestoring) {
     return (
-      <View style={styles.boot}>
+      <View style={[styles.boot, { backgroundColor: colors.header }]}>
         <StatusBar style="light" />
-        <Text style={styles.bootBrand}>GruaHub</Text>
-        <ActivityIndicator color="#fff" size="large" style={{ marginTop: 20 }} />
-        <Text style={styles.bootText}>Preparando app…</Text>
+        <Text style={[styles.bootBrand, { color: colors.headerText }]}>GruaHub</Text>
+        <ActivityIndicator color={colors.headerText} size="large" style={{ marginTop: 20 }} />
+        <Text style={[styles.bootText, { color: colors.headerMuted }]}>Preparando app…</Text>
       </View>
     );
   }
@@ -39,6 +42,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="login/index" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="visits/start"
@@ -51,18 +55,26 @@ export default function RootLayout() {
           options={{ headerShown: false, presentation: 'modal' }}
         />
         <Stack.Screen name="stock/replenish" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" options={{ headerShown: false }} />
       </Stack>
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootNavigator />
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   boot: {
     flex: 1,
-    backgroundColor: '#1e40af',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bootBrand: { color: '#fff', fontSize: 28, fontWeight: '700' },
-  bootText: { color: '#bfdbfe', marginTop: 12, fontSize: 14 },
+  bootBrand: { fontSize: 28, fontWeight: '700' },
+  bootText: { marginTop: 12, fontSize: 14 },
 });
