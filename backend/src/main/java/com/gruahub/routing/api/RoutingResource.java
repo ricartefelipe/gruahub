@@ -63,16 +63,25 @@ public class RoutingResource {
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
     public PageResponse<RoutePlanResponse> listPlans(
         @QueryParam("page") @DefaultValue("0") int page,
-        @QueryParam("size") @DefaultValue("30") int size
+        @QueryParam("size") @DefaultValue("30") int size,
+        @QueryParam("date") String date
     ) {
         UUID tenantId = TenantContext.getTenantId();
         int lim = Math.min(size, 100);
-        long total = ((Number) em.createNativeQuery(
-            "SELECT COUNT(*) FROM route_plan WHERE tenant_id = :tid"
-        ).setParameter("tid", tenantId).getSingleResult()).longValue();
+        LocalDate filterDate = (date != null && !date.isBlank()) ? LocalDate.parse(date) : null;
+        String dateClause = filterDate != null
+            ? " AND COALESCE(rp.planned_date, rp.scheduled_date) = CAST(:date AS date) "
+            : "";
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> rows = em.createNativeQuery(
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM route_plan rp WHERE rp.tenant_id = :tid" + dateClause
+        ).setParameter("tid", tenantId);
+        if (filterDate != null) {
+            countQuery.setParameter("date", filterDate.toString());
+        }
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        var listQuery = em.createNativeQuery(
             "SELECT rp.id, rp.operator_user_id, " +
             "COALESCE(rp.planned_date, rp.scheduled_date), " +
             "rp.status, " +
@@ -81,7 +90,7 @@ public class RoutingResource {
             "rp.created_at " +
             "FROM route_plan rp " +
             "LEFT JOIN route_stop rs ON rs.route_plan_id = rp.id " +
-            "WHERE rp.tenant_id = :tid " +
+            "WHERE rp.tenant_id = :tid " + dateClause +
             "GROUP BY rp.id, rp.operator_user_id, rp.planned_date, rp.scheduled_date, " +
             "rp.status, rp.created_at " +
             "ORDER BY COALESCE(rp.planned_date, rp.scheduled_date) DESC " +
@@ -89,8 +98,13 @@ public class RoutingResource {
         )
             .setParameter("tid", tenantId)
             .setParameter("lim", lim)
-            .setParameter("off", page * lim)
-            .getResultList();
+            .setParameter("off", page * lim);
+        if (filterDate != null) {
+            listQuery.setParameter("date", filterDate.toString());
+        }
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = listQuery.getResultList();
 
         var content = rows.stream().map(r -> new RoutePlanResponse(
             (UUID) r[0],

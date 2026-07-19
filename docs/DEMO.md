@@ -58,6 +58,9 @@ e o status muda para `CONFIRMED`.
 
 ### Etapa 4 — Visita de campo no mobile
 
+O seed demo cria rota do dia (`CURRENT_DATE`) com 2 paradas.
+O app chama `GET /api/v1/routes?date=YYYY-MM-DD` e usa `operatingPointId` na visita.
+
 Abrir Expo Go → escanear QR do `npx expo start`.
 Login com `operador@diversao.demo` / `gruahub@2025`.
 
@@ -68,6 +71,7 @@ Fluxo:
 4. Escanear QR Code da máquina (ou digitar)
 
 A visita é salva localmente (SQLite) e sincronizada com o backend.
+Se a rota estiver vazia: no web, **Rotas → Gerar rota de hoje**, ou reinicie o backend com `QUARKUS_LIQUIBASE_CONTEXTS=demo`.
 
 ---
 
