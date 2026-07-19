@@ -1,12 +1,28 @@
 'use client';
 
 import { signIn, useSession } from 'next-auth/react';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+function LoginErrorBanner() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+  if (!error) return null;
+
+  return (
+    <div
+      className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800"
+      role="alert"
+    >
+      Não foi possível iniciar o login SSO ({error}). Tente novamente.
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -30,9 +46,21 @@ export default function LoginPage() {
           <p className="text-gray-500 mt-2">Plataforma de Gestão de Máquinas</p>
         </div>
 
+        <Suspense fallback={null}>
+          <LoginErrorBanner />
+        </Suspense>
+
         <button
-          onClick={() => signIn('keycloak', { callbackUrl: '/dashboard' })}
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            setPending(true);
+            void signIn('keycloak', { callbackUrl: '/dashboard' }).finally(() => {
+              setPending(false);
+            });
+          }}
           className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700
+                     disabled:opacity-60 disabled:cursor-not-allowed
                      text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200
                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           aria-label="Entrar com Keycloak SSO"
@@ -41,10 +69,9 @@ export default function LoginPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
-          Entrar com SSO
+          {pending ? 'Redirecionando…' : 'Entrar com SSO'}
         </button>
 
-        {/* Credenciais de demo: visíveis apenas em desenvolvimento */}
         {process.env.NODE_ENV !== 'production' && (
           <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
             <p className="font-medium mb-2">⚠ Ambiente de demonstração</p>
