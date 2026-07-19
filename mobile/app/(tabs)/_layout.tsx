@@ -6,11 +6,12 @@
 import { Tabs, Redirect } from 'expo-router';
 import { Text } from 'react-native';
 import { useAuthStore } from '../../src/store/authStore';
+import { useTheme } from '../../src/theme';
 
 export default function TabLayout() {
   const { accessToken } = useAuthStore();
+  const { colors } = useTheme();
 
-  // Guard: sem token → login
   if (!accessToken) {
     return <Redirect href="/login" />;
   }
@@ -19,9 +20,12 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#9ca3af',
-        tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#e5e7eb' },
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarStyle: {
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.border,
+        },
       }}
     >
       <Tabs.Screen
