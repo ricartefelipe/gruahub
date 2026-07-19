@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
     networks: [gruahub]
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-gruahub}
       POSTGRES_USER: ${POSTGRES_USER:-gruahub}
