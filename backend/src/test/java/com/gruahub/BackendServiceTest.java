@@ -158,7 +158,7 @@ class BackendServiceTest {
     @TestTransaction
     void machine_list_is_scoped_to_tenant() {
         // Conta máquinas de Tenant A antes
-        long beforeA = machineService.list(0, 1000).total();
+        long beforeA = machineService.list(0, 1000).totalElements();
 
         // Cria uma máquina para Tenant A
         machineService.create(new CreateMachineRequest(
@@ -167,13 +167,13 @@ class BackendServiceTest {
         ));
 
         // Verifica que Tenant A tem +1
-        assertThat(machineService.list(0, 1000).total()).isEqualTo(beforeA + 1);
+        assertThat(machineService.list(0, 1000).totalElements()).isEqualTo(beforeA + 1);
 
         // Troca para Tenant B
         TenantContext.clear();
         TenantContext.set(TENANT_B, "tenant-b", "user-b", "user-b@test.local");
 
-        long beforeB = machineService.list(0, 1000).total();
+        long beforeB = machineService.list(0, 1000).totalElements();
 
         // Cria uma máquina para Tenant B
         machineService.create(new CreateMachineRequest(
@@ -182,7 +182,7 @@ class BackendServiceTest {
         ));
 
         // Tenant B vê apenas suas próprias máquinas (+1, não a de Tenant A)
-        assertThat(machineService.list(0, 1000).total()).isEqualTo(beforeB + 1);
+        assertThat(machineService.list(0, 1000).totalElements()).isEqualTo(beforeB + 1);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -412,7 +412,7 @@ class BackendServiceTest {
         )
             .setParameter("id", randomId)
             .setParameter("tid", TENANT_A)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
         // Antes da correção: getSingleResult() lançaria NoResultException → 500.
         // Após a correção: getSingleResultOrNull() retorna null → recurso lança NotFoundException → 404.
@@ -446,7 +446,7 @@ class BackendServiceTest {
             .setParameter("mid", machineId)
             .setParameter("pid", prizeId)
             .setParameter("delta", delta1)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
         // Segunda atualização (UPDATE path)
         Number afterSecond = (Number) em.createNativeQuery(
@@ -463,7 +463,7 @@ class BackendServiceTest {
             .setParameter("mid", machineId)
             .setParameter("pid", prizeId)
             .setParameter("delta", delta2)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
         // 10 + (-3) = 7
         assertThat(afterSecond.intValue()).isEqualTo(7);
@@ -503,7 +503,7 @@ class BackendServiceTest {
             .setParameter("mid", machineId)
             .setParameter("pid", prizeId)
             .setParameter("delta", -100)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
         assertThat(result.intValue()).isEqualTo(0);
     }

@@ -111,7 +111,7 @@ public class AlertResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         if (row == null) throw new NotFoundException("Alert not found: " + id);
         return mapRow(row);
     }

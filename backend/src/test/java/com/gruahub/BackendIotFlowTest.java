@@ -384,7 +384,7 @@ class BackendIotFlowTest {
                 "ORDER BY created_at DESC LIMIT 1")
                 .setParameter("pid", paymentId)
                 .setParameter("tid", TENANT_ID)
-                .getSingleResultOrNull();
+                .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         return result != null ? result.toString() : null;
     }
 
@@ -393,7 +393,7 @@ class BackendIotFlowTest {
                 "SELECT status FROM credit_grant WHERE id = :id AND tenant_id = :tid")
                 .setParameter("id",  creditId)
                 .setParameter("tid", TENANT_ID)
-                .getSingleResultOrNull();
+                .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         return result != null ? result.toString() : null;
     }
 }
