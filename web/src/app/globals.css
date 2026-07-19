@@ -7,11 +7,10 @@
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  color-scheme: dark;
 }
 
 body {
@@ -19,8 +18,71 @@ body {
   background: var(--background);
 }
 
-/* Utility: status badges */
+.dark .bg-white {
+  background-color: #1e293b;
+}
+
+.dark .bg-gray-50 {
+  background-color: #0f172a;
+}
+
+.dark .bg-gray-100 {
+  background-color: #0f172a;
+}
+
+.dark .bg-gray-200 {
+  background-color: #334155;
+}
+
+.dark .text-gray-900 {
+  color: #f1f5f9;
+}
+
+.dark .text-gray-800 {
+  color: #e2e8f0;
+}
+
+.dark .text-gray-700 {
+  color: #cbd5e1;
+}
+
+.dark .text-gray-600 {
+  color: #94a3b8;
+}
+
+.dark .text-gray-500 {
+  color: #94a3b8;
+}
+
+.dark .text-gray-400 {
+  color: #94a3b8;
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: #334155;
+}
+
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #334155;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #334155;
+}
+
 .badge-online  { @apply bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded; }
 .badge-offline { @apply bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded; }
 .badge-maintenance { @apply bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded; }
 .badge-draft   { @apply bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded; }
+
+.dark .badge-online  { @apply bg-green-900/40 text-green-300; }
+.dark .badge-offline { @apply bg-red-900/40 text-red-300; }
+.dark .badge-maintenance { @apply bg-yellow-900/40 text-yellow-300; }
+.dark .badge-draft   { @apply bg-slate-700 text-slate-200; }
