@@ -116,7 +116,7 @@ gruahub/
 │       ├── shared/             # TenantContext, Money, filtros, outbox
 │       ├── identity/           # Tenant, ExternalUser
 │       ├── fleet/              # Machine, MachineModel, Controller
-│       ├── iot/                # MQTT, IotEventService, HeartbeatScheduler
+│       ├── iot/                # MQTT, IotEventService, HeartbeatTimeoutScheduler
 │       ├── payments/           # PaymentTransaction, SandboxProvider, webhook
 │       ├── plays/              # CreditGrant, PlaySession, CreditService
 │       ├── reconciliation/     # ReconciliationCase, ReconciliationScheduler

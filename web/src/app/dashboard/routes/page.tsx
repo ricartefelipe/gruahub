@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 
 interface RoutePlan {
@@ -31,6 +31,7 @@ function fmtDate(iso: string) {
 }
 
 export default function RoutesPage() {
+  const qc = useQueryClient();
   const { data: plans = [], isLoading, isError: plansError, error: plansErrorObj } = useQuery<RoutePlan[]>({
     queryKey: ['route-plans'],
     queryFn: () =>
@@ -46,11 +47,20 @@ export default function RoutesPage() {
     enabled: !!selected,
   });
 
+  const generate = useMutation({
+    mutationFn: () => api.post('/routes/generate', null, { params: { maxStops: 10 } }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['route-plans'] });
+      const id = res.data?.id as string | undefined;
+      if (id) setSelected(id);
+    },
+  });
+
   useEffect(() => {
     if (plans.length > 0 && !selected) {
       setSelected(plans[0].id);
     }
-  }, [plans]);
+  }, [plans, selected]);
 
   if (isLoading) {
     return <div className="text-center py-12 text-gray-400">Carregando rotas...</div>;
@@ -58,10 +68,28 @@ export default function RoutesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Rotas</h1>
-        <p className="text-sm text-gray-500 mt-1">Planos de rota por operador — ordenados por score de prioridade</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Rotas</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Planos de rota ordenados por score de prioridade dos pontos
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => generate.mutate()}
+          disabled={generate.isPending}
+          className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        >
+          {generate.isPending ? 'Gerando...' : 'Gerar rota de hoje'}
+        </button>
       </div>
+
+      {generate.isError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
+          Erro ao gerar rota: {(generate.error as Error)?.message ?? 'falha de comunicação'}
+        </div>
+      )}
 
       {plansError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm" role="alert">
@@ -78,11 +106,12 @@ export default function RoutesPage() {
       {plans.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
           <p className="text-gray-500">Nenhum plano de rota criado.</p>
-          <p className="text-sm text-gray-400 mt-1">As rotas são geradas automaticamente com base nas prioridades dos pontos.</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Use &quot;Gerar rota de hoje&quot; para criar um plano com os pontos ativos por prioridade.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-4 h-[calc(100vh-220px)]">
-          {/* Plan list */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-y-auto">
             <div className="p-3 border-b border-gray-100 bg-gray-50">
               <h2 className="text-sm font-semibold text-gray-700">Planos</h2>
@@ -115,7 +144,6 @@ export default function RoutesPage() {
             </ul>
           </div>
 
-          {/* Stop detail */}
           <div className="col-span-2 bg-white border border-gray-200 rounded-xl overflow-y-auto">
             {selected ? (
               <>

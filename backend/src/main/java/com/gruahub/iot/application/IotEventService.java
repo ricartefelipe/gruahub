@@ -168,13 +168,16 @@ public class IotEventService {
                         + "[messageId=%s type=%s] — processing anyway",
                         machineId, lastSeq, newSeq, gap, messageId, messageType);
 
-                // Gerar alerta de gap de sequência
                 em.createNativeQuery(
                         "INSERT INTO alert (id, tenant_id, alert_type, severity, machine_id, " +
                         "title, message, status, created_at) " +
-                        "VALUES (gen_random_uuid(), :tid, 'SEQUENCE_GAP', 'INFO', :mid, " +
-                        "'Sequence Gap Detectado', :msg, 'OPEN', :now) " +
-                        "ON CONFLICT DO NOTHING")
+                        "SELECT gen_random_uuid(), :tid, 'SEQUENCE_GAP', 'INFO', :mid, " +
+                        "'Sequence Gap Detectado', :msg, 'OPEN', :now " +
+                        "WHERE NOT EXISTS (" +
+                        "  SELECT 1 FROM alert a " +
+                        "  WHERE a.tenant_id = :tid AND a.machine_id = :mid " +
+                        "  AND a.alert_type = 'SEQUENCE_GAP' AND a.status = 'OPEN'" +
+                        ")")
                         .setParameter("tid", tenantId)
                         .setParameter("mid", machineId)
                         .setParameter("msg", String.format(
