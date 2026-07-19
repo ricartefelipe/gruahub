@@ -1,24 +1,7 @@
-/**
- * Cliente HTTP do app mobile.
- *
- * Garantias:
- *   - Timeout de 15 s via AbortController
- *   - Header Authorization: Bearer <token>
- *   - Header X-Correlation-Id (UUID v4 por requisição, para rastreabilidade)
- *   - Header Idempotency-Key (clientOperationId) quando fornecido
- *   - Parse de Problem Details RFC 7807 como ApiError tipado
- *   - Tokens NUNCA logados
- */
-
 import { v4 as uuidv4 } from 'uuid';
-import Constants from 'expo-constants';
-
-const API_BASE: string =
-  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? 'http://localhost:8080';
+import { API_URL } from '../config/env';
 
 export const REQUEST_TIMEOUT_MS = 15_000;
-
-// ── Erro tipado RFC 7807 ─────────────────────────────────────────────────────
 
 export class ApiError extends Error {
   constructor(
@@ -31,36 +14,22 @@ export class ApiError extends Error {
     this.name = 'ApiError';
   }
 
-  /** True para falhas transitórias — vale retry com backoff. */
   get isRetryable(): boolean {
     return this.status >= 500 || this.status === 0;
   }
 
-  /** True para falhas permanentes — não adianta tentar novamente. */
   get isPermanent(): boolean {
     return this.status === 400 || this.status === 403 || this.status === 422;
   }
 }
 
-// ── Opções de requisição ─────────────────────────────────────────────────────
-
 export interface FetchOptions extends Omit<RequestInit, 'headers'> {
   accessToken?: string;
   tenantId?: string;
-  /** clientOperationId para Idempotency-Key (enfileiramento offline). */
   operationId?: string;
-  /** Substituir URL base. */
   baseUrl?: string;
 }
 
-// ── Função principal ─────────────────────────────────────────────────────────
-
-/**
- * Realiza uma requisição HTTP com timeout, correlationId e Problem Details.
- *
- * @throws ApiError   em respostas 4xx/5xx com body Problem Details
- * @throws Error      em timeout ou erro de rede
- */
 export async function apiFetch(
   path: string,
   options: FetchOptions = {}
@@ -68,7 +37,7 @@ export async function apiFetch(
   const { accessToken, tenantId, operationId, baseUrl, ...init } = options;
 
   const correlationId = uuidv4();
-  const url = `${baseUrl ?? API_BASE}${path}`;
+  const url = `${baseUrl ?? API_URL}${path}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -94,8 +63,9 @@ export async function apiFetch(
     }
 
     return response;
-  } catch (err: any) {
-    if (err.name === 'AbortError') {
+  } catch (err: unknown) {
+    const anyErr = err as { name?: string; message?: string };
+    if (anyErr.name === 'AbortError') {
       throw new ApiError(
         0,
         'urn:gruahub:error:timeout',
@@ -104,19 +74,16 @@ export async function apiFetch(
       );
     }
     if (err instanceof ApiError) throw err;
-    // Erro de rede puro (sem resposta)
     throw new ApiError(
       0,
       'urn:gruahub:error:network',
-      'Network error',
-      err?.message ?? 'sem conexão'
+      'Sem conexão',
+      anyErr?.message ?? 'Não foi possível alcançar a API'
     );
   } finally {
     clearTimeout(timer);
   }
 }
-
-// ── Atalhos ──────────────────────────────────────────────────────────────────
 
 export function apiGet(path: string, options?: FetchOptions): Promise<Response> {
   return apiFetch(path, { ...options, method: 'GET' });
@@ -134,8 +101,6 @@ export function apiPost(
   });
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 async function throwApiError(response: Response): Promise<never> {
   let type = `urn:gruahub:error:http-${response.status}`;
   let title = response.statusText || `HTTP ${response.status}`;
@@ -152,7 +117,7 @@ async function throwApiError(response: Response): Promise<never> {
       detail = (await response.text()).slice(0, 300);
     }
   } catch {
-    // parsing falhou — usa valores padrão
+    // keep defaults
   }
 
   throw new ApiError(response.status, type, title, detail);

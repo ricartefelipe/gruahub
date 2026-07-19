@@ -28,7 +28,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Rota',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🗺️</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>R</Text>,
           tabBarAccessibilityLabel: 'Rota do dia',
         }}
       />
@@ -36,7 +36,7 @@ export default function TabLayout() {
         name="queue"
         options={{
           title: 'Fila',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>📤</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>F</Text>,
           tabBarAccessibilityLabel: 'Fila de sincronização',
         }}
       />
@@ -44,7 +44,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>👤</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>P</Text>,
           tabBarAccessibilityLabel: 'Meu perfil',
         }}
       />
