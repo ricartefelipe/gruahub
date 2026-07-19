@@ -53,7 +53,7 @@ Fase 8: Hardening (segurança, observabilidade, E2E, docs finais)
 | OpenAPI UI | http://localhost:8080/q/swagger-ui | — |
 | Frontend Web | http://localhost:3000 | admin@gruahub.local / gruahub@2025 |
 | Keycloak Admin | http://localhost:8180 | admin / admin |
-| EMQX Dashboard | http://localhost:18083 | admin / public |
+| EMQX Dashboard | http://localhost:18083 | admin / public12 |
 | MinIO Console | http://localhost:9001 | minioadmin / minioadmin |
 | PostgreSQL | localhost:5432 | gruahub / gruahub |
 

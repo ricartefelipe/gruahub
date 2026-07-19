@@ -90,12 +90,15 @@ services:
       - emqx_data:/opt/emqx/data
       - emqx_log:/opt/emqx/log
       - ./emqx/acl.conf:/opt/emqx/etc/acl.conf:ro
+      - ./emqx/docker-entrypoint-wrapper.sh:/docker-entrypoint-wrapper.sh:ro
+    entrypoint: ["/bin/sh", "/docker-entrypoint-wrapper.sh"]
+    command: ["/opt/emqx/bin/emqx", "foreground"]
     healthcheck:
-      test: ["CMD", "/opt/emqx/bin/emqx", "ping"]
+      test: ["CMD", "sh", "-c", "/opt/emqx/bin/emqx ping && test -f /tmp/emqx-admin-synced"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 12
+      start_period: 40s
 
   emqx-users:
     image: curlimages/curl:8.7.1

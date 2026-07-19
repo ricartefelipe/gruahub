@@ -110,7 +110,7 @@ docker compose logs machine-sim --tail=20
 
 1. No browser, navegar para uma máquina.
 2. Mostrar que `última_jogada` atualiza após `play_completed` chegar.
-3. Abrir painel EMQX: `http://localhost:18083` (admin / public) → **Topics** → mostrar tópico `v1/+/machines/+/telemetry`.
+3. Abrir painel EMQX: `http://localhost:18083` (admin / public12) → **Topics** → mostrar tópico `v1/+/machines/+/telemetry`.
 
 **Ponto de atenção:** MQTT schema-v1.json é validado na chegada; mensagens malformadas são rejeitadas com log de erro.
 
