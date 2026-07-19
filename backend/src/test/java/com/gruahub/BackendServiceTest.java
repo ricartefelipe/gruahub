@@ -7,6 +7,7 @@ import com.gruahub.fleet.application.MachineService;
 import com.gruahub.fleet.domain.MachineStatus;
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.domain.TenantContext;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -56,7 +57,22 @@ class BackendServiceTest {
 
     @BeforeEach
     void setTenantA() {
+        ensureTenant(TENANT_A, "tenant-a", "Tenant A");
+        ensureTenant(TENANT_B, "tenant-b", "Tenant B");
         TenantContext.set(TENANT_A, "tenant-a", "user-a", "user-a@test.local");
+    }
+
+    private void ensureTenant(UUID id, String slug, String name) {
+        QuarkusTransaction.requiringNew().run(() -> {
+            em.createNativeQuery(
+                    "INSERT INTO tenant (id, name, slug, status, settings, created_at, updated_at, version) " +
+                    "VALUES (:id, :name, :slug, 'ACTIVE', CAST('{}' AS jsonb), NOW(), NOW(), 0) " +
+                    "ON CONFLICT (id) DO NOTHING")
+                    .setParameter("id", id)
+                    .setParameter("name", name)
+                    .setParameter("slug", slug)
+                    .executeUpdate();
+        });
     }
 
     @AfterEach
@@ -431,15 +447,14 @@ class BackendServiceTest {
         int delta1 = 10; // STOCK_IN
         int delta2 = -3; // PRIZE_GIVEN
 
-        // Primeira inserção (INSERT path)
         em.createNativeQuery(
             "INSERT INTO machine_stock_balance " +
-            "  (id, tenant_id, machine_id, prize_id, current_quantity, capacity, version) " +
-            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 300, 0) " +
-            "ON CONFLICT (machine_id, prize_id, tenant_id) DO UPDATE " +
-            "  SET current_quantity = GREATEST(0, machine_stock_balance.current_quantity + :delta), " +
+            "  (id, tenant_id, machine_id, prize_id, quantity, minimum_quantity, version) " +
+            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 5, 0) " +
+            "ON CONFLICT (machine_id, prize_id) DO UPDATE " +
+            "  SET quantity = GREATEST(0, machine_stock_balance.quantity + :delta), " +
             "      updated_at = NOW(), version = machine_stock_balance.version + 1 " +
-            "RETURNING current_quantity"
+            "RETURNING quantity"
         )
             .setParameter("newId", UUID.randomUUID())
             .setParameter("tid", TENANT_A)
@@ -448,15 +463,14 @@ class BackendServiceTest {
             .setParameter("delta", delta1)
             .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
-        // Segunda atualização (UPDATE path)
         Number afterSecond = (Number) em.createNativeQuery(
             "INSERT INTO machine_stock_balance " +
-            "  (id, tenant_id, machine_id, prize_id, current_quantity, capacity, version) " +
-            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 300, 0) " +
-            "ON CONFLICT (machine_id, prize_id, tenant_id) DO UPDATE " +
-            "  SET current_quantity = GREATEST(0, machine_stock_balance.current_quantity + :delta), " +
+            "  (id, tenant_id, machine_id, prize_id, quantity, minimum_quantity, version) " +
+            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 5, 0) " +
+            "ON CONFLICT (machine_id, prize_id) DO UPDATE " +
+            "  SET quantity = GREATEST(0, machine_stock_balance.quantity + :delta), " +
             "      updated_at = NOW(), version = machine_stock_balance.version + 1 " +
-            "RETURNING current_quantity"
+            "RETURNING quantity"
         )
             .setParameter("newId", UUID.randomUUID())
             .setParameter("tid", TENANT_A)
@@ -475,12 +489,11 @@ class BackendServiceTest {
         UUID machineId = UUID.randomUUID();
         UUID prizeId = UUID.randomUUID();
 
-        // INSERT com quantidade inicial 5
         em.createNativeQuery(
             "INSERT INTO machine_stock_balance " +
-            "  (id, tenant_id, machine_id, prize_id, current_quantity, capacity, version) " +
-            "VALUES (:newId, :tid, :mid, :pid, 5, 300, 0) " +
-            "ON CONFLICT (machine_id, prize_id, tenant_id) DO NOTHING"
+            "  (id, tenant_id, machine_id, prize_id, quantity, minimum_quantity, version) " +
+            "VALUES (:newId, :tid, :mid, :pid, 5, 5, 0) " +
+            "ON CONFLICT (machine_id, prize_id) DO NOTHING"
         )
             .setParameter("newId", UUID.randomUUID())
             .setParameter("tid", TENANT_A)
@@ -488,15 +501,14 @@ class BackendServiceTest {
             .setParameter("pid", prizeId)
             .executeUpdate();
 
-        // Tenta dar -100 (mais que o saldo) → deve ficar em 0
         Number result = (Number) em.createNativeQuery(
             "INSERT INTO machine_stock_balance " +
-            "  (id, tenant_id, machine_id, prize_id, current_quantity, capacity, version) " +
-            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 300, 0) " +
-            "ON CONFLICT (machine_id, prize_id, tenant_id) DO UPDATE " +
-            "  SET current_quantity = GREATEST(0, machine_stock_balance.current_quantity + :delta), " +
+            "  (id, tenant_id, machine_id, prize_id, quantity, minimum_quantity, version) " +
+            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 5, 0) " +
+            "ON CONFLICT (machine_id, prize_id) DO UPDATE " +
+            "  SET quantity = GREATEST(0, machine_stock_balance.quantity + :delta), " +
             "      updated_at = NOW(), version = machine_stock_balance.version + 1 " +
-            "RETURNING current_quantity"
+            "RETURNING quantity"
         )
             .setParameter("newId", UUID.randomUUID())
             .setParameter("tid", TENANT_A)

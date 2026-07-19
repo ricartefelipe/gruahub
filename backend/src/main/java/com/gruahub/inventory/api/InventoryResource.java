@@ -99,8 +99,10 @@ public class InventoryResource {
 
         String sql =
             "SELECT b.machine_id, m.asset_number, b.prize_id, p.name, p.sku, " +
-            "b.current_quantity, b.capacity, " +
-            "CASE WHEN b.capacity > 0 THEN (b.current_quantity * 100.0 / b.capacity) ELSE 0 END as pct " +
+            "b.quantity, COALESCE(b.minimum_quantity, 5), " +
+            "CASE WHEN COALESCE(b.minimum_quantity, 5) > 0 " +
+            "THEN (b.quantity * 100.0 / GREATEST(COALESCE(b.minimum_quantity, 5), b.quantity, 1)) " +
+            "ELSE 0 END as pct " +
             "FROM machine_stock_balance b " +
             "JOIN machine m ON m.id = b.machine_id " +
             "JOIN prize p ON p.id = b.prize_id " +
@@ -197,19 +199,15 @@ public class InventoryResource {
             ? -Math.abs(req.quantityDelta())
             : Math.abs(req.quantityDelta());
 
-        // UPSERT atômico no saldo.
-        // INSERT ON CONFLICT DO UPDATE é atômico no PostgreSQL — elimina a race
-        // condition de SELECT→INSERT/UPDATE separados sob carga concorrente.
-        // RETURNING retorna o novo current_quantity (após GREATEST clamp).
         Number newQty = (Number) em.createNativeQuery(
             "INSERT INTO machine_stock_balance " +
-            "  (id, tenant_id, machine_id, prize_id, current_quantity, capacity, version) " +
-            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 300, 0) " +
-            "ON CONFLICT (machine_id, prize_id, tenant_id) DO UPDATE " +
-            "  SET current_quantity = GREATEST(0, machine_stock_balance.current_quantity + :delta), " +
+            "  (id, tenant_id, machine_id, prize_id, quantity, minimum_quantity, version) " +
+            "VALUES (:newId, :tid, :mid, :pid, GREATEST(0, :delta), 5, 0) " +
+            "ON CONFLICT (machine_id, prize_id) DO UPDATE " +
+            "  SET quantity = GREATEST(0, machine_stock_balance.quantity + :delta), " +
             "      updated_at = NOW(), " +
             "      version = machine_stock_balance.version + 1 " +
-            "RETURNING current_quantity"
+            "RETURNING quantity"
         )
             .setParameter("newId", UUID.randomUUID())
             .setParameter("tid", tenantId)

@@ -89,10 +89,10 @@
 | `backend` / `web` / `mobile` / `simulators` / `contracts` | Gates principais |
 | `e2e-smoke` | Playwright smoke (Next.js only; sem Keycloak/stack) |
 | `docker-compose` | Smoke infra em push/PR para `develop` e `main` (timeout 12m) |
-| `security` | OWASP e `npm audit` usam `\|\| true` — **não** falham o pipeline |
-| Expo export | Step mobile termina com `\|\| true` |
+| `security` | Steps nomeados `*(soft-fail)`: OWASP e `npm audit --audit-level=critical` com `\|\| true` (hoje há critical no Next 14.2.5) |
+| Expo export | Step `Export static bundle (soft-fail)` — não bloqueia o job mobile |
 
-Não afirmar “nenhum soft-fail”: há soft-fails deliberados em security/export.
+Soft-fails são deliberados e visíveis no nome do step; upgrade de Next/`npm audit` gate fica como follow-up.
 
 ### Documentação
 

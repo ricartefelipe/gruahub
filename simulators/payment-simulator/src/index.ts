@@ -29,15 +29,19 @@ import { v4 as uuidv4 } from 'uuid';
 // Configuração via variáveis de ambiente
 // ================================================================
 const BACKEND_URL  = process.env.BACKEND_URL   || 'http://localhost:8080';
-const SANDBOX_SECRET = process.env.SANDBOX_SECRET;
 const TENANT_ID    = process.env.TENANT_ID     || '11111111-0000-0000-0000-000000000001';
 const MACHINE_ID   = process.env.MACHINE_ID    || '66666666-0000-0000-0000-000000000001';
 const AMOUNT_CENTS = parseInt(process.env.AMOUNT_CENTS || '200', 10);
 
-if (!SANDBOX_SECRET) {
-  console.error('[Payment Simulator] SANDBOX_SECRET is required (see infra/.env.example)');
-  process.exit(1);
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`[Payment Simulator] ${name} is required (see infra/.env.example)`);
+  }
+  return value;
 }
+
+const SANDBOX_SECRET = requireEnv('SANDBOX_SECRET');
 
 // ================================================================
 // HTTP helpers
