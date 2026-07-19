@@ -25,6 +25,7 @@ Plataforma B2B multi-tenant para gestão de máquinas de pelúcia e gruas: telem
 ### 1. Subir infraestrutura
 
 ```bash
+cp infra/.env.example infra/.env   # segredos obrigatórios — sem defaults no compose
 cd infra
 docker compose up -d
 ```

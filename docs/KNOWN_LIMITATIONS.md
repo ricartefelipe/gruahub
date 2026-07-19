@@ -27,7 +27,7 @@
 
 ## Status de Implementação
 
-Consulte `docs/TASKS.md` para o status detalhado de cada item.
+Consulte `docs/TASKS.md` (estado real) e `docs/MVP_READINESS.md`.
 
 | Componente | Status |
 |-----------|--------|
