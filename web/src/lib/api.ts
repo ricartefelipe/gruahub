@@ -380,7 +380,13 @@ export const routesApi = {
   list: (page = 0, size = 30) =>
     apiClient.get<PageResponse<Route>>('/routes', { params: { page, size } }),
   stops: (routeId: string) =>
-    apiClient.get<RouteStop[]>(`/routes/${routeId}/stops`),
+    apiClient.get<PageResponse<RouteStop>>(`/routes/${routeId}/stops`),
+  generate: (maxStops = 10) =>
+    apiClient.post<{ id: string; totalStops: number; plannedDate: string }>(
+      '/routes/generate',
+      null,
+      { params: { maxStops } },
+    ),
 };
 
 export const reportsApi = {

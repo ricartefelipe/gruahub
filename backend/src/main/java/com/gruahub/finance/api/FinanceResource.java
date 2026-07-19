@@ -22,11 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para liquidações financeiras e comissões.
- * As liquidações são calculadas pelo SettlementScheduler (job periódico)
- * ou criadas manualmente pelo FINANCE/TENANT_ADMIN.
- */
 @Path("/api/v1/finance")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -117,7 +112,6 @@ public class FinanceResource {
     public SettlementResponse approveSettlement(@PathParam("id") UUID id) {
         UUID tenantId = TenantContext.getTenantId();
         int updated = em.createNativeQuery(
-            // Aceita DRAFT (default da migração) e PENDING (criado pelo scheduler)
             "UPDATE settlement SET status = 'APPROVED', updated_at = NOW() " +
             "WHERE id = :id AND tenant_id = :tid AND status IN ('PENDING', 'DRAFT')"
         )

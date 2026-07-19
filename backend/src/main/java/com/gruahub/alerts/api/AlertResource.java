@@ -21,10 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para alertas operacionais.
- * Alertas são gerados automaticamente pelo HeartbeatTimeoutScheduler e outros jobs.
- */
 @Path("/api/v1/alerts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

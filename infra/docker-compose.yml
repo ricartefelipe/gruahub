@@ -248,6 +248,8 @@ services:
         condition: service_healthy
       emqx-users:
         condition: service_completed_successfully
+      backend:
+        condition: service_healthy
 
   payment-simulator:
     build:

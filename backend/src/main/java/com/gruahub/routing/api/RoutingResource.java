@@ -19,18 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para planos de rota.
- * Rotas são geradas pelo RoutePlanScheduler (ordenadas por priority_score)
- * ou manualmente pelo TENANT_ADMIN.
- *
- * Notas de schema:
- *  - route_plan.operator_user_id  → UUID NOT NULL (migração 012)
- *  - route_plan.scheduled_date    → date NOT NULL  (migração 012)
- *  - route_plan.planned_date      → date nullable  (migração 017, alias)
- *  - route_stop.sequence_order    → int  NOT NULL  (migração 012)
- *  - route_stop.stop_order        → int  nullable  (migração 017, alias)
- */
 @Path("/api/v1/routes")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

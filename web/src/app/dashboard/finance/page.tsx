@@ -81,7 +81,9 @@ export default function FinancePage() {
       ) : settlements.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
           <p className="text-gray-500">Nenhuma liquidação registrada ainda.</p>
-          <p className="text-sm text-gray-400 mt-1">As liquidações são calculadas automaticamente ao final do período.</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Liquidações de demonstração vêm do seed; aprovação e pagamento são feitos nesta tela.
+          </p>
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
