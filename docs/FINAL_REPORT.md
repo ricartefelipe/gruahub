@@ -136,9 +136,9 @@ A plataforma cobre o ciclo completo: **máquina online → pagamento → crédit
 | `simulators` | TypeCheck + build (machine + payment) | ✅ |
 | `contracts` | `ajv compile` — schema MQTT draft-07 | ✅ |
 | `security` | OWASP Dependency Check CVSS≥9 + npm audit critical | ✅ |
-| `docker-compose` | Smoke test infra (main/master only) | ✅ |
+| `docker-compose` | Smoke infra em push/PR (`develop`/`main`) | ✅ |
 
-Nenhum job usa `continue-on-error: true`.
+Security/OWASP e expo export usam soft-fail (`|| true`). Ver `MVP_READINESS.md`.
 
 ### 3.7 Documentação
 
@@ -198,7 +198,7 @@ Ver `COMMERCIAL_READINESS.md` para roadmap de go-live.
 **O GruaHub MVP está tecnicamente pronto para demonstração.**
 
 Todos os 7 componentes classificados como **MVP DEMONSTRÁVEL**.  
-CI passa com 7 jobs independentes, sem `continue-on-error`.  
+CI tem 7 jobs; security e expo export têm soft-fail deliberado.
 Segurança multitenant verificada em teste automatizado.  
 Documentação honesta sobre escopo, limitações e gaps para produção.
 

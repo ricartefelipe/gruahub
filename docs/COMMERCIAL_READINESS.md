@@ -16,7 +16,7 @@ Estes itens funcionam hoje, sem condicionantes:
 - Telemetria IoT via EMQX com schema validado
 - Pagamentos sandbox com HMAC e idempotência
 - Rotas, visitas, sangria, comissão, alertas funcionais
-- CI/CD com 7 jobs, sem `continue-on-error`
+- CI/CD com 7 jobs (security/export com soft-fail; smoke compose em PR/develop)
 
 ---
 
