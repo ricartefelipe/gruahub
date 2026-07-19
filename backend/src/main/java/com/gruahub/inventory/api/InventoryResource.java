@@ -14,6 +14,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import org.jboss.logging.Logger;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -196,7 +197,7 @@ public class InventoryResource {
             .setParameter("mid", req.machineId())
             .setParameter("pid", req.prizeId())
             .setParameter("delta", delta)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
         int after  = newQty != null ? newQty.intValue() : Math.max(0, delta);
         // before é a aproximação: after - delta, clamped a 0 para não ser negativo.

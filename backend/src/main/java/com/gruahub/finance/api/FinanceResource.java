@@ -206,7 +206,7 @@ public class FinanceResource {
             "FROM settlement s " +
             "JOIN operating_point op ON op.id = s.operating_point_id " +
             "WHERE s.id = :id AND s.tenant_id = :tid"
-        ).setParameter("id", id).setParameter("tid", tenantId).getSingleResultOrNull();
+        ).setParameter("id", id).setParameter("tid", tenantId).unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         if (r == null) throw new NotFoundException("Settlement not found: " + id);
         return mapSettlementRow(r);
     }

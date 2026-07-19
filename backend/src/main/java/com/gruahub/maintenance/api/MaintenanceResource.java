@@ -125,7 +125,7 @@ public class MaintenanceResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         if (row == null) throw new NotFoundException("Ticket not found: " + id);
         return mapRow(row);
     }

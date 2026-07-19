@@ -99,7 +99,7 @@ public class EstablishmentResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
         if (row == null) throw new NotFoundException("Establishment not found: " + id);
 

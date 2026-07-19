@@ -56,17 +56,13 @@ databaseChangeLog:
       comment: "Documenta constraint exactly-once: um CreditGrant por PaymentTransaction"
       changes: []
 
-  # ── device_command: coluna published_at para rastreio de outbox ──────────────
+  # ── device_command: published_at (já criado em 005-004-device-command) ───────
+  # Mantido como changeSet documental para alinhar com o hardening IoT/pagamento.
   - changeSet:
       id: 018-005-device-command-published-at
       author: gruahub
-      changes:
-        - addColumn:
-            tableName: device_command
-            columns:
-              - column:
-                  name: published_at
-                  type: timestamptz
+      comment: "published_at já existe em 005-iot; evita ADD COLUMN duplicado"
+      changes: []
 
   # ── device_message_inbox: coluna device_id para identidade de dispositivo ────
   - changeSet:

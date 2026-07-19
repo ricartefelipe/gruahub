@@ -130,7 +130,7 @@ public class FieldVisitResource {
         )
             .setParameter("id", id)
             .setParameter("tid", tenantId)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
         if (row == null) throw new NotFoundException("Visit not found: " + id);
         return mapVisitRow(row);
     }
@@ -211,7 +211,7 @@ public class FieldVisitResource {
         )
             .setParameter("id", req.visitId())
             .setParameter("tid", tenantId)
-            .getSingleResultOrNull();
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
         if (existing == null) throw new NotFoundException("Visit not found: " + req.visitId());
         if ("COMPLETED".equals(existing[1])) {
