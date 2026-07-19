@@ -48,7 +48,8 @@ docker compose --profile backup up -d
 
 - HTTPS: `https://localhost` (certificado interno — aceite o aviso do browser ou use `curl -k`)
 - Prod-like: ajuste `NEXTAUTH_URL` / `NEXT_PUBLIC_API_URL` para `https://localhost` no `.env`
-- Backup: dumps em volume `postgres_backups` (`BACKUP_INTERVAL_SECONDS`, `BACKUP_RETENTION_DAYS`)
+- Backup: volume `postgres_backups`; offsite opcional via `BACKUP_S3_*`; drill `pg-restore-drill.sh`
+- Segredos: preferir `infra/.env`; produção pode usar `VAR_FILE` (ver `DEPLOYMENT.md`)
 - Detalhes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) e [docs/COMMERCIAL_READINESS.md](docs/COMMERCIAL_READINESS.md)
 
 ### 2. Subir o backend

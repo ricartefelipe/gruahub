@@ -27,6 +27,7 @@ STOPSIGNAL SIGTERM
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
 
 ENTRYPOINT ["sh", "-c", \
-    "java $JAVA_OPTS \
+    "if [ -f /scripts/load-secret-files.sh ]; then . /scripts/load-secret-files.sh; fi; \
+     exec java $JAVA_OPTS \
      -Djava.util.logging.manager=org.jboss.logmanager.LogManager \
      -jar quarkus-run.jar"]

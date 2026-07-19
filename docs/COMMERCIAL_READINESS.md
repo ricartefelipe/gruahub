@@ -33,9 +33,9 @@ Estes itens funcionam hoje, sem condicionantes:
 | Gap | Risco | Esforço estimado | Estado |
 |-----|-------|------------------|--------|
 | TLS/HTTPS em deploy real (Let's Encrypt / cert gerenciado) | Dados em trânsito sem criptografia em produção pública | 1–2 dias (Caddy/Traefik + DNS) | Parcial — HTTPS local com `tls internal` pronto; produção pública ainda aberta |
-| Secrets em Vault / AWS Secrets Manager | Rotação manual; risco de exposure em CI logs | 3–5 dias | Parcial — Compose 100% `${VAR}`; Vault/SM ainda necessário para produção |
+| Secrets em Vault / AWS Secrets Manager | Rotação manual; risco de exposure em CI logs | 2–4 dias | Parcial — `${VAR}` + hook `*_FILE`; Vault/SM ainda necessário para rotação gerenciada |
 | Rate limiting global / WAF / login | DDoS e enumeração de tenants | 1 dia restante (WAF / Keycloak atrás do edge) | Parcial — API global + Keycloak brute-force; sem WAF nem proxy Keycloak |
-| Backup Postgres com offsite (S3) | Perda de dados se o volume local falhar | 0,5–1 dia (upload S3 + restore drill) | Parcial — `pg_dump` local agendado; offsite/restore drill abertos |
+| Backup Postgres com offsite (S3) | Perda de dados se o volume local falhar | — | Parcial — local + upload S3-compat opcional + restore drill; falta política/runbook de DR |
 | Sem auditoria de penetração | Vulnerabilidades desconhecidas | Externo — 2–4 semanas | Aberto |
 
 ### Importantes — degradam a experiência
@@ -74,8 +74,10 @@ Entregue no Compose / backend (ver `DEPLOYMENT.md`):
 5. **Perímetro prod-like** — overlay sem publicar 8080/3000/Postgres/MinIO/dashboards; script `up-prod-like.sh`
 6. **Headers Caddy** — HSTS e headers básicos de browser hardening
 7. **Login throttle** — brute-force Keycloak no realm importado
+8. **Backup offsite opcional** — `BACKUP_S3_*` (MinIO/AWS) + `pg-restore-drill.sh`
+9. **Secrets `*_FILE`** — hook Docker-secrets-style no backend/web/backup (sem Vault)
 
-Ainda aberto nesta frente: Vault/SM (`*_FILE` path), cert público, offsite backup + restore drill, Keycloak atrás do Caddy, WAF, FCM/SMS/e-mail, pen-test, pagamento real, hardware, NF-e.
+Ainda aberto nesta frente: Vault/SM com rotação, cert público, Keycloak atrás do Caddy, WAF, runbook DR formal, FCM/SMS/e-mail, pen-test, pagamento real, hardware, NF-e.
 
 ---
 
@@ -85,8 +87,8 @@ Ainda aberto nesta frente: Vault/SM (`*_FILE` path), cert público, offsite back
 Mês 1 (Hardening de infra) — em andamento:
   ├── HTTPS/TLS local (Caddy) ✅ / Let's Encrypt produção ⬜
   ├── Perímetro prod-like (sem 8080/3000 no host) ✅ / Keycloak no edge ⬜
-  ├── Segredos via .env no Compose ✅ / Vault ou SM / *_FILE ⬜
-  ├── Backup PostgreSQL local ✅ / offsite S3 ⬜
+  ├── Segredos via .env + *_FILE ✅ / Vault ou SM com rotação ⬜
+  ├── Backup PostgreSQL local + S3 opcional + restore drill ✅ / runbook DR ⬜
   └── Rate limiting API + Keycloak brute-force ✅ / WAF ⬜
 
 Mês 2 (Notificações + Monitoramento):

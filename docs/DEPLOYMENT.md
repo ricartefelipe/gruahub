@@ -168,18 +168,64 @@ curl -k -s -o /dev/null -w '%{http_code}\n' https://localhost/q/health/ready    
 
 Login: Keycloak realm com brute-force protection (`failureFactor=5`). Proxy Keycloak atrás do Caddy ainda é gap (porta 8180 permanece).
 
-### Backup Postgres
+### Backup Postgres (local + offsite opcional)
 
 ```bash
 cd infra
-docker compose --profile backup up -d postgres postgres-backup
+docker compose --profile backup up -d --build postgres postgres-backup
 # dumps em volume nomeado postgres_backups; retenção via BACKUP_RETENTION_DAYS
 # one-shot manual (stack já no ar):
-docker compose --profile backup run --rm postgres-backup /bin/sh /scripts/pg-backup.sh
+docker compose --profile backup run --rm postgres-backup /scripts/pg-backup.sh
 ```
 
-Variáveis: `BACKUP_INTERVAL_SECONDS` (default 86400), `BACKUP_RETENTION_DAYS` (default 7).  
-Offsite (S3) e drill de restore ainda são gaps comerciais — ver `COMMERCIAL_READINESS.md`.
+Variáveis locais: `BACKUP_INTERVAL_SECONDS` (default 86400), `BACKUP_RETENTION_DAYS` (default 7).
+
+Offsite S3-compatible (opcional) — use MinIO da stack ou AWS:
+
+```bash
+# no infra/.env
+BACKUP_S3_ENDPOINT=http://minio:9000
+BACKUP_S3_ACCESS_KEY=minioadmin
+BACKUP_S3_SECRET_KEY=minioadmin
+BACKUP_S3_BUCKET=gruahub
+BACKUP_S3_PREFIX=postgres-backups
+```
+
+Se `BACKUP_S3_ENDPOINT` estiver vazio, o job só grava no volume. Com endpoint definido, faz `mc cp` após o `pg_dump`.
+
+### Restore drill
+
+```bash
+cd infra
+docker compose --profile backup up -d --build postgres postgres-backup minio
+docker compose --profile backup run --rm postgres-backup /scripts/pg-backup.sh
+docker compose --profile backup run --rm postgres-backup /scripts/pg-restore-drill.sh
+```
+
+O drill restaura o dump mais recente num DB temporário `${POSTGRES_DB}_restore_drill`, valida schemas/tabelas de aplicação e apaga o DB. Não substitui restore de desastre em produção — é smoke de integridade do artefato.
+
+### Segredos via `*_FILE` (Docker secrets style)
+
+Sem Vault completo: qualquer `VAR_FILE` apontando para um arquivo montado preenche `VAR` se `VAR` estiver vazio (`infra/scripts/load-secret-files.sh`).
+
+Hook ativo em:
+- backend / web (entrypoint)
+- postgres-backup (scripts)
+
+Exemplo Compose:
+
+```yaml
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+services:
+  backend:
+    secrets: [db_password]
+    environment:
+      DB_PASSWORD_FILE: /run/secrets/db_password
+```
+
+Ainda aberto para produção gerenciada: rotação automática via Vault / AWS Secrets Manager.
 
 ### Produção pública (ainda aberto)
 
@@ -188,7 +234,7 @@ Além dos profiles locais, um deploy público deve:
 - Colocar Keycloak atrás do mesmo edge (sem `:8180` no host)
 - Usar imagens versionadas (não só `build:`)
 - Definir réplicas e limites de recursos
-- Mover segredos para Vault / AWS Secrets Manager / Docker Secrets (`*_FILE`)
+- Completar Vault / AWS Secrets Manager (hoje: `.env` + caminho `*_FILE`)
 
 ## Variáveis de Ambiente Críticas
 

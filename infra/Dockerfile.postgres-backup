@@ -1,0 +1,11 @@
+FROM minio/mc:RELEASE.2024-05-09T17-04-24Z AS mc
+
+FROM postgres:16-alpine
+
+COPY --from=mc /usr/bin/mc /usr/bin/mc
+COPY scripts/pg-backup.sh /scripts/pg-backup.sh
+COPY scripts/pg-backup-loop.sh /scripts/pg-backup-loop.sh
+COPY scripts/pg-restore-drill.sh /scripts/pg-restore-drill.sh
+COPY scripts/load-secret-files.sh /scripts/load-secret-files.sh
+
+RUN chmod 755 /scripts/*.sh

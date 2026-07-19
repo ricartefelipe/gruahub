@@ -16,6 +16,8 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [x] Overlay prod-like: sem publicar 8080/3000/Postgres/MinIO/dashboards no host
 - [x] Keycloak brute-force protection no realm demo
 - [x] Backup Postgres agendado (`pg_dump`, profiles `backup` / `prod-like`)
+- [x] Backup offsite S3-compatible opcional (`BACKUP_S3_*`) + restore drill
+- [x] Hook de segredos `*_FILE` (Docker secrets style) em backend/web/backup
 - [x] Plays / conciliação / inventário / fieldops / finance / routing / maintenance / alerts / reports PDF
 - [x] Seed demo (`Diversão Nordeste Demo`) + rota do dia (`CURRENT_DATE`)
 - [x] Web dashboard + portal parceiro (RBAC por página)
@@ -33,7 +35,7 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [ ] WAF / Keycloak atrás do Caddy (brute-force realm já ativo); rate-limit in-memory não cobre multi-instância
 - [ ] TLS público (Let's Encrypt / cert gerenciado); hoje só `tls internal` local
 - [ ] Push FCM ativo, SMS/e-mail (stubs/prod ainda abertos)
-- [ ] Backup offsite (S3) + drill de restore; Vault / Secrets Manager / `*_FILE` em produção
+- [ ] Vault / AWS Secrets Manager com rotação (hoje: `.env` + `*_FILE`); runbook DR de backup
 - [ ] Pagamento real / hardware físico / adaptadores de controlador
 - [ ] Escala horizontal (outbox polling, locks in-memory, rate-limit in-memory)
 

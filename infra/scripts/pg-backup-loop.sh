@@ -1,8 +1,12 @@
 #!/bin/sh
 set -eu
 
-INTERVAL_SECONDS="${BACKUP_INTERVAL_SECONDS:-86400}"
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+if [ -f "$SCRIPT_DIR/load-secret-files.sh" ]; then
+  . "$SCRIPT_DIR/load-secret-files.sh"
+fi
+
+INTERVAL_SECONDS="${BACKUP_INTERVAL_SECONDS:-86400}"
 
 echo "Postgres backup loop started (interval=${INTERVAL_SECONDS}s)"
 while true; do
