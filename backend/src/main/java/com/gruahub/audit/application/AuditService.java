@@ -42,11 +42,17 @@ public class AuditService {
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void record(UUID tenantId, String action, String resourceType,
                        String resourceId, String metadataJson) {
-        String userId = null;
+        UUID actorUserId = null;
         String email = null;
 
         try {
-            userId = jwt.getSubject();
+            String subject = jwt.getSubject();
+            if (subject != null && !subject.isBlank()) {
+                actorUserId = UUID.fromString(subject);
+            }
+        } catch (Exception ignored) {}
+
+        try {
             email = jwt.getClaim("email");
         } catch (Exception ignored) {}
 
@@ -57,10 +63,10 @@ public class AuditService {
         em.createNativeQuery(
                 "INSERT INTO audit_event (id, tenant_id, actor_user_id, actor_email, action, " +
                 "resource_type, resource_id, correlation_id, metadata, occurred_at) " +
-                "VALUES (:id, :tid, :uid::uuid, :email, :action, :resType, :resId, :corr, :meta::jsonb, :now)")
+                "VALUES (:id, :tid, :uid, :email, :action, :resType, :resId, :corr, CAST(:meta AS jsonb), :now)")
                 .setParameter("id", UUID.randomUUID())
                 .setParameter("tid", tenantId)
-                .setParameter("uid", userId)
+                .setParameter("uid", actorUserId)
                 .setParameter("email", email)
                 .setParameter("action", action)
                 .setParameter("resType", resourceType)

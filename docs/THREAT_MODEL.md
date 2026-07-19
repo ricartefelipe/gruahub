@@ -62,7 +62,7 @@ com exposição planejada para internet em produção.
 
 ### T-007 — Information Disclosure (Tenant Leakage)
 **Ameaça:** Requisição de Tenant A retorna dados do Tenant B.
-**Mitigação:** Todas as queries filtram por `tenant_id = :tid` derivado do JWT. Testes de isolamento em `TenantIsolationIT`.
+**Mitigação:** Todas as queries filtram por `tenant_id = :tid` derivado do JWT. `TenantIsolationIT` cobre listagem escopada, GET cross-tenant (404) e ausência de claim `tenant_id` (403).
 **Status:** Mitigado.
 
 ### T-008 — Denial of Service (Webhook Flood)
