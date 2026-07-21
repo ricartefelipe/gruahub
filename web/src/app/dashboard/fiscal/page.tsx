@@ -39,11 +39,13 @@ export default function FiscalPage() {
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('');
 
+  const listPath = statusFilter
+    ? `/fiscal/documents?status=${statusFilter}`
+    : '/fiscal/documents';
+
   const { data: documents = [], isLoading, isError } = useQuery<FiscalDocument[]>({
     queryKey: ['fiscal-documents', statusFilter],
-    queryFn: () =>
-      api.get(`/fiscal/documents${statusFilter ? `?status=${statusFilter}` : ''}`)
-        .then(r => r.data?.content ?? []),
+    queryFn: () => api.get(listPath).then(r => r.data?.content ?? []),
   });
 
   const issue = useMutation({
@@ -78,6 +80,89 @@ export default function FiscalPage() {
     }
   };
 
+  let body;
+  if (isLoading) {
+    body = <p className="p-6 text-gray-400 text-sm">Carregando...</p>;
+  } else if (isError) {
+    body = <p className="p-6 text-red-500 text-sm">Falha ao carregar documentos.</p>;
+  } else if (documents.length === 0) {
+    body = (
+      <p className="p-6 text-gray-400 text-sm text-center">
+        Nenhum documento. Confirme um pagamento para gerar rascunho automático.
+      </p>
+    );
+  } else {
+    body = (
+      <table className="w-full text-sm">
+        <thead className="text-xs text-gray-500 uppercase border-b bg-gray-50">
+          <tr>
+            <th className="px-4 py-3 text-left">Tipo</th>
+            <th className="px-4 py-3 text-left">Valor</th>
+            <th className="px-4 py-3 text-left">Emitente</th>
+            <th className="px-4 py-3 text-left">Status</th>
+            <th className="px-4 py-3 text-left">Criado</th>
+            <th className="px-4 py-3 text-left">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {documents.map(doc => {
+            const meta = STATUS_META[doc.status] ?? STATUS_META.DRAFT;
+            return (
+              <tr key={doc.id} className="border-b last:border-0">
+                <td className="px-4 py-3">
+                  <div className="font-medium text-gray-900">{doc.documentType}</div>
+                  <div className="text-xs text-gray-400 font-mono">{doc.id.slice(0, 8)}…</div>
+                </td>
+                <td className="px-4 py-3">{fmtMoney(doc.amountCents, doc.currency)}</td>
+                <td className="px-4 py-3 text-gray-700">
+                  {doc.issuerName || '—'}
+                  {doc.issuerDocument ? (
+                    <div className="text-xs text-gray-400">{doc.issuerDocument}</div>
+                  ) : null}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${meta.className}`}>
+                    {meta.label}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-gray-600">{fmtDate(doc.createdAt)}</td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-2">
+                    {doc.status === 'DRAFT' && (
+                      <button
+                        type="button"
+                        className="text-xs text-teal-700 hover:underline"
+                        onClick={() => issue.mutate(doc.id)}
+                      >
+                        Emitir stub
+                      </button>
+                    )}
+                    {doc.status !== 'CANCELLED' && (
+                      <button
+                        type="button"
+                        className="text-xs text-red-600 hover:underline"
+                        onClick={() => cancel.mutate(doc.id)}
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="text-xs text-blue-700 hover:underline"
+                      onClick={() => downloadPdf(doc.id)}
+                    >
+                      PDF
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -88,8 +173,9 @@ export default function FiscalPage() {
       </div>
 
       <div className="flex gap-2 items-center">
-        <label className="text-sm text-gray-600">Status</label>
+        <label htmlFor="fiscal-status-filter" className="text-sm text-gray-600">Status</label>
         <select
+          id="fiscal-status-filter"
           className="border rounded-lg px-3 py-1.5 text-sm"
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
@@ -102,83 +188,7 @@ export default function FiscalPage() {
       </div>
 
       <div className="bg-white border rounded-xl overflow-hidden">
-        {isLoading ? (
-          <p className="p-6 text-gray-400 text-sm">Carregando...</p>
-        ) : isError ? (
-          <p className="p-6 text-red-500 text-sm">Falha ao carregar documentos.</p>
-        ) : documents.length === 0 ? (
-          <p className="p-6 text-gray-400 text-sm text-center">
-            Nenhum documento. Confirme um pagamento para gerar rascunho automático.
-          </p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-xs text-gray-500 uppercase border-b bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left">Tipo</th>
-                <th className="px-4 py-3 text-left">Valor</th>
-                <th className="px-4 py-3 text-left">Emitente</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Criado</th>
-                <th className="px-4 py-3 text-left">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.map(doc => {
-                const meta = STATUS_META[doc.status] ?? STATUS_META.DRAFT;
-                return (
-                  <tr key={doc.id} className="border-b last:border-0">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{doc.documentType}</div>
-                      <div className="text-xs text-gray-400 font-mono">{doc.id.slice(0, 8)}…</div>
-                    </td>
-                    <td className="px-4 py-3">{fmtMoney(doc.amountCents, doc.currency)}</td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {doc.issuerName || '—'}
-                      {doc.issuerDocument ? (
-                        <div className="text-xs text-gray-400">{doc.issuerDocument}</div>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${meta.className}`}>
-                        {meta.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{fmtDate(doc.createdAt)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {doc.status === 'DRAFT' && (
-                          <button
-                            type="button"
-                            className="text-xs text-teal-700 hover:underline"
-                            onClick={() => issue.mutate(doc.id)}
-                          >
-                            Emitir stub
-                          </button>
-                        )}
-                        {doc.status !== 'CANCELLED' && (
-                          <button
-                            type="button"
-                            className="text-xs text-red-600 hover:underline"
-                            onClick={() => cancel.mutate(doc.id)}
-                          >
-                            Cancelar
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="text-xs text-blue-700 hover:underline"
-                          onClick={() => downloadPdf(doc.id)}
-                        >
-                          PDF
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+        {body}
       </div>
     </div>
   );
