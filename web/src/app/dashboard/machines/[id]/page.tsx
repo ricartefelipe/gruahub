@@ -167,6 +167,14 @@ export default function MachineDetailPage() {
               </span>
             </div>
             {machine.name && <p className="text-gray-500 mt-0.5">{machine.name}</p>}
+            <a
+              href={`/play/${encodeURIComponent(machine.qrCode || machine.assetNumber || machine.id)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block mt-1 text-sm text-teal-700 hover:underline"
+            >
+              Abrir página do jogador →
+            </a>
           </div>
         </div>
 

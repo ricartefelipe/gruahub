@@ -14,6 +14,8 @@ tags:
   description: Gestão da frota de máquinas
 - name: Payments
   description: Pagamentos e webhooks
+- name: Player Public
+  description: APIs públicas do fluxo do jogador (sem login)
 - name: Promotions
   description: Campanhas promocionais de jogadas
 paths:
@@ -54,10 +56,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseAlertResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -77,10 +79,10 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -105,10 +107,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AlertResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -138,10 +140,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AlertResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -170,10 +172,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AlertResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -216,10 +218,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseAuditEventResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -254,10 +256,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseEstablishmentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -276,10 +278,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -301,10 +303,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EstablishmentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -334,10 +336,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EstablishmentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -354,10 +356,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -374,10 +376,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -412,10 +414,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseCommissionPolicyResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -432,10 +434,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -469,10 +471,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseSettlementResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -495,10 +497,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SettlementResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -521,10 +523,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SettlementResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -558,10 +560,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseStockBalanceResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -601,10 +603,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseStockMovementResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -622,10 +624,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -659,10 +661,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponsePrizeResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -681,10 +683,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -711,10 +713,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PrizeResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -744,10 +746,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseMachineResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -768,10 +770,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -789,10 +791,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MachineStatusSummary"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -817,10 +819,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MachineResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -851,10 +853,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MachineResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -879,10 +881,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -911,10 +913,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MachineResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -957,10 +959,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseTicketResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -978,10 +980,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1005,10 +1007,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TicketResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1036,10 +1038,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TicketResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1078,10 +1080,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseOperatingPointResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1101,10 +1103,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1126,10 +1128,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OperatingPointResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1159,10 +1161,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OperatingPointResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1199,10 +1201,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponsePaymentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1220,10 +1222,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1348,10 +1350,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PaymentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1389,10 +1391,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponsePlayResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1413,10 +1415,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1451,10 +1453,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseCampaignResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1473,10 +1475,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1500,10 +1502,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CampaignResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1532,15 +1534,64 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CampaignResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
         - TENANT_ADMIN
         - OPERATIONS_MANAGER
+  /api/v1/public/machines/{token}:
+    get:
+      tags:
+      - Player Public
+      summary: Resolver máquina pública por QR / patrimônio / UUID
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicMachineResponse"
+  /api/v1/public/payments/initiate:
+    post:
+      tags:
+      - Player Public
+      summary: Iniciar pagamento Pix do jogador
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicInitiateRequest"
+      responses:
+        "200":
+          description: OK
+  /api/v1/public/payments/{paymentId}/status:
+    get:
+      tags:
+      - Player Public
+      summary: Consultar status do pagamento do jogador
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicPaymentStatusResponse"
   /api/v1/reconciliation:
     get:
       tags:
@@ -1569,10 +1620,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseReconciliationCaseResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1590,10 +1641,10 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1616,10 +1667,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReconciliationCaseResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1647,10 +1698,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReconciliationCaseResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1668,10 +1719,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1706,10 +1757,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseRoutePlanResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1730,10 +1781,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1755,10 +1806,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseRouteStopResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1797,10 +1848,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseVisitResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1823,10 +1874,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1844,10 +1895,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1865,10 +1916,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1891,10 +1942,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VisitResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -2908,6 +2959,50 @@ components:
           type: boolean
         createdAt:
           $ref: "#/components/schemas/Instant"
+    PublicInitiateRequest:
+      required:
+      - machineToken
+      type: object
+      properties:
+        machineToken:
+          pattern: \S
+          type: string
+        amountCents:
+          format: int64
+          minimum: 1
+          type: integer
+    PublicMachineResponse:
+      type: object
+      properties:
+        machineId:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        assetNumber:
+          type: string
+        qrCode:
+          type: string
+        playPriceCents:
+          format: int64
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+    PublicPaymentStatusResponse:
+      type: object
+      properties:
+        paymentId:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+        amountCents:
+          format: int64
+          type: integer
+        currency:
+          type: string
+        machineId:
+          $ref: "#/components/schemas/UUID"
     ReconciliationCaseResponse:
       type: object
       properties:

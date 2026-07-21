@@ -19,6 +19,9 @@
     "name" : "Payments",
     "description" : "Pagamentos e webhooks"
   }, {
+    "name" : "Player Public",
+    "description" : "APIs públicas do fluxo do jogador (sem login)"
+  }, {
     "name" : "Promotions",
     "description" : "Campanhas promocionais de jogadas"
   } ],
@@ -73,11 +76,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -100,11 +103,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -134,11 +137,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -177,11 +180,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -220,11 +223,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -281,11 +284,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -331,11 +334,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -357,11 +360,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -391,11 +394,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -432,11 +435,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -457,11 +460,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -485,11 +488,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -534,11 +537,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -560,11 +563,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -609,11 +612,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -643,11 +646,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -677,11 +680,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -726,11 +729,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -781,11 +784,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -807,11 +810,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -856,11 +859,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -882,11 +885,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -925,11 +928,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -969,11 +972,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -996,11 +999,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1023,11 +1026,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1058,11 +1061,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1100,11 +1103,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1137,11 +1140,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1178,11 +1181,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1239,11 +1242,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1265,11 +1268,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1299,11 +1302,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1340,11 +1343,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1396,11 +1399,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1422,11 +1425,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1456,11 +1459,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1497,11 +1500,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1552,11 +1555,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1580,11 +1583,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1759,11 +1762,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1814,11 +1817,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1842,11 +1845,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1892,11 +1895,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1919,11 +1922,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1954,11 +1957,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -1996,16 +1999,88 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
           "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER" ]
         } ]
+      }
+    },
+    "/api/v1/public/machines/{token}" : {
+      "get" : {
+        "tags" : [ "Player Public" ],
+        "summary" : "Resolver máquina pública por QR / patrimônio / UUID",
+        "parameters" : [ {
+          "name" : "token",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PublicMachineResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/payments/initiate" : {
+      "post" : {
+        "tags" : [ "Player Public" ],
+        "summary" : "Iniciar pagamento Pix do jogador",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PublicInitiateRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/public/payments/{paymentId}/status" : {
+      "get" : {
+        "tags" : [ "Player Public" ],
+        "summary" : "Consultar status do pagamento do jogador",
+        "parameters" : [ {
+          "name" : "paymentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PublicPaymentStatusResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/reconciliation" : {
@@ -2045,11 +2120,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2072,11 +2147,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2106,11 +2181,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2149,11 +2224,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2177,11 +2252,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2226,11 +2301,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2254,11 +2329,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2288,11 +2363,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2343,11 +2418,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2376,11 +2451,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2404,11 +2479,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2432,11 +2507,11 @@
           "200" : {
             "description" : "OK"
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -2466,11 +2541,11 @@
               }
             }
           },
-          "403" : {
-            "description" : "Not Allowed"
-          },
           "401" : {
             "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -3869,6 +3944,69 @@
           },
           "createdAt" : {
             "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "PublicInitiateRequest" : {
+        "required" : [ "machineToken" ],
+        "type" : "object",
+        "properties" : {
+          "machineToken" : {
+            "pattern" : "\\S",
+            "type" : "string"
+          },
+          "amountCents" : {
+            "format" : "int64",
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        }
+      },
+      "PublicMachineResponse" : {
+        "type" : "object",
+        "properties" : {
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "assetNumber" : {
+            "type" : "string"
+          },
+          "qrCode" : {
+            "type" : "string"
+          },
+          "playPriceCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PublicPaymentStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "paymentId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "amountCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
           }
         }
       },
