@@ -1,0 +1,138 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-001-promotion-campaign
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: promotion_campaign
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(160)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: starts_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ends_at
+                  type: timestamptz
+              - column:
+                  name: machine_id
+                  type: uuid
+              - column:
+                  name: rule_type
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: extra_bonus_plays
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: buy_n
+                  type: int
+              - column:
+                  name: get_m
+                  type: int
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: promotion_campaign
+            baseColumnNames: tenant_id
+            constraintName: fk_promotion_campaign_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: promotion_campaign
+            baseColumnNames: machine_id
+            constraintName: fk_promotion_campaign_machine
+            referencedTableName: machine
+            referencedColumnNames: id
+        - createIndex:
+            tableName: promotion_campaign
+            indexName: idx_promotion_campaign_tenant_status
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: status
+        - createIndex:
+            tableName: promotion_campaign
+            indexName: idx_promotion_campaign_active_window
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: starts_at
+              - column:
+                  name: ends_at
+
+  - changeSet:
+      id: 023-002-seed-demo-campaign
+      author: gruahub
+      context: demo
+      changes:
+        - insert:
+            tableName: promotion_campaign
+            columns:
+              - column:
+                  name: id
+                  value: aaaaaaaa-0000-0000-0000-000000000101
+              - column:
+                  name: tenant_id
+                  value: 11111111-0000-0000-0000-000000000001
+              - column:
+                  name: name
+                  value: Bônus fim de semana
+              - column:
+                  name: status
+                  value: ACTIVE
+              - column:
+                  name: starts_at
+                  valueComputed: NOW() - INTERVAL '7 days'
+              - column:
+                  name: ends_at
+                  valueComputed: NOW() + INTERVAL '90 days'
+              - column:
+                  name: rule_type
+                  value: EXTRA_BONUS
+              - column:
+                  name: extra_bonus_plays
+                  valueNumeric: 1
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()

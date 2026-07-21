@@ -45,3 +45,5 @@ databaseChangeLog:
       file: db/changelog/021-controller-adapter-demo.yaml
   - include:
       file: db/changelog/022-seed-demo-bonus-plays.yaml
+  - include:
+      file: db/changelog/023-promotion-campaigns.yaml

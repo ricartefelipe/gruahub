@@ -38,6 +38,12 @@ const navItems: NavItem[] = [
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE', 'OPERATIONS_MANAGER'],
   },
   {
+    href: '/dashboard/promotions',
+    label: 'Promoções',
+    icon: '🎯',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'OPERATIONS_MANAGER', 'FINANCE'],
+  },
+  {
     href: '/dashboard/reconciliation',
     label: 'Conciliação',
     icon: '⚖️',
