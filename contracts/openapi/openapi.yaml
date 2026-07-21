@@ -1574,6 +1574,20 @@ paths:
       responses:
         "200":
           description: OK
+  /api/v1/public/payments/{paymentId}/sandbox-confirm:
+    post:
+      tags:
+      - Player Public
+      summary: "[SANDBOX] Confirmar pagamento do jogador sem autenticação"
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
   /api/v1/public/payments/{paymentId}/status:
     get:
       tags:
@@ -2989,6 +3003,10 @@ components:
           type: string
         status:
           type: string
+        playerPath:
+          type: string
+        sandboxEnabled:
+          type: boolean
     PublicPaymentStatusResponse:
       type: object
       properties:

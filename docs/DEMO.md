@@ -56,6 +56,21 @@ e o status muda para `CONFIRMED`.
 
 ---
 
+### Etapa 3b — Jogada do jogador (PWA)
+
+QR do adesivo deve apontar para a URL da página pública, por exemplo:
+`http://localhost:3000/play/GH-MAQUINA-001`
+
+1. Abrir a URL no celular (sem login).
+2. Clicar **Pagar e jogar** → gera Pix sandbox.
+3. Em demo, clicar **Simular confirmação (sandbox)**.
+4. Status vira `CONFIRMED` e o crédito vai para a máquina via MQTT.
+
+No detalhe da máquina (dashboard) há o link da página do jogador e o botão para
+copiar a URL do adesivo.
+
+---
+
 ### Etapa 4 — Visita de campo no mobile
 
 O seed demo cria rota do dia (`CURRENT_DATE`) com 2 paradas.

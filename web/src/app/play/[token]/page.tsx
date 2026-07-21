@@ -13,6 +13,8 @@ interface PublicMachine {
   playPriceCents: number;
   currency: string;
   status: string;
+  playerPath?: string;
+  sandboxEnabled?: boolean;
 }
 
 interface InitiateResult {
@@ -64,6 +66,7 @@ export default function PlayerPlayPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +127,29 @@ export default function PlayerPlayPage() {
       setActionError('Não foi possível copiar o código Pix');
     }
   }, [payment?.copyPaste]);
+
+  const confirmSandbox = useCallback(async () => {
+    if (!payment?.paymentId) return;
+    setConfirming(true);
+    setActionError(null);
+    try {
+      const result = await publicFetch<{ status: string }>(
+        `/public/payments/${payment.paymentId}/sandbox-confirm`,
+        { method: 'POST' }
+      );
+      setStatus(result.status || 'CONFIRMED');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Falha ao confirmar sandbox');
+    } finally {
+      setConfirming(false);
+    }
+  }, [payment?.paymentId]);
+
+  const canSandboxConfirm =
+    Boolean(machine?.sandboxEnabled) &&
+    payment?.provider === 'SANDBOX' &&
+    status !== 'CONFIRMED' &&
+    status !== 'FAILED';
 
   const shellStyle = {
     background:
@@ -232,6 +258,17 @@ export default function PlayerPlayPage() {
                       {copied ? 'Copiado!' : 'Copiar código Pix'}
                     </button>
                   </div>
+                )}
+
+                {canSandboxConfirm && (
+                  <button
+                    type="button"
+                    disabled={confirming}
+                    onClick={confirmSandbox}
+                    className="w-full rounded-lg bg-amber-700 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    {confirming ? 'Confirmando...' : 'Simular confirmação (sandbox)'}
+                  </button>
                 )}
 
                 <p className="text-center text-xs text-stone-500">

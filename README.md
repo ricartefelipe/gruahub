@@ -110,7 +110,9 @@ Login demo do operador: `operador@diversao.demo` / `gruahub@2025`.
 
 Jornada: login SSO → rota do dia → iniciar visita (GPS real; se negar permissão, confirma sem coordenadas) → checklist → sangria e/ou reposição de estoque (QR → itens → `STOCK_IN` na fila) → concluir → aba **Fila** (sync). Visitas e movimentos aparecem no web em **Visitas** / **Estoque**.
 
-QR demo: UUID da máquina, `gruahub://machine/<uuid>`, patrimônio (`MAQUINA-001`) ou `qr_code` seed (`GH-MAQUINA-001`) — os dois últimos exigem rede para resolver.
+QR demo (operador): UUID da máquina, `gruahub://machine/<uuid>`, patrimônio (`MAQUINA-001`) ou `qr_code` seed (`GH-MAQUINA-001`) — os dois últimos exigem rede para resolver.
+
+QR do adesivo (jogador): URL da PWA, ex. `http://localhost:3000/play/GH-MAQUINA-001` → Pix → confirmação → crédito.
 
 ```bash
 cd mobile && npm test && npm run typecheck
