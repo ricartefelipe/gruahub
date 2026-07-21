@@ -858,6 +858,35 @@ paths:
         - PLATFORM_ADMIN
         - TENANT_ADMIN
         - OPERATIONS_MANAGER
+  /api/v1/machines/{id}/commands:
+    post:
+      tags:
+      - Machines
+      summary: "Enviar comando remoto à máquina (REBOOT, LOCK, UNLOCK)"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteCommandRequest"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
+        - TECHNICIAN
   /api/v1/machines/{id}/status:
     post:
       tags:
@@ -2691,6 +2720,14 @@ components:
         resolvedAt:
           $ref: "#/components/schemas/Instant"
         resolvedBy:
+          type: string
+    RemoteCommandRequest:
+      required:
+      - commandType
+      type: object
+      properties:
+        commandType:
+          pattern: \S
           type: string
     ResolveRequest:
       type: object

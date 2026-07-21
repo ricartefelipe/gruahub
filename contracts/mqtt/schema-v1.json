@@ -132,7 +132,7 @@
               "required": ["commandId", "commandType", "success"],
               "properties": {
                 "commandId":     { "type": "string", "format": "uuid" },
-                "commandType":   { "type": "string", "enum": ["GRANT_CREDIT", "REBOOT", "LOCK", "UPDATE_CONFIG"] },
+                "commandType":   { "type": "string", "enum": ["GRANT_CREDIT", "REBOOT", "LOCK", "UNLOCK", "UPDATE_CONFIG"] },
                 "creditGrantId": { "type": "string", "format": "uuid" },
                 "success":       { "type": "boolean" },
                 "failureReason": { "type": "string" }

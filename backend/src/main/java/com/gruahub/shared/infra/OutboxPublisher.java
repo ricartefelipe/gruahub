@@ -90,45 +90,62 @@ public class OutboxPublisher {
     private void dispatchEvent(String aggregateType, String eventType,
                                 String payloadStr, String tenantIdStr, String aggregateId) throws Exception {
 
-        if ("GRANT_CREDIT".equals(eventType) && "credit_grant".equals(aggregateType)) {
-            // Extrair tenantId e machineId do payload para publicar no tópico correto
-            JsonNode payload = objectMapper.readTree(payloadStr);
-            String tenantId  = payload.has("tenantId")  ? payload.get("tenantId").asText()  : tenantIdStr;
-            String machineId = payload.has("machineId") ? payload.get("machineId").asText() : null;
+        JsonNode payload = objectMapper.readTree(payloadStr);
+        String tenantId = payload.has("tenantId") ? payload.get("tenantId").asText() : tenantIdStr;
+        String machineId = payload.has("machineId") ? payload.get("machineId").asText() : null;
 
+        if ("GRANT_CREDIT".equals(eventType) && "credit_grant".equals(aggregateType)) {
             if (machineId == null || machineId.isBlank()) {
                 throw new IllegalArgumentException("GRANT_CREDIT payload missing machineId");
             }
 
             mqttClientService.publishCommand(tenantId, machineId, payloadStr);
 
-            // Atualizar device_command como PUBLISHED
             String commandId = payload.has("payload")
                     ? payload.get("payload").path("commandId").asText(null) : null;
             if (commandId != null) {
-                em.createNativeQuery(
-                        "UPDATE device_command SET status = 'PUBLISHED', published_at = :now " +
-                        "WHERE command_id = :cid AND tenant_id = CAST(:tid AS uuid) AND status = 'PENDING'")
-                        .setParameter("now", Instant.now())
-                        .setParameter("cid", commandId)
-                        .setParameter("tid", tenantIdStr != null ? tenantIdStr : tenantId)
-                        .executeUpdate();
-
-                // Atualizar credit_grant para SENT
+                markDeviceCommandPublished(commandId, tenantIdStr != null ? tenantIdStr : tenantId);
                 if (aggregateId != null) {
                     em.createNativeQuery(
                             "UPDATE credit_grant SET status = 'SENT', sent_at = :now WHERE id = CAST(:id AS uuid) AND status = 'PENDING'")
                             .setParameter("now", Instant.now())
-                            .setParameter("id",  aggregateId)
+                            .setParameter("id", aggregateId)
                             .executeUpdate();
                 }
             }
 
             LOG.infof("GRANT_CREDIT published via MQTT: tenant=%s machine=%s commandId=%s",
                     tenantId, machineId, commandId);
-        } else {
-            LOG.debugf("Outbox event dispatched (no MQTT action): %s.%s", aggregateType, eventType);
+            return;
         }
+
+        if ("device_command".equals(aggregateType)
+                && ("REBOOT".equals(eventType) || "LOCK".equals(eventType) || "UNLOCK".equals(eventType))) {
+            if (machineId == null || machineId.isBlank()) {
+                throw new IllegalArgumentException(eventType + " payload missing machineId");
+            }
+            mqttClientService.publishCommand(tenantId, machineId, payloadStr);
+            String commandId = payload.has("payload")
+                    ? payload.get("payload").path("commandId").asText(null) : null;
+            if (commandId != null) {
+                markDeviceCommandPublished(commandId, tenantIdStr != null ? tenantIdStr : tenantId);
+            }
+            LOG.infof("%s published via MQTT: tenant=%s machine=%s commandId=%s",
+                    eventType, tenantId, machineId, commandId);
+            return;
+        }
+
+        LOG.debugf("Outbox event dispatched (no MQTT action): %s.%s", aggregateType, eventType);
+    }
+
+    private void markDeviceCommandPublished(String commandId, String tenantId) {
+        em.createNativeQuery(
+                "UPDATE device_command SET status = 'PUBLISHED', published_at = :now " +
+                "WHERE command_id = :cid AND tenant_id = CAST(:tid AS uuid) AND status = 'PENDING'")
+                .setParameter("now", Instant.now())
+                .setParameter("cid", commandId)
+                .setParameter("tid", tenantId)
+                .executeUpdate();
     }
 
     /**
