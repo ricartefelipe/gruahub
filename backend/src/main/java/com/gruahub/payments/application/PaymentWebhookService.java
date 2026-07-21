@@ -5,6 +5,7 @@ import com.gruahub.payments.domain.PaymentStatus;
 import com.gruahub.payments.infra.SandboxPaymentProvider;
 import com.gruahub.plays.application.CreditService;
 import com.gruahub.plays.application.PlayGrantCalculator;
+import com.gruahub.promotions.application.CampaignBonusResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -35,6 +36,9 @@ public class PaymentWebhookService {
 
     @Inject
     CreditService creditService;
+
+    @Inject
+    CampaignBonusResolver campaignBonusResolver;
 
     @Transactional
     public void processWebhook(String providerName, UUID tenantId, String idempotencyKey,
@@ -173,8 +177,14 @@ public class PaymentWebhookService {
         UUID machineId = UUID.fromString(row[1].toString());
         long amountCents = ((Number) row[2]).longValue();
         MachinePlayConfig machineConfig = getMachinePlayConfig(machineId, tenantId);
+        int basePlays = PlayGrantCalculator.basePlays(amountCents, machineConfig.playPriceCents());
+        int campaignExtra = campaignBonusResolver.extraPlaysForPayment(
+                tenantId, machineId, basePlays, Instant.now());
         int plays = PlayGrantCalculator.playsForPayment(
-                amountCents, machineConfig.playPriceCents(), machineConfig.bonusPlays());
+                amountCents,
+                machineConfig.playPriceCents(),
+                machineConfig.bonusPlays(),
+                campaignExtra);
 
         if (plays <= 0) {
             LOG.warnf(
@@ -186,8 +196,8 @@ public class PaymentWebhookService {
         creditService.grantCreditForPayment(tenantId, machineId, paymentId, amountCents, plays);
 
         LOG.infof(
-                "Payment confirmed and credit enqueued: providerTxId=%s payment=%s machine=%s plays=%d (bonus=%d)",
-                providerTxId, paymentId, machineId, plays, machineConfig.bonusPlays());
+                "Payment confirmed and credit enqueued: providerTxId=%s payment=%s machine=%s plays=%d (machineBonus=%d campaignExtra=%d)",
+                providerTxId, paymentId, machineId, plays, machineConfig.bonusPlays(), campaignExtra);
     }
 
     private void markPaymentFailed(UUID tenantId, String providerTxId) {
