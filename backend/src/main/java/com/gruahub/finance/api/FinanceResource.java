@@ -60,6 +60,27 @@ public class FinanceResource {
         String notes
     ) {}
 
+    public record CommissionPolicyRequest(
+        @NotNull UUID operatingPointId,
+        @NotBlank String policyType,
+        BigDecimal percentage,
+        Long fixedAmountCents,
+        @NotBlank String effectiveFrom,
+        String effectiveTo
+    ) {}
+
+    public record CommissionPolicyResponse(
+        UUID id,
+        UUID operatingPointId,
+        String operatingPointName,
+        String policyType,
+        BigDecimal percentage,
+        Long fixedAmountCents,
+        String effectiveFrom,
+        String effectiveTo,
+        int versionNumber
+    ) {}
+
     // ── Settlements ───────────────────────────────────────────────────────────────
 
     @GET
@@ -143,6 +164,108 @@ public class FinanceResource {
         return getSettlement(id, tenantId);
     }
 
+    @GET
+    @Path("/commission-policies")
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
+    public PageResponse<CommissionPolicyResponse> listCommissionPolicies(
+        @QueryParam("operatingPointId") UUID operatingPointId,
+        @QueryParam("page") @DefaultValue("0") int page,
+        @QueryParam("size") @DefaultValue("50") int size
+    ) {
+        UUID tenantId = TenantContext.getTenantId();
+        int lim = Math.min(size, 200);
+        StringBuilder where = new StringBuilder("WHERE cp.tenant_id = :tid ");
+        if (operatingPointId != null) where.append("AND cp.operating_point_id = :opid ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM commission_policy cp " + where
+        ).setParameter("tid", tenantId);
+        if (operatingPointId != null) countQuery.setParameter("opid", operatingPointId);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
+            "SELECT cp.id, cp.operating_point_id, op.name, cp.policy_type, cp.percentage, " +
+            "cp.fixed_amount_cents, cp.effective_from, cp.effective_to, cp.version_number " +
+            "FROM commission_policy cp " +
+            "JOIN operating_point op ON op.id = cp.operating_point_id " +
+            where +
+            "ORDER BY cp.effective_from DESC LIMIT :lim OFFSET :off";
+
+        var q = em.createNativeQuery(sql)
+            .setParameter("tid", tenantId)
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
+        if (operatingPointId != null) q.setParameter("opid", operatingPointId);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = q.getResultList();
+        return PageResponse.of(rows.stream().map(this::mapPolicyRow).toList(), page, lim, total);
+    }
+
+    @POST
+    @Path("/commission-policies")
+    @Transactional
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
+    public Response createCommissionPolicy(
+        @Valid CommissionPolicyRequest req,
+        @Context UriInfo uriInfo
+    ) {
+        UUID tenantId = TenantContext.getTenantId();
+
+        Long pointCount = ((Number) em.createNativeQuery(
+            "SELECT COUNT(*) FROM operating_point WHERE id = :id AND tenant_id = :tid"
+        )
+            .setParameter("id", req.operatingPointId())
+            .setParameter("tid", tenantId)
+            .getSingleResult()).longValue();
+        if (pointCount == 0) throw new BadRequestException("Operating point not found in tenant");
+
+        if ("PERCENTAGE".equals(req.policyType()) && req.percentage() == null) {
+            throw new BadRequestException("percentage is required for PERCENTAGE policy");
+        }
+        if ("FIXED".equals(req.policyType()) && req.fixedAmountCents() == null) {
+            throw new BadRequestException("fixedAmountCents is required for FIXED policy");
+        }
+
+        Number version = (Number) em.createNativeQuery(
+            "SELECT COALESCE(MAX(version_number), 0) + 1 FROM commission_policy " +
+            "WHERE tenant_id = :tid AND operating_point_id = :opid"
+        )
+            .setParameter("tid", tenantId)
+            .setParameter("opid", req.operatingPointId())
+            .getSingleResult();
+
+        UUID id = UUID.randomUUID();
+        java.sql.Date effectiveFrom = java.sql.Date.valueOf(req.effectiveFrom());
+        java.sql.Date effectiveTo = req.effectiveTo() != null && !req.effectiveTo().isBlank()
+            ? java.sql.Date.valueOf(req.effectiveTo()) : null;
+
+        em.createNativeQuery(
+            "INSERT INTO commission_policy " +
+            "(id, tenant_id, operating_point_id, policy_type, percentage, fixed_amount_cents, " +
+            " effective_from, effective_to, version_number, created_at) " +
+            "VALUES (:id, :tid, :opid, :ptype, :pct, :fixed, :ef, :et, :ver, NOW())"
+        )
+            .setParameter("id", id)
+            .setParameter("tid", tenantId)
+            .setParameter("opid", req.operatingPointId())
+            .setParameter("ptype", req.policyType())
+            .setParameter("pct", req.percentage())
+            .setParameter("fixed", req.fixedAmountCents())
+            .setParameter("ef", effectiveFrom)
+            .setParameter("et", effectiveTo)
+            .setParameter("ver", version.intValue())
+            .executeUpdate();
+
+        audit.record("COMMISSION_POLICY_CREATED", "commission_policy", id.toString(),
+            JsonUtil.obj("operatingPointId", req.operatingPointId().toString(),
+                         "policyType", req.policyType()));
+
+        URI location = uriInfo.getBaseUriBuilder()
+            .path("/api/v1/finance/commission-policies/{id}").build(id);
+        return Response.created(location).entity(getPolicy(id, tenantId)).build();
+    }
+
     // ── Cash Collections (sangrias) ────────────────────────────────────────────────
 
     @POST
@@ -219,10 +342,39 @@ public class FinanceResource {
             r[4] != null ? r[4].toString() : null,
             (String) r[5],
             r[6] != null ? ((Number) r[6]).longValue() : 0L,
-            (BigDecimal) r[7],
+            r[7] != null ? (BigDecimal) r[7] : null,
             r[8] != null ? ((Number) r[8]).longValue() : 0L,
             r[9] != null ? ((Number) r[9]).longValue() : 0L,
             r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null
+        );
+    }
+
+    private CommissionPolicyResponse getPolicy(UUID id, UUID tenantId) {
+        Object[] r = (Object[]) em.createNativeQuery(
+            "SELECT cp.id, cp.operating_point_id, op.name, cp.policy_type, cp.percentage, " +
+            "cp.fixed_amount_cents, cp.effective_from, cp.effective_to, cp.version_number " +
+            "FROM commission_policy cp " +
+            "JOIN operating_point op ON op.id = cp.operating_point_id " +
+            "WHERE cp.id = :id AND cp.tenant_id = :tid"
+        )
+            .setParameter("id", id)
+            .setParameter("tid", tenantId)
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
+        if (r == null) throw new NotFoundException("Commission policy not found: " + id);
+        return mapPolicyRow(r);
+    }
+
+    private CommissionPolicyResponse mapPolicyRow(Object[] r) {
+        return new CommissionPolicyResponse(
+            (UUID) r[0],
+            (UUID) r[1],
+            (String) r[2],
+            (String) r[3],
+            r[4] != null ? (BigDecimal) r[4] : null,
+            r[5] != null ? ((Number) r[5]).longValue() : null,
+            r[6] != null ? r[6].toString() : null,
+            r[7] != null ? r[7].toString() : null,
+            r[8] != null ? ((Number) r[8]).intValue() : 1
         );
     }
 }

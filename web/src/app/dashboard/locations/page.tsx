@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface Establishment {
   id: string;
@@ -31,6 +32,15 @@ export default function LocationsPage() {
   const [activeTab, setActiveTab] = useState<'establishments' | 'points'>('establishments');
   const [newEstName, setNewEstName] = useState('');
   const [showNewEst, setShowNewEst] = useState(false);
+  const [showNewPoint, setShowNewPoint] = useState(false);
+  const [pointForm, setPointForm] = useState({
+    establishmentId: '',
+    name: '',
+    addressCity: '',
+    addressState: '',
+    commissionPct: '15',
+    contractType: 'COMODATO',
+  });
 
   const { data: establishments = [], isLoading: estLoading, isError: estError, error: estErrorObj } = useQuery<Establishment[]>({
     queryKey: ['establishments'],
@@ -42,7 +52,7 @@ export default function LocationsPage() {
     queryKey: ['operating-points'],
     queryFn: () =>
       api.get('/operating-points?size=100').then(r => r.data?.content ?? []),
-    enabled: activeTab === 'points',
+    enabled: activeTab === 'points' || showNewPoint,
   });
 
   const createEst = useMutation({
@@ -51,7 +61,35 @@ export default function LocationsPage() {
       qc.invalidateQueries({ queryKey: ['establishments'] });
       setShowNewEst(false);
       setNewEstName('');
+      toast.success('Estabelecimento criado');
     },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao criar estabelecimento'),
+  });
+
+  const createPoint = useMutation({
+    mutationFn: () =>
+      api.post('/operating-points', {
+        establishmentId: pointForm.establishmentId,
+        name: pointForm.name,
+        addressCity: pointForm.addressCity || null,
+        addressState: pointForm.addressState || null,
+        commissionPct: pointForm.commissionPct ? Number(pointForm.commissionPct) : null,
+        contractType: pointForm.contractType || null,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['operating-points'] });
+      setShowNewPoint(false);
+      setPointForm({
+        establishmentId: '',
+        name: '',
+        addressCity: '',
+        addressState: '',
+        commissionPct: '15',
+        contractType: 'COMODATO',
+      });
+      toast.success('Ponto de operação criado');
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao criar ponto'),
   });
 
   return (
@@ -61,7 +99,6 @@ export default function LocationsPage() {
         <p className="text-sm text-gray-500 mt-1">Estabelecimentos e pontos de operação</p>
       </div>
 
-      {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="flex gap-4" aria-label="Abas de locais">
           {(['establishments', 'points'] as const).map(tab => (
@@ -94,7 +131,6 @@ export default function LocationsPage() {
         </div>
       )}
 
-      {/* Establishments tab */}
       {activeTab === 'establishments' && (
         <div className="space-y-4">
           <div className="flex justify-end">
@@ -168,9 +204,89 @@ export default function LocationsPage() {
         </div>
       )}
 
-      {/* Operating Points tab */}
       {activeTab === 'points' && (
-        <div>
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowNewPoint(true)}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+            >
+              + Novo ponto
+            </button>
+          </div>
+
+          {showNewPoint && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <select
+                  value={pointForm.establishmentId}
+                  onChange={e => setPointForm(f => ({ ...f, establishmentId: e.target.value }))}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  aria-label="Estabelecimento"
+                >
+                  <option value="">Estabelecimento</option>
+                  {establishments.map(e => (
+                    <option key={e.id} value={e.id}>{e.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={pointForm.name}
+                  onChange={e => setPointForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Nome do ponto"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={pointForm.addressCity}
+                  onChange={e => setPointForm(f => ({ ...f, addressCity: e.target.value }))}
+                  placeholder="Cidade"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={pointForm.addressState}
+                  onChange={e => setPointForm(f => ({ ...f, addressState: e.target.value.toUpperCase().slice(0, 2) }))}
+                  placeholder="UF"
+                  maxLength={2}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={pointForm.commissionPct}
+                  onChange={e => setPointForm(f => ({ ...f, commissionPct: e.target.value }))}
+                  placeholder="Comissão %"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={pointForm.contractType}
+                  onChange={e => setPointForm(f => ({ ...f, contractType: e.target.value }))}
+                  placeholder="Tipo de contrato"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => createPoint.mutate()}
+                  disabled={!pointForm.establishmentId || !pointForm.name.trim() || createPoint.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50"
+                >
+                  {createPoint.isPending ? 'Criando...' : 'Criar'}
+                </button>
+                <button
+                  onClick={() => setShowNewPoint(false)}
+                  className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
           {ptLoading ? (
             <div className="text-center py-8 text-gray-400">Carregando pontos...</div>
           ) : (

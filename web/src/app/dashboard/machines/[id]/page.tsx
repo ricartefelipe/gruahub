@@ -65,11 +65,15 @@ export default function MachineDetailPage() {
 
   const { data: plays = [] } = useQuery<PlayEvent[]>({
     queryKey: ['machine-plays', id],
-    queryFn: () => api.get('/plays', { params: { machineId: id, size: 20 } }).then(r => r.data),
+    queryFn: () =>
+      api.get('/plays', { params: { machineId: id, size: 20 } }).then(r => r.data?.content ?? []),
     enabled: tab === 'plays',
   });
 
-  // ── Mutations ────────────────────────────────────────────────────────────────
+  const [showCreditForm, setShowCreditForm] = useState(false);
+  const [creditPlays, setCreditPlays] = useState('1');
+  const [creditJustification, setCreditJustification] = useState('');
+
   const statusMutation = useMutation({
     mutationFn: (status: string) => machinesApi.changeStatus(id, status),
     onSuccess: (r) => {
@@ -78,6 +82,24 @@ export default function MachineDetailPage() {
       toast.success('Status atualizado');
     },
     onError: (e: any) => toast.error(e.response?.data?.title || 'Erro ao atualizar status'),
+  });
+
+  const manualCredit = useMutation({
+    mutationFn: () =>
+      api.post('/plays/manual-credit', {
+        machineId: id,
+        playsGranted: Number(creditPlays) || 1,
+        amountCents: 0,
+        justification: creditJustification.trim(),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['machine-plays', id] });
+      setShowCreditForm(false);
+      setCreditPlays('1');
+      setCreditJustification('');
+      toast.success('Crédito remoto enfileirado');
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao liberar crédito'),
   });
 
   // ── Loading / Error ──────────────────────────────────────────────────────────
@@ -126,7 +148,13 @@ export default function MachineDetailPage() {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={() => setShowCreditForm(v => !v)}
+            className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Liberar crédito
+          </button>
           {machine.status !== 'ACTIVE' && machine.status !== 'RETIRED' && (
             <button
               onClick={() => statusMutation.mutate('ACTIVE')}
@@ -158,6 +186,46 @@ export default function MachineDetailPage() {
           )}
         </div>
       </div>
+
+      {showCreditForm && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-medium text-indigo-900">Crédito remoto (bonificação / teste)</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input
+              type="number"
+              min="1"
+              value={creditPlays}
+              onChange={e => setCreditPlays(e.target.value)}
+              placeholder="Jogadas"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              aria-label="Quantidade de jogadas"
+            />
+            <input
+              type="text"
+              value={creditJustification}
+              onChange={e => setCreditJustification(e.target.value)}
+              placeholder="Justificativa"
+              className="md:col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              aria-label="Justificativa do crédito"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => manualCredit.mutate()}
+              disabled={!creditJustification.trim() || manualCredit.isPending}
+              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg disabled:opacity-50"
+            >
+              {manualCredit.isPending ? 'Enviando...' : 'Enviar comando'}
+            </button>
+            <button
+              onClick={() => setShowCreditForm(false)}
+              className="px-3 py-2 text-gray-500 hover:text-gray-700"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Status cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

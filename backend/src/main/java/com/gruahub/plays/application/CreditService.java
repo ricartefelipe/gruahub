@@ -106,6 +106,52 @@ public class CreditService {
         return creditId;
     }
 
+    @Transactional
+    public UUID grantCreditManual(UUID tenantId, UUID machineId, long amountCents,
+                                  int playsGranted, String justification, String authorizedBy) {
+        UUID creditId = UUID.randomUUID();
+        String commandId = UUID.randomUUID().toString();
+
+        em.createNativeQuery(
+                "INSERT INTO credit_grant " +
+                "(id, tenant_id, machine_id, payment_transaction_id, " +
+                " amount_cents, plays_granted, reason, status, command_id, " +
+                " manual_justification, manual_authorized_by, created_at) " +
+                "VALUES (:id, :tid, :mid, NULL, :amt, :plays, 'MANUAL', 'PENDING', :cmdId, " +
+                " :justification, :authorizedBy, :now)")
+                .setParameter("id", creditId)
+                .setParameter("tid", tenantId)
+                .setParameter("mid", machineId)
+                .setParameter("amt", amountCents)
+                .setParameter("plays", playsGranted)
+                .setParameter("cmdId", commandId)
+                .setParameter("justification", justification)
+                .setParameter("authorizedBy", authorizedBy)
+                .setParameter("now", Instant.now())
+                .executeUpdate();
+
+        String cmdPayload = buildGrantCreditPayload(commandId, creditId, playsGranted, amountCents, tenantId, machineId);
+        outboxPublisher.enqueue(tenantId, "credit_grant", creditId, "GRANT_CREDIT", cmdPayload);
+
+        em.createNativeQuery(
+                "INSERT INTO device_command " +
+                "(id, command_id, tenant_id, machine_id, command_type, payload, " +
+                " status, expires_at, created_at) " +
+                "VALUES (gen_random_uuid(), :cmdId, :tid, :mid, 'GRANT_CREDIT', CAST(:payload AS jsonb), " +
+                "'PENDING', :expiry, :now)")
+                .setParameter("cmdId", commandId)
+                .setParameter("tid", tenantId)
+                .setParameter("mid", machineId)
+                .setParameter("payload", cmdPayload)
+                .setParameter("expiry", Instant.now().plusSeconds(commandTtlSeconds))
+                .setParameter("now", Instant.now())
+                .executeUpdate();
+
+        LOG.infof("Manual credit granted and enqueued: creditId=%s machine=%s plays=%d by=%s",
+                creditId, machineId, playsGranted, authorizedBy);
+        return creditId;
+    }
+
     /**
      * Registra ACK de crédito da máquina.
      * Idempotente: WHERE status IN ('PENDING','SENT') evita dupla transição.
