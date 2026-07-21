@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-001-demo-controller-eletek
+      author: gruahub
+      context: demo
+      changes:
+        - update:
+            tableName: controller
+            columns:
+              - column:
+                  name: model_type
+                  value: ELETEK
+            where: id = '55555555-0000-0000-0000-000000000003'
+              AND tenant_id = '11111111-0000-0000-0000-000000000001'

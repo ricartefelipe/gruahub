@@ -3,6 +3,7 @@ package com.gruahub.iot.application;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.gruahub.fleet.domain.MachineStatus;
 import com.gruahub.fleet.infra.MachineRepository;
+import com.gruahub.iot.domain.ControllerAdapter;
 import com.gruahub.plays.application.CreditService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -38,6 +39,9 @@ public class IotEventService {
 
     @Inject
     CreditService creditService;
+
+    @Inject
+    ControllerAdapterRegistry controllerAdapterRegistry;
 
     /**
      * Ponto de entrada para toda mensagem MQTT recebida.
@@ -77,10 +81,12 @@ public class IotEventService {
             return;
         }
 
-        // ── 2. Inbox idempotente via INSERT ON CONFLICT DO NOTHING ──────────────
-        // A unique constraint uq_device_message_inbox_key (message_id, tenant_id)
-        // garante que dois threads concorrentes com o mesmo messageId só inserirão uma vez.
-        // O segundo verá rows=0 e retornará imediatamente.
+        ControllerAdapter.NormalizedInbound normalized = controllerAdapterRegistry
+                .forMachine(tenantId, machineId)
+                .normalizeInbound(messageType, payload);
+        String canonicalType = normalized.messageType();
+        JsonNode canonicalPayload = normalized.envelope();
+
         int rows = em.createNativeQuery(
                 "INSERT INTO device_message_inbox " +
                 "(id, message_id, tenant_id, machine_id, message_type, " +
@@ -91,33 +97,30 @@ public class IotEventService {
                 .setParameter("mid",     messageId)
                 .setParameter("tid",     tenantId)
                 .setParameter("macid",   machineId)
-                .setParameter("type",    messageType)
+                .setParameter("type",    canonicalType)
                 .setParameter("sv",      schemaVersion)
                 .setParameter("payload", rawPayload)
                 .setParameter("now",     Instant.now())
                 .executeUpdate();
 
         if (rows == 0) {
-            // Mensagem já processada anteriormente — duplicata idêntica ignorada
             LOG.debugf("Duplicate MQTT message messageId=%s tenant=%s — skipped", messageId, tenantId);
             return;
         }
 
-        // ── 3. Sequence tracking ────────────────────────────────────────────────
-        long sequence = payload.has("sequence") ? payload.get("sequence").asLong(-1L) : -1L;
+        long sequence = canonicalPayload.has("sequence") ? canonicalPayload.get("sequence").asLong(-1L) : -1L;
         if (sequence >= 0) {
-            checkAndUpdateSequence(machineId, tenantId, sequence, messageId, messageType);
+            checkAndUpdateSequence(machineId, tenantId, sequence, messageId, canonicalType);
         }
 
-        // ── 4. Roteamento por tipo ──────────────────────────────────────────────
-        switch (messageType) {
-            case "HEARTBEAT", "STATUS_REPORT" -> handleHeartbeat(tenantId, machineId, payload, messageId);
-            case "COMMAND_ACK"                -> handleCommandAck(tenantId, machineId, payload);
-            case "CREDIT_RECEIVED"            -> handleCreditReceived(tenantId, machineId, payload);
-            case "PLAY_STARTED"               -> handlePlayStarted(tenantId, machineId, payload);
-            case "PLAY_COMPLETED"             -> handlePlayCompleted(tenantId, machineId, payload);
-            case "ERROR_REPORT"               -> handleErrorReport(tenantId, machineId, payload);
-            default -> LOG.debugf("Unhandled MQTT message type: %s [messageId=%s]", messageType, messageId);
+        switch (canonicalType) {
+            case "HEARTBEAT", "STATUS_REPORT" -> handleHeartbeat(tenantId, machineId, canonicalPayload, messageId);
+            case "COMMAND_ACK"                -> handleCommandAck(tenantId, machineId, canonicalPayload);
+            case "CREDIT_RECEIVED"            -> handleCreditReceived(tenantId, machineId, canonicalPayload);
+            case "PLAY_STARTED"               -> handlePlayStarted(tenantId, machineId, canonicalPayload);
+            case "PLAY_COMPLETED"             -> handlePlayCompleted(tenantId, machineId, canonicalPayload);
+            case "ERROR_REPORT"               -> handleErrorReport(tenantId, machineId, canonicalPayload);
+            default -> LOG.debugf("Unhandled MQTT message type: %s [messageId=%s]", canonicalType, messageId);
         }
 
         // ── 5. Marcar como processado ───────────────────────────────────────────
