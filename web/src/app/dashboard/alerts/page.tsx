@@ -62,6 +62,15 @@ export default function AlertsPage() {
     },
   });
 
+  const resolve = useMutation({
+    mutationFn: (id: string) =>
+      api.post(`/alerts/${id}/resolve`, { note: 'Resolvido via painel web' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['alerts'] });
+      qc.invalidateQueries({ queryKey: ['alerts-summary'] });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -142,7 +151,7 @@ export default function AlertsPage() {
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                       {fmt(alert.occurredAt)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 space-x-2">
                       <button
                         onClick={() => {
                           if (confirm(`Reconhecer alerta "${typeLabel}" da máquina ${alert.machineAssetNumber}?`)) {
@@ -154,6 +163,18 @@ export default function AlertsPage() {
                         aria-label={`Reconhecer alerta ${typeLabel}`}
                       >
                         Reconhecer
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Resolver alerta "${typeLabel}" da máquina ${alert.machineAssetNumber}?`)) {
+                            resolve.mutate(alert.id);
+                          }
+                        }}
+                        disabled={resolve.isPending}
+                        className="text-xs px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+                        aria-label={`Resolver alerta ${typeLabel}`}
+                      >
+                        Resolver
                       </button>
                     </td>
                   </tr>
