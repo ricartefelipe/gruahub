@@ -47,7 +47,8 @@
 		reverse_proxy backend:8080
 	}
 
-	handle /q/* {
+	# Health only — não expor Swagger/OpenAPI em piloto público
+	handle /q/health* {
 		reverse_proxy backend:8080
 	}
 

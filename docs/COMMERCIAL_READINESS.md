@@ -83,6 +83,7 @@ Entregue no Compose / backend (ver `DEPLOYMENT.md`):
 12. **Push stub** — `PushNotifier` (`noop` / `http-stub`) + hook mobile Expo; sem FCM Google
 13. **Runbook DR** — retenção/offsite/restore documentados em `DEPLOYMENT.md` com scripts existentes
 14. **Monitoramento** — profile Compose `monitoring` (Uptime Kuma em `:3002`) + orientação de uptime externo
+15. **Pilot safety** — `ProductionSafetyGuard` (fail-fast sandbox em profile prod), flag `gruahub.player-public.enabled`, Swagger off em `%prod`, checklist em `docs/PILOT_CHECKLIST.md`
 
 Ainda aberto nesta frente: Vault/SM com rotação, cert público real (DNS), WAF comercial / rate-limit distribuído, FCM/Expo Push + SMS/e-mail, PITR, pen-test, pagamento real, hardware, NF-e.
 
