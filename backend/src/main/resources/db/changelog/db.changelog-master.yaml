@@ -43,3 +43,5 @@ databaseChangeLog:
       file: db/changelog/020-seed-demo-route-today.yaml
   - include:
       file: db/changelog/021-controller-adapter-demo.yaml
+  - include:
+      file: db/changelog/022-seed-demo-bonus-plays.yaml

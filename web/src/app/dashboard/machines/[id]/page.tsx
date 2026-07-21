@@ -73,6 +73,7 @@ export default function MachineDetailPage() {
   const [showCreditForm, setShowCreditForm] = useState(false);
   const [creditPlays, setCreditPlays] = useState('1');
   const [creditJustification, setCreditJustification] = useState('');
+  const [bonusDraft, setBonusDraft] = useState<string | null>(null);
 
   const statusMutation = useMutation({
     mutationFn: (status: string) => machinesApi.changeStatus(id, status),
@@ -110,6 +111,17 @@ export default function MachineDetailPage() {
       qc.invalidateQueries({ queryKey: ['machine', id] });
     },
     onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao enviar comando'),
+  });
+
+  const updateBonus = useMutation({
+    mutationFn: (bonusPlays: number) => machinesApi.update(id, { bonusPlays }),
+    onSuccess: (r) => {
+      qc.setQueryData(['machine', id], r.data);
+      qc.invalidateQueries({ queryKey: ['machines'] });
+      setBonusDraft(null);
+      toast.success('Jogadas bônus atualizadas');
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao atualizar bônus'),
   });
 
   // ── Loading / Error ──────────────────────────────────────────────────────────
@@ -260,7 +272,50 @@ export default function MachineDetailPage() {
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Jogadas bônus</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{machine.bonusPlays}</p>
+          {bonusDraft === null ? (
+            <div className="mt-1 flex items-baseline justify-between gap-2">
+              <p className="text-xl font-bold text-gray-900">{machine.bonusPlays}</p>
+              <button
+                type="button"
+                onClick={() => setBonusDraft(String(machine.bonusPlays))}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Editar
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-2">
+              <input
+                type="number"
+                min={0}
+                value={bonusDraft}
+                onChange={e => setBonusDraft(e.target.value)}
+                className="w-full border rounded-lg px-2 py-1.5 text-sm"
+                aria-label="Jogadas bônus"
+              />
+              <p className="text-xs text-gray-400">Extras somadas a cada crédito pago</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={updateBonus.isPending}
+                  onClick={() => {
+                    const value = Math.max(0, parseInt(bonusDraft, 10) || 0);
+                    updateBonus.mutate(value);
+                  }}
+                  className="px-2.5 py-1 bg-indigo-600 text-white text-xs rounded-lg disabled:opacity-50"
+                >
+                  {updateBonus.isPending ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBonusDraft(null)}
+                  className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Último sinal</p>

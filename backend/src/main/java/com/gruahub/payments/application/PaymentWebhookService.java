@@ -4,6 +4,7 @@ import com.gruahub.payments.domain.PaymentProvider;
 import com.gruahub.payments.domain.PaymentStatus;
 import com.gruahub.payments.infra.SandboxPaymentProvider;
 import com.gruahub.plays.application.CreditService;
+import com.gruahub.plays.application.PlayGrantCalculator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -171,13 +172,22 @@ public class PaymentWebhookService {
         UUID paymentId = UUID.fromString(row[0].toString());
         UUID machineId = UUID.fromString(row[1].toString());
         long amountCents = ((Number) row[2]).longValue();
-        long playPriceCents = getPlayPriceCents(machineId, tenantId);
-        int plays = playPriceCents > 0 ? (int) (amountCents / playPriceCents) : 1;
+        MachinePlayConfig machineConfig = getMachinePlayConfig(machineId, tenantId);
+        int plays = PlayGrantCalculator.playsForPayment(
+                amountCents, machineConfig.playPriceCents(), machineConfig.bonusPlays());
+
+        if (plays <= 0) {
+            LOG.warnf(
+                    "Payment confirmed but zero plays granted: providerTxId=%s payment=%s machine=%s amount=%d price=%d",
+                    providerTxId, paymentId, machineId, amountCents, machineConfig.playPriceCents());
+            return;
+        }
 
         creditService.grantCreditForPayment(tenantId, machineId, paymentId, amountCents, plays);
 
-        LOG.infof("Payment confirmed and credit enqueued: providerTxId=%s payment=%s machine=%s plays=%d",
-                providerTxId, paymentId, machineId, plays);
+        LOG.infof(
+                "Payment confirmed and credit enqueued: providerTxId=%s payment=%s machine=%s plays=%d (bonus=%d)",
+                providerTxId, paymentId, machineId, plays, machineConfig.bonusPlays());
     }
 
     private void markPaymentFailed(UUID tenantId, String providerTxId) {
@@ -201,14 +211,23 @@ public class PaymentWebhookService {
         return result == null ? null : UUID.fromString(result.toString());
     }
 
-    private long getPlayPriceCents(UUID machineId, UUID tenantId) {
+    private record MachinePlayConfig(long playPriceCents, int bonusPlays) {}
+
+    private MachinePlayConfig getMachinePlayConfig(UUID machineId, UUID tenantId) {
         @SuppressWarnings("unchecked")
-        List<Object> result = em.createNativeQuery(
-                "SELECT play_price_cents FROM machine WHERE id = :mid AND tenant_id = :tid")
+        List<Object[]> result = em.createNativeQuery(
+                "SELECT play_price_cents, COALESCE(bonus_plays, 0) FROM machine " +
+                "WHERE id = :mid AND tenant_id = :tid")
                 .setParameter("mid", machineId)
                 .setParameter("tid", tenantId)
                 .getResultList();
-        return result.isEmpty() ? 200L : ((Number) result.get(0)).longValue();
+        if (result.isEmpty()) {
+            return new MachinePlayConfig(200L, 0);
+        }
+        Object[] row = result.get(0);
+        return new MachinePlayConfig(
+                ((Number) row[0]).longValue(),
+                ((Number) row[1]).intValue());
     }
 
     @Transactional
