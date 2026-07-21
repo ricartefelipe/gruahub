@@ -98,9 +98,11 @@ public class PlayerMachineLookup {
         String token = raw.trim();
         try {
             java.net.URI uri = java.net.URI.create(token);
-            if ("gruahub".equalsIgnoreCase(uri.getScheme())) {
-                String path = uri.getPath() == null ? "" : uri.getPath();
-                String host = uri.getHost() == null ? "" : uri.getHost();
+            String scheme = uri.getScheme() == null ? "" : uri.getScheme();
+            String path = uri.getPath() == null ? "" : uri.getPath();
+            String host = uri.getHost() == null ? "" : uri.getHost();
+
+            if ("gruahub".equalsIgnoreCase(scheme)) {
                 if (path.startsWith("//machine/")) {
                     return path.substring("//machine/".length());
                 }
@@ -111,11 +113,39 @@ public class PlayerMachineLookup {
                     return path.substring("/machine/".length());
                 }
             }
+
+            if (("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
+                    && path.contains("/play/")) {
+                int idx = path.lastIndexOf("/play/");
+                String playToken = path.substring(idx + "/play/".length());
+                int slash = playToken.indexOf('/');
+                if (slash >= 0) {
+                    playToken = playToken.substring(0, slash);
+                }
+                if (!playToken.isBlank()) {
+                    return java.net.URLDecoder.decode(playToken, java.nio.charset.StandardCharsets.UTF_8);
+                }
+            }
         } catch (Exception ignored) {
             // plain token
         }
         if (token.startsWith("gruahub://machine/")) {
             return token.substring("gruahub://machine/".length());
+        }
+        int playIdx = token.lastIndexOf("/play/");
+        if (playIdx >= 0) {
+            String playToken = token.substring(playIdx + "/play/".length());
+            int q = playToken.indexOf('?');
+            if (q >= 0) {
+                playToken = playToken.substring(0, q);
+            }
+            int slash = playToken.indexOf('/');
+            if (slash >= 0) {
+                playToken = playToken.substring(0, slash);
+            }
+            if (!playToken.isBlank()) {
+                return java.net.URLDecoder.decode(playToken, java.nio.charset.StandardCharsets.UTF_8);
+            }
         }
         return token;
     }

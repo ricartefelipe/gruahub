@@ -167,14 +167,34 @@ export default function MachineDetailPage() {
               </span>
             </div>
             {machine.name && <p className="text-gray-500 mt-0.5">{machine.name}</p>}
-            <a
-              href={`/play/${encodeURIComponent(machine.qrCode || machine.assetNumber || machine.id)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block mt-1 text-sm text-teal-700 hover:underline"
-            >
-              Abrir página do jogador →
-            </a>
+            <div className="mt-2 space-y-1">
+              <a
+                href={`/play/${encodeURIComponent(machine.qrCode || machine.assetNumber || machine.id)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block text-sm text-teal-700 hover:underline"
+              >
+                Abrir página do jogador →
+              </a>
+              <p className="text-xs text-gray-500 break-all">
+                QR do adesivo (copie a URL):{' '}
+                <button
+                  type="button"
+                  className="text-teal-700 hover:underline"
+                  onClick={() => {
+                    const path = `/play/${encodeURIComponent(
+                      machine.qrCode || machine.assetNumber || machine.id
+                    )}`;
+                    const url = `${window.location.origin}${path}`;
+                    navigator.clipboard.writeText(url)
+                      .then(() => toast.success('URL do adesivo copiada'))
+                      .catch(() => toast.error('Não foi possível copiar'));
+                  }}
+                >
+                  /play/{machine.qrCode || machine.assetNumber || machine.id}
+                </button>
+              </p>
+            </div>
           </div>
         </div>
 

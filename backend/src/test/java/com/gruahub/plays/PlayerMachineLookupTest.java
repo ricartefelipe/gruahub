@@ -16,4 +16,16 @@ class PlayerMachineLookupTest {
         assertEquals("GH-MAQUINA-001", PlayerMachineLookup.normalizeToken(" GH-MAQUINA-001 "));
         assertEquals("MAQUINA-001", PlayerMachineLookup.normalizeToken("MAQUINA-001"));
     }
+
+    @Test
+    void normalizesPlayerStickerUrls() {
+        assertEquals(
+                "GH-MAQUINA-001",
+                PlayerMachineLookup.normalizeToken("http://localhost:3000/play/GH-MAQUINA-001")
+        );
+        assertEquals(
+                "GH-MAQUINA-002",
+                PlayerMachineLookup.normalizeToken("https://play.gruahub.local/play/GH-MAQUINA-002?utm=sticker")
+        );
+    }
 }
