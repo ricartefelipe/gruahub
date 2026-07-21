@@ -52,6 +52,8 @@ public class AlertResource {
 
     public record AcknowledgeRequest(String note) {}
 
+    public record ResolveRequest(String note) {}
+
     // ── Queries ─────────────────────────────────────────────────────────────────
 
     @GET
@@ -151,6 +153,37 @@ public class AlertResource {
 
         audit.record("ALERT_ACKNOWLEDGED", "alert", id.toString(),
             JsonUtil.obj("acknowledgedBy", acknowledgedBy));
+
+        return getAlert(id);
+    }
+
+    @POST
+    @Path("/{id}/resolve")
+    @Transactional
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "TECHNICIAN"})
+    public AlertResponse resolve(
+        @PathParam("id") UUID id,
+        ResolveRequest req,
+        @Context SecurityContext secCtx
+    ) {
+        UUID tenantId = TenantContext.getTenantId();
+        String resolvedBy = secCtx != null && secCtx.getUserPrincipal() != null
+            ? secCtx.getUserPrincipal().getName() : "unknown";
+
+        int updated = em.createNativeQuery(
+            "UPDATE alert SET status = 'RESOLVED', " +
+            "note = COALESCE(:note, note), updated_at = NOW() " +
+            "WHERE id = :id AND tenant_id = :tid AND status IN ('OPEN', 'ACKNOWLEDGED')"
+        )
+            .setParameter("note", req != null ? req.note() : null)
+            .setParameter("id", id)
+            .setParameter("tid", tenantId)
+            .executeUpdate();
+
+        if (updated == 0) throw new NotFoundException("Alert not found or already resolved: " + id);
+
+        audit.record("ALERT_RESOLVED", "alert", id.toString(),
+            JsonUtil.obj("resolvedBy", resolvedBy));
 
         return getAlert(id);
     }

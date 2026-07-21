@@ -191,11 +191,54 @@ public class ReportResource {
     }
 
     private String renderSettlement(UUID tenantId, Map<String, String> params) {
+        String startDate = params.getOrDefault("startDate", "");
+        String endDate = params.getOrDefault("endDate", "");
+        String status = params.getOrDefault("status", "");
+
+        StringBuilder sql = new StringBuilder(
+            "SELECT op.name, " +
+            "CAST(s.period_start AS text) || ' – ' || CAST(s.period_end AS text), " +
+            "s.gross_revenue_cents, s.commission_cents, " +
+            "COALESCE(s.net_revenue_cents, s.net_amount_cents), s.status " +
+            "FROM settlement s " +
+            "JOIN operating_point op ON op.id = s.operating_point_id " +
+            "WHERE s.tenant_id = :tid "
+        );
+        if (!startDate.isBlank()) sql.append("AND s.period_start >= CAST(:sd AS date) ");
+        if (!endDate.isBlank()) sql.append("AND s.period_end <= CAST(:ed AS date) ");
+        if (!status.isBlank()) sql.append("AND s.status = :status ");
+        sql.append("ORDER BY s.period_start DESC");
+
+        var query = em.createNativeQuery(sql.toString()).setParameter("tid", tenantId);
+        if (!startDate.isBlank()) query.setParameter("sd", startDate);
+        if (!endDate.isBlank()) query.setParameter("ed", endDate);
+        if (!status.isBlank()) query.setParameter("status", status);
+
+        @SuppressWarnings("unchecked")
+        java.util.List<Object[]> settlements = query.getResultList();
+
+        long totalNet = settlements.stream()
+            .mapToLong(r -> r[4] != null ? ((Number) r[4]).longValue() : 0)
+            .sum();
+
+        java.util.List<Object[]> displayRows = settlements.stream()
+            .map(r -> new Object[]{
+                r[0],
+                r[1],
+                "R$ " + String.format("%.2f", ((Number) r[2]).longValue() / 100.0),
+                "R$ " + String.format("%.2f", ((Number) r[3]).longValue() / 100.0),
+                "R$ " + String.format("%.2f", ((Number) r[4]).longValue() / 100.0),
+                r[5]
+            })
+            .toList();
+
         return buildSimpleHtmlTable(
             "Relatório de Liquidação",
             new String[]{"Ponto", "Período", "Bruto", "Comissão", "Líquido", "Status"},
-            java.util.List.of(),
-            "Nenhuma liquidação no período"
+            displayRows,
+            settlements.isEmpty()
+                ? "Nenhuma liquidação no período"
+                : "Total líquido: R$ " + String.format("%.2f", totalNet / 100.0)
         );
     }
 
