@@ -2,33 +2,20 @@ package com.gruahub.payments.domain;
 
 import java.util.UUID;
 
-/**
- * Porta para provedores de pagamento.
- * Implementações: SandboxPaymentProvider, MercadoPagoPaymentProvider (futuro), etc.
- * O tenant nunca passa o provedor pelo corpo da requisição.
- */
 public interface PaymentProvider {
 
     String providerName();
 
-    /**
-     * Cria uma transação de pagamento no provedor.
-     * @return ID da transação no provedor
-     */
-    String createTransaction(PaymentCreateRequest request);
+    PaymentCreateResult createPayment(PaymentCreateRequest request);
 
-    /**
-     * Verifica o status de uma transação existente.
-     */
     PaymentStatusResult checkStatus(String providerTransactionId);
 
-    /**
-     * Verifica a assinatura de um evento de webhook.
-     * @return true se a assinatura é válida
-     */
-    boolean verifyWebhookSignature(byte[] payload, String signature, String secret);
+    boolean verifyWebhookSignature(WebhookSignatureContext context);
+
+    WebhookEvent parseWebhook(byte[] payload);
 
     record PaymentCreateRequest(
+            UUID paymentId,
             UUID machineId,
             UUID tenantId,
             long amountCents,
@@ -36,5 +23,27 @@ public interface PaymentProvider {
             String description
     ) {}
 
+    record PaymentCreateResult(
+            String providerTransactionId,
+            String paymentMethod,
+            String qrCodeBase64,
+            String copyPaste,
+            String ticketUrl,
+            String metadataJson
+    ) {}
+
     record PaymentStatusResult(String providerTransactionId, PaymentStatus status) {}
+
+    record WebhookSignatureContext(
+            byte[] payload,
+            String signature,
+            String requestId,
+            String dataId
+    ) {}
+
+    record WebhookEvent(
+            String providerTransactionId,
+            String eventType,
+            boolean requiresStatusFetch
+    ) {}
 }

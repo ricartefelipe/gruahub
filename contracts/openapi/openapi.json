@@ -1524,6 +1524,34 @@
         } ]
       }
     },
+    "/api/v1/payments/initiate" : {
+      "post" : {
+        "tags" : [ "Payment Resource" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InitiatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER", "FINANCE" ]
+        } ]
+      }
+    },
     "/api/v1/payments/sandbox/confirm/{transactionId}" : {
       "post" : {
         "tags" : [ "Payments" ],
@@ -1610,7 +1638,19 @@
             "type" : "string"
           }
         }, {
+          "name" : "data.id",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
           "name" : "Idempotency-Key",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "X-Request-Id",
           "in" : "header",
           "schema" : {
             "type" : "string"
@@ -1623,6 +1663,18 @@
           }
         }, {
           "name" : "X-Tenant-Id",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "x-request-id",
+          "in" : "header",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "x-signature",
           "in" : "header",
           "schema" : {
             "type" : "string"
@@ -2572,6 +2624,23 @@
             "additionalProperties" : {
               "type" : "string"
             }
+          }
+        }
+      },
+      "InitiatePaymentRequest" : {
+        "required" : [ "machineId" ],
+        "type" : "object",
+        "properties" : {
+          "machineId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "amountCents" : {
+            "format" : "int64",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "provider" : {
+            "type" : "string"
           }
         }
       },

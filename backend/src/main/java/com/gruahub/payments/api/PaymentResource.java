@@ -1,13 +1,18 @@
 package com.gruahub.payments.api;
 
+import com.gruahub.payments.application.PaymentInitiationService;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.shared.api.PageResponse;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.time.Instant;
 import java.util.List;
@@ -19,11 +24,21 @@ import java.util.UUID;
  */
 @Path("/api/v1/payments")
 @Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 @RequestScoped
 public class PaymentResource {
 
     @Inject
     EntityManager em;
+
+    @Inject
+    PaymentInitiationService initiationService;
+
+    public record InitiatePaymentRequest(
+        @NotNull UUID machineId,
+        @Min(1) Long amountCents,
+        String provider
+    ) {}
 
     public record PaymentResponse(
         UUID id,
@@ -38,6 +53,18 @@ public class PaymentResource {
         Instant createdAt,
         Instant confirmedAt
     ) {}
+
+    @POST
+    @Path("/initiate")
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER", "FINANCE"})
+    public Response initiatePayment(@Valid InitiatePaymentRequest request) {
+        var result = initiationService.initiate(
+                request.machineId(),
+                request.amountCents(),
+                request.provider()
+        );
+        return Response.status(Response.Status.CREATED).entity(result).build();
+    }
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
