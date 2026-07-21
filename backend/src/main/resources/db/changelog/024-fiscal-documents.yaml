@@ -1,0 +1,106 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-001-fiscal-document
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: fiscal_document
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: document_type
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_transaction_id
+                  type: uuid
+              - column:
+                  name: settlement_id
+                  type: uuid
+              - column:
+                  name: amount_cents
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  defaultValue: BRL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: issuer_document
+                  type: varchar(30)
+              - column:
+                  name: issuer_name
+                  type: varchar(200)
+              - column:
+                  name: snapshot
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: issued_at
+                  type: timestamptz
+              - column:
+                  name: cancelled_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: fiscal_document
+            baseColumnNames: tenant_id
+            constraintName: fk_fiscal_document_tenant
+            referencedTableName: tenant
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: fiscal_document
+            baseColumnNames: payment_transaction_id
+            constraintName: fk_fiscal_document_payment
+            referencedTableName: payment_transaction
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: fiscal_document
+            baseColumnNames: settlement_id
+            constraintName: fk_fiscal_document_settlement
+            referencedTableName: settlement
+            referencedColumnNames: id
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX uq_fiscal_document_payment
+              ON fiscal_document (payment_transaction_id)
+              WHERE payment_transaction_id IS NOT NULL;
+        - createIndex:
+            tableName: fiscal_document
+            indexName: idx_fiscal_document_tenant_status
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: status

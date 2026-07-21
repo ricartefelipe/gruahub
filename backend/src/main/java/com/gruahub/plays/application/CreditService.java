@@ -1,5 +1,7 @@
 package com.gruahub.plays.application;
 
+import com.gruahub.iot.application.ControllerAdapterRegistry;
+import com.gruahub.iot.domain.ControllerAdapter;
 import com.gruahub.shared.infra.OutboxPublisher;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -37,6 +39,9 @@ public class CreditService {
 
     @Inject
     OutboxPublisher outboxPublisher;
+
+    @Inject
+    ControllerAdapterRegistry controllerAdapterRegistry;
 
     /**
      * Cria um crédito para a máquina após confirmação de pagamento.
@@ -85,24 +90,43 @@ public class CreditService {
         // O OutboxPublisher scheduler publicará via MQTT quando o broker estiver disponível.
         String cmdPayload = buildGrantCreditPayload(commandId, creditId, playsGranted, amountCents, tenantId, machineId);
         outboxPublisher.enqueue(tenantId, "credit_grant", creditId, "GRANT_CREDIT", cmdPayload);
-
-        // Também registrar na tabela device_command para rastreabilidade e ACK tracking
-        em.createNativeQuery(
-                "INSERT INTO device_command " +
-                "(id, command_id, tenant_id, machine_id, command_type, payload, " +
-                " status, expires_at, created_at) " +
-                "VALUES (gen_random_uuid(), :cmdId, :tid, :mid, 'GRANT_CREDIT', CAST(:payload AS jsonb), " +
-                "'PENDING', :expiry, :now)")
-                .setParameter("cmdId",   commandId)
-                .setParameter("tid",     tenantId)
-                .setParameter("mid",     machineId)
-                .setParameter("payload", cmdPayload)
-                .setParameter("expiry",  Instant.now().plusSeconds(commandTtlSeconds))
-                .setParameter("now",     Instant.now())
-                .executeUpdate();
+        insertDeviceCommand(tenantId, machineId, commandId, cmdPayload);
 
         LOG.infof("Credit granted and enqueued: creditId=%s payment=%s machine=%s plays=%d",
                 creditId, paymentTransactionId, machineId, playsGranted);
+        return creditId;
+    }
+
+    @Transactional
+    public UUID grantCreditManual(UUID tenantId, UUID machineId, long amountCents,
+                                  int playsGranted, String justification, String authorizedBy) {
+        UUID creditId = UUID.randomUUID();
+        String commandId = UUID.randomUUID().toString();
+
+        em.createNativeQuery(
+                "INSERT INTO credit_grant " +
+                "(id, tenant_id, machine_id, payment_transaction_id, " +
+                " amount_cents, plays_granted, reason, status, command_id, " +
+                " manual_justification, manual_authorized_by, created_at) " +
+                "VALUES (:id, :tid, :mid, NULL, :amt, :plays, 'MANUAL', 'PENDING', :cmdId, " +
+                " :justification, :authorizedBy, :now)")
+                .setParameter("id", creditId)
+                .setParameter("tid", tenantId)
+                .setParameter("mid", machineId)
+                .setParameter("amt", amountCents)
+                .setParameter("plays", playsGranted)
+                .setParameter("cmdId", commandId)
+                .setParameter("justification", justification)
+                .setParameter("authorizedBy", authorizedBy)
+                .setParameter("now", Instant.now())
+                .executeUpdate();
+
+        String cmdPayload = buildGrantCreditPayload(commandId, creditId, playsGranted, amountCents, tenantId, machineId);
+        outboxPublisher.enqueue(tenantId, "credit_grant", creditId, "GRANT_CREDIT", cmdPayload);
+        insertDeviceCommand(tenantId, machineId, commandId, cmdPayload);
+
+        LOG.infof("Manual credit granted and enqueued: creditId=%s machine=%s plays=%d by=%s",
+                creditId, machineId, playsGranted, authorizedBy);
         return creditId;
     }
 
@@ -146,29 +170,33 @@ public class CreditService {
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────────
-
     private String buildGrantCreditPayload(String commandId, UUID creditId, int plays,
                                            long amountCents, UUID tenantId, UUID machineId) {
-        // Sem string concatenation de dados de usuário — valores são todos controlados
-        return String.format("""
-                {
-                  "schemaVersion": 1,
-                  "messageId": "%s",
-                  "tenantId": "%s",
-                  "machineId": "%s",
-                  "type": "GRANT_CREDIT",
-                  "occurredAt": "%s",
-                  "payload": {
-                    "commandId": "%s",
-                    "creditGrantId": "%s",
-                    "playsGranted": %d,
-                    "amountCents": %d,
-                    "ttlSeconds": %d
-                  }
-                }""",
-                commandId, tenantId, machineId,
-                Instant.now().toString(),
-                commandId, creditId, plays, amountCents, commandTtlSeconds);
+        ControllerAdapter adapter = controllerAdapterRegistry.forMachine(tenantId, machineId);
+        return adapter.buildGrantCreditCommand(new ControllerAdapter.GrantCreditCommand(
+                tenantId,
+                machineId,
+                commandId,
+                creditId,
+                plays,
+                amountCents,
+                commandTtlSeconds
+        ));
+    }
+
+    private void insertDeviceCommand(UUID tenantId, UUID machineId, String commandId, String cmdPayload) {
+        em.createNativeQuery(
+                "INSERT INTO device_command " +
+                "(id, command_id, tenant_id, machine_id, command_type, payload, " +
+                " status, expires_at, created_at) " +
+                "VALUES (gen_random_uuid(), :cmdId, :tid, :mid, 'GRANT_CREDIT', CAST(:payload AS jsonb), " +
+                "'PENDING', :expiry, :now)")
+                .setParameter("cmdId", commandId)
+                .setParameter("tid", tenantId)
+                .setParameter("mid", machineId)
+                .setParameter("payload", cmdPayload)
+                .setParameter("expiry", Instant.now().plusSeconds(commandTtlSeconds))
+                .setParameter("now", Instant.now())
+                .executeUpdate();
     }
 }

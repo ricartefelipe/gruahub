@@ -296,6 +296,8 @@ export const machinesApi = {
   changeStatus: (id: string, status: string) =>
     apiClient.post<Machine>(`/machines/${id}/status`, null, { params: { status } }),
   statusSummary: () => apiClient.get<MachineStatusSummary>('/machines/summary/status'),
+  sendCommand: (id: string, commandType: string) =>
+    apiClient.post(`/machines/${id}/commands`, { commandType }),
 };
 
 export const alertsApi = {
@@ -345,6 +347,25 @@ export const inventoryApi = {
     apiClient.get<PageResponse<StockBalance>>('/inventory/balances', { params: { page, size } }),
   movements: (page = 0, size = 100) =>
     apiClient.get<PageResponse<StockMovement>>('/inventory/movements', { params: { page, size } }),
+  prizes: (page = 0, size = 100) =>
+    apiClient.get<PageResponse<Record<string, unknown>>>('/inventory/prizes', { params: { page, size } }),
+  createPrize: (data: Record<string, unknown>) =>
+    apiClient.post('/inventory/prizes', data),
+  updatePrize: (id: string, data: Record<string, unknown>) =>
+    apiClient.put(`/inventory/prizes/${id}`, data),
+};
+
+export const playsApi = {
+  list: (page = 0, size = 50, machineId?: string) =>
+    apiClient.get<PageResponse<Record<string, unknown>>>('/plays', {
+      params: { page, size, ...(machineId ? { machineId } : {}) },
+    }),
+  manualCredit: (data: {
+    machineId: string;
+    playsGranted: number;
+    amountCents: number;
+    justification: string;
+  }) => apiClient.post('/plays/manual-credit', data),
 };
 
 export const paymentsApi = {
@@ -352,6 +373,8 @@ export const paymentsApi = {
     apiClient.get<PageResponse<PaymentTransaction>>('/payments', {
       params: { page, size, ...(status ? { status } : {}) },
     }),
+  initiate: (data: { machineId: string; amountCents?: number; provider?: string }) =>
+    apiClient.post('/payments/initiate', data),
   sandboxConfirm: (transactionId: string) =>
     apiClient.post(`/payments/sandbox/confirm/${transactionId}`),
   sandboxFail: (transactionId: string) =>
@@ -374,6 +397,16 @@ export const reconciliationApi = {
 export const financeApi = {
   settlements: (page = 0, size = 50) =>
     apiClient.get<PageResponse<Settlement>>('/finance/settlements', { params: { page, size } }),
+  approve: (id: string) =>
+    apiClient.put<Settlement>(`/finance/settlements/${id}/approve`),
+  markPaid: (id: string) =>
+    apiClient.put<Settlement>(`/finance/settlements/${id}/mark-paid`),
+  commissionPolicies: (page = 0, size = 50) =>
+    apiClient.get<PageResponse<Record<string, unknown>>>('/finance/commission-policies', {
+      params: { page, size },
+    }),
+  createCommissionPolicy: (data: Record<string, unknown>) =>
+    apiClient.post('/finance/commission-policies', data),
 };
 
 export const routesApi = {

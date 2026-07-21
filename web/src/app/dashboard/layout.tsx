@@ -2,24 +2,107 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/dashboard/machines', label: 'Máquinas', icon: '🎰' },
-  { href: '/dashboard/locations', label: 'Pontos', icon: '📍' },
-  { href: '/dashboard/payments', label: 'Pagamentos', icon: '💳' },
-  { href: '/dashboard/reconciliation', label: 'Conciliação', icon: '⚖️' },
-  { href: '/dashboard/inventory', label: 'Estoque', icon: '📦' },
-  { href: '/dashboard/visits', label: 'Visitas', icon: '🗓️' },
-  { href: '/dashboard/routes', label: 'Rotas', icon: '🗺️' },
-  { href: '/dashboard/finance', label: 'Financeiro', icon: '💰' },
-  { href: '/dashboard/maintenance', label: 'Manutenção', icon: '🔧' },
-  { href: '/dashboard/alerts', label: 'Alertas', icon: '🔔' },
-  { href: '/dashboard/reports', label: 'Relatórios', icon: '📈' },
-  { href: '/dashboard/audit', label: 'Auditoria', icon: '🔍' },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  roles: string[];
+};
+
+const ALL_ROLES = [
+  'PLATFORM_ADMIN',
+  'TENANT_ADMIN',
+  'OPERATIONS_MANAGER',
+  'FIELD_OPERATOR',
+  'TECHNICIAN',
+  'FINANCE',
+];
+
+const navItems: NavItem[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: '📊', roles: ALL_ROLES },
+  { href: '/dashboard/machines', label: 'Máquinas', icon: '🎰', roles: ALL_ROLES },
+  {
+    href: '/dashboard/locations',
+    label: 'Pontos',
+    icon: '📍',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'OPERATIONS_MANAGER', 'FIELD_OPERATOR', 'FINANCE'],
+  },
+  {
+    href: '/dashboard/payments',
+    label: 'Pagamentos',
+    icon: '💳',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE', 'OPERATIONS_MANAGER'],
+  },
+  {
+    href: '/dashboard/promotions',
+    label: 'Promoções',
+    icon: '🎯',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'OPERATIONS_MANAGER', 'FINANCE'],
+  },
+  {
+    href: '/dashboard/reconciliation',
+    label: 'Conciliação',
+    icon: '⚖️',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE', 'OPERATIONS_MANAGER'],
+  },
+  {
+    href: '/dashboard/inventory',
+    label: 'Estoque',
+    icon: '📦',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FIELD_OPERATOR', 'FINANCE', 'TECHNICIAN', 'OPERATIONS_MANAGER'],
+  },
+  {
+    href: '/dashboard/visits',
+    label: 'Visitas',
+    icon: '🗓️',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FIELD_OPERATOR', 'OPERATIONS_MANAGER'],
+  },
+  {
+    href: '/dashboard/routes',
+    label: 'Rotas',
+    icon: '🗺️',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FIELD_OPERATOR', 'OPERATIONS_MANAGER'],
+  },
+  {
+    href: '/dashboard/finance',
+    label: 'Financeiro',
+    icon: '💰',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE'],
+  },
+  {
+    href: '/dashboard/fiscal',
+    label: 'Fiscal',
+    icon: '🧾',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE'],
+  },
+  {
+    href: '/dashboard/maintenance',
+    label: 'Manutenção',
+    icon: '🔧',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'TECHNICIAN', 'FIELD_OPERATOR', 'OPERATIONS_MANAGER'],
+  },
+  {
+    href: '/dashboard/alerts',
+    label: 'Alertas',
+    icon: '🔔',
+    roles: ALL_ROLES,
+  },
+  {
+    href: '/dashboard/reports',
+    label: 'Relatórios',
+    icon: '📈',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE', 'OPERATIONS_MANAGER'],
+  },
+  {
+    href: '/dashboard/audit',
+    label: 'Auditoria',
+    icon: '🔍',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN'],
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -31,6 +114,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace('/login');
     }
   }, [status, router]);
+
+  const roles: string[] = (session as any)?.roles ?? [];
+
+  const visibleNav = useMemo(() => {
+    if (roles.length === 0) return navItems;
+    return navItems.filter(item => item.roles.some(r => roles.includes(r)));
+  }, [roles]);
 
   if (status === 'loading') {
     return (
@@ -52,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <nav className="flex-1 overflow-y-auto p-2" aria-label="Navegação principal">
           <ul className="space-y-1">
-            {navItems.map(item => (
+            {visibleNav.map(item => (
               <li key={item.href}>
                 <Link
                   href={item.href}

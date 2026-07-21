@@ -76,6 +76,26 @@ public class InventoryResource {
         String notes
     ) {}
 
+    public record PrizeRequest(
+        @NotBlank @Size(max = 60) String sku,
+        @NotBlank @Size(max = 120) String name,
+        @Size(max = 500) String description,
+        @Min(0) Long costCents,
+        @Size(max = 30) String sizeCategory,
+        Boolean active
+    ) {}
+
+    public record PrizeResponse(
+        UUID id,
+        String sku,
+        String name,
+        String description,
+        Long costCents,
+        String sizeCategory,
+        boolean active,
+        Instant createdAt
+    ) {}
+
     // ── Queries ─────────────────────────────────────────────────────────────────
 
     @GET
@@ -250,7 +270,134 @@ public class InventoryResource {
         return Response.created(location).entity(Map.of("id", movId)).build();
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────────
+    @GET
+    @Path("/prizes")
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN"})
+    public PageResponse<PrizeResponse> listPrizes(
+        @QueryParam("active") Boolean active,
+        @QueryParam("page") @DefaultValue("0") int page,
+        @QueryParam("size") @DefaultValue("100") int size
+    ) {
+        UUID tenantId = TenantContext.getTenantId();
+        int lim = Math.min(size, 500);
+        StringBuilder where = new StringBuilder("WHERE p.tenant_id = :tid ");
+        if (active != null) where.append("AND p.active = :active ");
+
+        var countQuery = em.createNativeQuery(
+            "SELECT COUNT(*) FROM prize p " + where
+        ).setParameter("tid", tenantId);
+        if (active != null) countQuery.setParameter("active", active);
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        String sql =
+            "SELECT p.id, p.sku, p.name, p.description, p.cost_cents, p.size_category, " +
+            "p.active, p.created_at " +
+            "FROM prize p " + where +
+            "ORDER BY p.name LIMIT :lim OFFSET :off";
+
+        var q = em.createNativeQuery(sql)
+            .setParameter("tid", tenantId)
+            .setParameter("lim", lim)
+            .setParameter("off", page * lim);
+        if (active != null) q.setParameter("active", active);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = q.getResultList();
+        return PageResponse.of(rows.stream().map(this::mapPrizeRow).toList(), page, lim, total);
+    }
+
+    @POST
+    @Path("/prizes")
+    @Transactional
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN"})
+    public Response createPrize(@Valid PrizeRequest req, @Context UriInfo uriInfo) {
+        UUID tenantId = TenantContext.getTenantId();
+        UUID id = UUID.randomUUID();
+        boolean active = req.active() == null || req.active();
+
+        try {
+            em.createNativeQuery(
+                "INSERT INTO prize " +
+                "(id, tenant_id, sku, name, description, cost_cents, size_category, active, created_at) " +
+                "VALUES (:id, :tid, :sku, :name, :description, :cost, :size, :active, NOW())"
+            )
+                .setParameter("id", id)
+                .setParameter("tid", tenantId)
+                .setParameter("sku", req.sku())
+                .setParameter("name", req.name())
+                .setParameter("description", req.description())
+                .setParameter("cost", req.costCents() != null ? req.costCents() : 0L)
+                .setParameter("size", req.sizeCategory())
+                .setParameter("active", active)
+                .executeUpdate();
+        } catch (Exception e) {
+            throw new BadRequestException("SKU already exists or invalid prize data");
+        }
+
+        audit.record("PRIZE_CREATED", "prize", id.toString(),
+            JsonUtil.obj("sku", req.sku(), "name", req.name()));
+
+        URI location = uriInfo.getBaseUriBuilder()
+            .path("/api/v1/inventory/prizes/{id}").build(id);
+        return Response.created(location).entity(getPrize(id, tenantId)).build();
+    }
+
+    @PUT
+    @Path("/prizes/{id}")
+    @Transactional
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN"})
+    public PrizeResponse updatePrize(@PathParam("id") UUID id, @Valid PrizeRequest req) {
+        UUID tenantId = TenantContext.getTenantId();
+        boolean active = req.active() == null || req.active();
+
+        int updated = em.createNativeQuery(
+            "UPDATE prize SET sku = :sku, name = :name, description = :description, " +
+            "cost_cents = :cost, size_category = :size, active = :active " +
+            "WHERE id = :id AND tenant_id = :tid"
+        )
+            .setParameter("sku", req.sku())
+            .setParameter("name", req.name())
+            .setParameter("description", req.description())
+            .setParameter("cost", req.costCents() != null ? req.costCents() : 0L)
+            .setParameter("size", req.sizeCategory())
+            .setParameter("active", active)
+            .setParameter("id", id)
+            .setParameter("tid", tenantId)
+            .executeUpdate();
+
+        if (updated == 0) throw new NotFoundException("Prize not found: " + id);
+
+        audit.record("PRIZE_UPDATED", "prize", id.toString(),
+            JsonUtil.obj("sku", req.sku(), "name", req.name()));
+
+        return getPrize(id, tenantId);
+    }
+
+    private PrizeResponse getPrize(UUID id, UUID tenantId) {
+        Object[] row = (Object[]) em.createNativeQuery(
+            "SELECT p.id, p.sku, p.name, p.description, p.cost_cents, p.size_category, " +
+            "p.active, p.created_at " +
+            "FROM prize p WHERE p.id = :id AND p.tenant_id = :tid"
+        )
+            .setParameter("id", id)
+            .setParameter("tid", tenantId)
+            .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
+        if (row == null) throw new NotFoundException("Prize not found: " + id);
+        return mapPrizeRow(row);
+    }
+
+    private PrizeResponse mapPrizeRow(Object[] r) {
+        return new PrizeResponse(
+            (UUID) r[0],
+            (String) r[1],
+            (String) r[2],
+            (String) r[3],
+            r[4] != null ? ((Number) r[4]).longValue() : 0L,
+            (String) r[5],
+            r[6] != null && (Boolean) r[6],
+            r[7] != null ? ((java.sql.Timestamp) r[7]).toInstant() : null
+        );
+    }
 
     private StockMovementResponse mapMovRow(Object[] r) {
         return new StockMovementResponse(

@@ -65,11 +65,16 @@ export default function MachineDetailPage() {
 
   const { data: plays = [] } = useQuery<PlayEvent[]>({
     queryKey: ['machine-plays', id],
-    queryFn: () => api.get('/plays', { params: { machineId: id, size: 20 } }).then(r => r.data),
+    queryFn: () =>
+      api.get('/plays', { params: { machineId: id, size: 20 } }).then(r => r.data?.content ?? []),
     enabled: tab === 'plays',
   });
 
-  // ── Mutations ────────────────────────────────────────────────────────────────
+  const [showCreditForm, setShowCreditForm] = useState(false);
+  const [creditPlays, setCreditPlays] = useState('1');
+  const [creditJustification, setCreditJustification] = useState('');
+  const [bonusDraft, setBonusDraft] = useState<string | null>(null);
+
   const statusMutation = useMutation({
     mutationFn: (status: string) => machinesApi.changeStatus(id, status),
     onSuccess: (r) => {
@@ -78,6 +83,45 @@ export default function MachineDetailPage() {
       toast.success('Status atualizado');
     },
     onError: (e: any) => toast.error(e.response?.data?.title || 'Erro ao atualizar status'),
+  });
+
+  const manualCredit = useMutation({
+    mutationFn: () =>
+      api.post('/plays/manual-credit', {
+        machineId: id,
+        playsGranted: Number(creditPlays) || 1,
+        amountCents: 0,
+        justification: creditJustification.trim(),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['machine-plays', id] });
+      setShowCreditForm(false);
+      setCreditPlays('1');
+      setCreditJustification('');
+      toast.success('Crédito remoto enfileirado');
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao liberar crédito'),
+  });
+
+  const remoteCommand = useMutation({
+    mutationFn: (commandType: string) =>
+      api.post(`/machines/${id}/commands`, { commandType }),
+    onSuccess: (_r, commandType) => {
+      toast.success(`Comando ${commandType} enfileirado`);
+      qc.invalidateQueries({ queryKey: ['machine', id] });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao enviar comando'),
+  });
+
+  const updateBonus = useMutation({
+    mutationFn: (bonusPlays: number) => machinesApi.update(id, { bonusPlays }),
+    onSuccess: (r) => {
+      qc.setQueryData(['machine', id], r.data);
+      qc.invalidateQueries({ queryKey: ['machines'] });
+      setBonusDraft(null);
+      toast.success('Jogadas bônus atualizadas');
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao atualizar bônus'),
   });
 
   // ── Loading / Error ──────────────────────────────────────────────────────────
@@ -123,10 +167,55 @@ export default function MachineDetailPage() {
               </span>
             </div>
             {machine.name && <p className="text-gray-500 mt-0.5">{machine.name}</p>}
+            <div className="mt-2 space-y-1">
+              <a
+                href={`/play/${encodeURIComponent(machine.qrCode || machine.assetNumber || machine.id)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block text-sm text-teal-700 hover:underline"
+              >
+                Abrir página do jogador →
+              </a>
+              <p className="text-xs text-gray-500 break-all">
+                QR do adesivo (copie a URL):{' '}
+                <button
+                  type="button"
+                  className="text-teal-700 hover:underline"
+                  onClick={() => {
+                    const path = `/play/${encodeURIComponent(
+                      machine.qrCode || machine.assetNumber || machine.id
+                    )}`;
+                    const url = `${window.location.origin}${path}`;
+                    navigator.clipboard.writeText(url)
+                      .then(() => toast.success('URL do adesivo copiada'))
+                      .catch(() => toast.error('Não foi possível copiar'));
+                  }}
+                >
+                  /play/{machine.qrCode || machine.assetNumber || machine.id}
+                </button>
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={() => setShowCreditForm(v => !v)}
+            className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Liberar crédito
+          </button>
+          <button
+            onClick={() => {
+              if (confirm('Reiniciar esta máquina remotamente?')) {
+                remoteCommand.mutate('REBOOT');
+              }
+            }}
+            disabled={remoteCommand.isPending}
+            className="px-4 py-2 text-sm font-medium bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50"
+          >
+            Reiniciar
+          </button>
           {machine.status !== 'ACTIVE' && machine.status !== 'RETIRED' && (
             <button
               onClick={() => statusMutation.mutate('ACTIVE')}
@@ -159,6 +248,46 @@ export default function MachineDetailPage() {
         </div>
       </div>
 
+      {showCreditForm && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-medium text-indigo-900">Crédito remoto (bonificação / teste)</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input
+              type="number"
+              min="1"
+              value={creditPlays}
+              onChange={e => setCreditPlays(e.target.value)}
+              placeholder="Jogadas"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              aria-label="Quantidade de jogadas"
+            />
+            <input
+              type="text"
+              value={creditJustification}
+              onChange={e => setCreditJustification(e.target.value)}
+              placeholder="Justificativa"
+              className="md:col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              aria-label="Justificativa do crédito"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => manualCredit.mutate()}
+              disabled={!creditJustification.trim() || manualCredit.isPending}
+              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg disabled:opacity-50"
+            >
+              {manualCredit.isPending ? 'Enviando...' : 'Enviar comando'}
+            </button>
+            <button
+              onClick={() => setShowCreditForm(false)}
+              className="px-3 py-2 text-gray-500 hover:text-gray-700"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Status cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border p-4">
@@ -171,7 +300,50 @@ export default function MachineDetailPage() {
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Jogadas bônus</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{machine.bonusPlays}</p>
+          {bonusDraft === null ? (
+            <div className="mt-1 flex items-baseline justify-between gap-2">
+              <p className="text-xl font-bold text-gray-900">{machine.bonusPlays}</p>
+              <button
+                type="button"
+                onClick={() => setBonusDraft(String(machine.bonusPlays))}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Editar
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-2">
+              <input
+                type="number"
+                min={0}
+                value={bonusDraft}
+                onChange={e => setBonusDraft(e.target.value)}
+                className="w-full border rounded-lg px-2 py-1.5 text-sm"
+                aria-label="Jogadas bônus"
+              />
+              <p className="text-xs text-gray-400">Extras somadas a cada crédito pago</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={updateBonus.isPending}
+                  onClick={() => {
+                    const value = Math.max(0, parseInt(bonusDraft, 10) || 0);
+                    updateBonus.mutate(value);
+                  }}
+                  className="px-2.5 py-1 bg-indigo-600 text-white text-xs rounded-lg disabled:opacity-50"
+                >
+                  {updateBonus.isPending ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBonusDraft(null)}
+                  className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Último sinal</p>

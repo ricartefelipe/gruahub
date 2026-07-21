@@ -165,6 +165,12 @@ client.on('message', (topicStr: string, message: Buffer) => {
 
     if (commandType === 'GRANT_CREDIT' || payload.type === 'GRANT_CREDIT') {
       handleGrantCredit(state, payload);
+    } else if (
+      commandType === 'REBOOT' || payload.type === 'REBOOT' ||
+      commandType === 'LOCK' || payload.type === 'LOCK' ||
+      commandType === 'UNLOCK' || payload.type === 'UNLOCK'
+    ) {
+      handleRemoteCommand(state, payload);
     }
   } catch (e) {
     console.error('[GruaHub Simulator] Error processing command:', e);
@@ -174,6 +180,38 @@ client.on('message', (topicStr: string, message: Buffer) => {
 // ================================================================
 // Handlers de comandos
 // ================================================================
+async function handleRemoteCommand(state: MachineState, envelope: any): Promise<void> {
+  const cmdPayload = envelope.payload || {};
+  const commandId = cmdPayload.commandId;
+  const commandType = cmdPayload.commandType || envelope.type;
+
+  console.log(`[Machine ${state.machineId.substring(0, 8)}] Processing ${commandType}`);
+
+  if (commandType === 'REBOOT') {
+    state.creditsAvailable = 0;
+    state.online = false;
+    await delay(800);
+    state.online = true;
+    state.firmwareVersion = state.firmwareVersion;
+    sendHeartbeat(state);
+  } else if (commandType === 'LOCK') {
+    state.online = false;
+  } else if (commandType === 'UNLOCK') {
+    state.online = true;
+    sendHeartbeat(state);
+  }
+
+  await delay(200);
+  const ackMsg = buildEnvelope(state.machineId, 'COMMAND_ACK', {
+    commandId,
+    commandType,
+    status: 'EXECUTED',
+    success: true,
+  });
+  client.publish(topic(state.machineId, 'command-acks'), ackMsg, { qos: 1 });
+  console.log(`[Machine ${state.machineId.substring(0, 8)}] Sent COMMAND_ACK for ${commandType}`);
+}
+
 async function handleGrantCredit(state: MachineState, envelope: any): Promise<void> {
   const cmdPayload = envelope.payload;
   const commandId    = cmdPayload?.commandId;

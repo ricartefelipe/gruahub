@@ -10,10 +10,16 @@ servers:
 - url: http://0.0.0.0:8080
   description: Auto generated value
 tags:
+- name: Fiscal
+  description: Documentos fiscais stub (sem SEFAZ)
 - name: Machines
   description: Gestão da frota de máquinas
 - name: Payments
   description: Pagamentos e webhooks
+- name: Player Public
+  description: APIs públicas do fluxo do jogador (sem login)
+- name: Promotions
+  description: Campanhas promocionais de jogadas
 paths:
   /api/v1/alerts:
     get:
@@ -52,10 +58,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseAlertResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -75,10 +81,10 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -103,10 +109,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AlertResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -136,10 +142,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AlertResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FIELD_OPERATOR
+        - TECHNICIAN
+  /api/v1/alerts/{id}/resolve:
+    post:
+      tags:
+      - Alert Resource
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -182,10 +220,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseAuditEventResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -220,10 +258,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseEstablishmentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -242,10 +280,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -267,10 +305,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EstablishmentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -300,10 +338,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EstablishmentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -320,10 +358,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -340,15 +378,72 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
         - TENANT_ADMIN
         - FIELD_OPERATOR
+        - FINANCE
+  /api/v1/finance/commission-policies:
+    get:
+      tags:
+      - Finance Resource
+      parameters:
+      - name: operatingPointId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: page
+        in: query
+        schema:
+          format: int32
+          default: 0
+          type: integer
+      - name: size
+        in: query
+        schema:
+          format: int32
+          default: 50
+          type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseCommissionPolicyResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FINANCE
+    post:
+      tags:
+      - Finance Resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommissionPolicyRequest"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
         - FINANCE
   /api/v1/finance/settlements:
     get:
@@ -378,10 +473,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseSettlementResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -404,10 +499,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SettlementResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -430,10 +525,174 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SettlementResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FINANCE
+  /api/v1/fiscal/documents:
+    get:
+      tags:
+      - Fiscal
+      summary: Listar documentos fiscais stub
+      parameters:
+      - name: page
+        in: query
+        schema:
+          format: int32
+          default: 0
+          type: integer
+      - name: size
+        in: query
+        schema:
+          format: int32
+          default: 50
+          type: integer
+      - name: status
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseFiscalDocumentView"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FINANCE
+  /api/v1/fiscal/documents/from-payment:
+    post:
+      tags:
+      - Fiscal
+      summary: Criar rascunho a partir de pagamento confirmado
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFromPaymentRequest"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FINANCE
+  /api/v1/fiscal/documents/{id}:
+    get:
+      tags:
+      - Fiscal
+      summary: Detalhe do documento fiscal stub
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FiscalDocumentView"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FINANCE
+  /api/v1/fiscal/documents/{id}/cancel:
+    post:
+      tags:
+      - Fiscal
+      summary: Cancelar documento fiscal stub
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FiscalDocumentView"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FINANCE
+  /api/v1/fiscal/documents/{id}/issue-stub:
+    post:
+      tags:
+      - Fiscal
+      summary: Emitir stub (marca como ISSUED_STUB)
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FiscalDocumentView"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FINANCE
+  /api/v1/fiscal/documents/{id}/pdf:
+    get:
+      tags:
+      - Fiscal
+      summary: Baixar PDF stub do documento
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -467,10 +726,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseStockBalanceResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -510,10 +769,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseStockMovementResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -531,15 +790,103 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
         - TENANT_ADMIN
         - FIELD_OPERATOR
+  /api/v1/inventory/prizes:
+    get:
+      tags:
+      - Inventory Resource
+      parameters:
+      - name: active
+        in: query
+        schema:
+          type: boolean
+      - name: page
+        in: query
+        schema:
+          format: int32
+          default: 0
+          type: integer
+      - name: size
+        in: query
+        schema:
+          format: int32
+          default: 100
+          type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponsePrizeResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FIELD_OPERATOR
+        - FINANCE
+        - TECHNICIAN
+    post:
+      tags:
+      - Inventory Resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrizeRequest"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+  /api/v1/inventory/prizes/{id}:
+    put:
+      tags:
+      - Inventory Resource
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrizeRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrizeResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
   /api/v1/machines:
     get:
       tags:
@@ -565,10 +912,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseMachineResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -589,10 +936,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -610,10 +957,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MachineStatusSummary"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -638,10 +985,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MachineResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -672,15 +1019,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MachineResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
         - TENANT_ADMIN
         - OPERATIONS_MANAGER
+  /api/v1/machines/{id}/commands:
+    post:
+      tags:
+      - Machines
+      summary: "Enviar comando remoto à máquina (REBOOT, LOCK, UNLOCK)"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteCommandRequest"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
+        - TECHNICIAN
   /api/v1/machines/{id}/status:
     post:
       tags:
@@ -703,10 +1079,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MachineResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -749,10 +1125,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseTicketResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -770,10 +1146,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -797,10 +1173,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TicketResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -828,10 +1204,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TicketResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -870,10 +1246,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseOperatingPointResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -893,10 +1269,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -918,10 +1294,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OperatingPointResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -951,10 +1327,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OperatingPointResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -991,14 +1367,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponsePaymentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
         - TENANT_ADMIN
+        - FINANCE
+  /api/v1/payments/initiate:
+    post:
+      tags:
+      - Payment Resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitiatePaymentRequest"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
         - FINANCE
   /api/v1/payments/sandbox/confirm/{transactionId}:
     post:
@@ -1064,7 +1462,15 @@ paths:
         required: true
         schema:
           type: string
+      - name: data.id
+        in: query
+        schema:
+          type: string
       - name: Idempotency-Key
+        in: header
+        schema:
+          type: string
+      - name: X-Request-Id
         in: header
         schema:
           type: string
@@ -1073,6 +1479,14 @@ paths:
         schema:
           type: string
       - name: X-Tenant-Id
+        in: header
+        schema:
+          type: string
+      - name: x-request-id
+        in: header
+        schema:
+          type: string
+      - name: x-signature
         in: header
         schema:
           type: string
@@ -1102,15 +1516,262 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PaymentResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
         - TENANT_ADMIN
         - FINANCE
+  /api/v1/plays:
+    get:
+      tags:
+      - Play Resource
+      parameters:
+      - name: machineId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: page
+        in: query
+        schema:
+          format: int32
+          default: 0
+          type: integer
+      - name: size
+        in: query
+        schema:
+          format: int32
+          default: 50
+          type: integer
+      - name: status
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponsePlayResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
+        - FIELD_OPERATOR
+        - TECHNICIAN
+        - FINANCE
+  /api/v1/plays/manual-credit:
+    post:
+      tags:
+      - Play Resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManualCreditRequest"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
+  /api/v1/promotions/campaigns:
+    get:
+      tags:
+      - Promotions
+      summary: Listar campanhas promocionais
+      parameters:
+      - name: page
+        in: query
+        schema:
+          format: int32
+          default: 0
+          type: integer
+      - name: size
+        in: query
+        schema:
+          format: int32
+          default: 50
+          type: integer
+      - name: status
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseCampaignResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
+        - FINANCE
+    post:
+      tags:
+      - Promotions
+      summary: Criar campanha promocional
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignRequest"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
+  /api/v1/promotions/campaigns/{id}:
+    get:
+      tags:
+      - Promotions
+      summary: Detalhe de campanha
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
+        - FINANCE
+    patch:
+      tags:
+      - Promotions
+      summary: Atualizar campanha promocional
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignResponse"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - OPERATIONS_MANAGER
+  /api/v1/public/machines/{token}:
+    get:
+      tags:
+      - Player Public
+      summary: Resolver máquina pública por QR / patrimônio / UUID
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicMachineResponse"
+  /api/v1/public/payments/initiate:
+    post:
+      tags:
+      - Player Public
+      summary: Iniciar pagamento Pix do jogador
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicInitiateRequest"
+      responses:
+        "200":
+          description: OK
+  /api/v1/public/payments/{paymentId}/sandbox-confirm:
+    post:
+      tags:
+      - Player Public
+      summary: "[SANDBOX] Confirmar pagamento do jogador sem autenticação"
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+  /api/v1/public/payments/{paymentId}/status:
+    get:
+      tags:
+      - Player Public
+      summary: Consultar status do pagamento do jogador
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicPaymentStatusResponse"
   /api/v1/reconciliation:
     get:
       tags:
@@ -1139,10 +1800,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseReconciliationCaseResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1160,10 +1821,10 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1186,10 +1847,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReconciliationCaseResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1217,10 +1878,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReconciliationCaseResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1238,10 +1899,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1276,10 +1937,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseRoutePlanResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1300,10 +1961,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1325,10 +1986,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseRouteStopResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1367,10 +2028,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PageResponseVisitResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1393,10 +2054,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1414,10 +2075,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1435,10 +2096,10 @@ paths:
       responses:
         "200":
           description: OK
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1461,10 +2122,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VisitResponse"
-        "403":
-          description: Not Allowed
         "401":
           description: Not Authorized
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - PLATFORM_ADMIN
@@ -1526,6 +2187,72 @@ components:
           type: string
         occurredAt:
           $ref: "#/components/schemas/Instant"
+    CampaignRequest:
+      required:
+      - name
+      - status
+      - startsAt
+      - ruleType
+      type: object
+      properties:
+        name:
+          maxLength: 160
+          pattern: \S
+          type: string
+        status:
+          pattern: \S
+          type: string
+        startsAt:
+          $ref: "#/components/schemas/Instant"
+        endsAt:
+          $ref: "#/components/schemas/Instant"
+        machineId:
+          $ref: "#/components/schemas/UUID"
+        ruleType:
+          pattern: \S
+          type: string
+        extraBonusPlays:
+          format: int32
+          minimum: 0
+          type: integer
+        buyN:
+          format: int32
+          minimum: 1
+          type: integer
+        getM:
+          format: int32
+          minimum: 1
+          type: integer
+    CampaignResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        status:
+          type: string
+        startsAt:
+          $ref: "#/components/schemas/Instant"
+        endsAt:
+          $ref: "#/components/schemas/Instant"
+        machineId:
+          $ref: "#/components/schemas/UUID"
+        ruleType:
+          type: string
+        extraBonusPlays:
+          format: int32
+          type: integer
+        buyN:
+          format: int32
+          type: integer
+        getM:
+          format: int32
+          type: integer
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        updatedAt:
+          $ref: "#/components/schemas/Instant"
     CashCollectionRequest:
       required:
       - clientOperationId
@@ -1568,6 +2295,51 @@ components:
             $ref: "#/components/schemas/ChecklistItem"
         completedAt:
           type: string
+    CommissionPolicyRequest:
+      required:
+      - operatingPointId
+      - policyType
+      - effectiveFrom
+      type: object
+      properties:
+        operatingPointId:
+          $ref: "#/components/schemas/UUID"
+        policyType:
+          pattern: \S
+          type: string
+        percentage:
+          type: number
+        fixedAmountCents:
+          format: int64
+          type: integer
+        effectiveFrom:
+          pattern: \S
+          type: string
+        effectiveTo:
+          type: string
+    CommissionPolicyResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        operatingPointId:
+          $ref: "#/components/schemas/UUID"
+        operatingPointName:
+          type: string
+        policyType:
+          type: string
+        percentage:
+          type: number
+        fixedAmountCents:
+          format: int64
+          type: integer
+        effectiveFrom:
+          type: string
+        effectiveTo:
+          type: string
+        versionNumber:
+          format: int32
+          type: integer
     CompleteVisitRequest:
       required:
       - visitId
@@ -1583,6 +2355,13 @@ components:
         cashCollectedCents:
           format: int64
           type: integer
+    CreateFromPaymentRequest:
+      required:
+      - paymentId
+      type: object
+      properties:
+        paymentId:
+          $ref: "#/components/schemas/UUID"
     CreateMachineRequest:
       required:
       - assetNumber
@@ -1667,6 +2446,34 @@ components:
           type: string
         createdAt:
           $ref: "#/components/schemas/Instant"
+    FiscalDocumentView:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        documentType:
+          type: string
+        status:
+          type: string
+        paymentTransactionId:
+          $ref: "#/components/schemas/UUID"
+        settlementId:
+          $ref: "#/components/schemas/UUID"
+        amountCents:
+          format: int64
+          type: integer
+        currency:
+          type: string
+        issuerDocument:
+          type: string
+        issuerName:
+          type: string
+        issuedAt:
+          $ref: "#/components/schemas/Instant"
+        cancelledAt:
+          $ref: "#/components/schemas/Instant"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
     GenerateReportRequest:
       required:
       - reportType
@@ -1679,6 +2486,19 @@ components:
           type: object
           additionalProperties:
             type: string
+    InitiatePaymentRequest:
+      required:
+      - machineId
+      type: object
+      properties:
+        machineId:
+          $ref: "#/components/schemas/UUID"
+        amountCents:
+          format: int64
+          minimum: 1
+          type: integer
+        provider:
+          type: string
     Instant:
       format: date-time
       type: string
@@ -1753,6 +2573,26 @@ components:
         maintenance:
           format: int64
           type: integer
+    ManualCreditRequest:
+      required:
+      - machineId
+      - justification
+      type: object
+      properties:
+        machineId:
+          $ref: "#/components/schemas/UUID"
+        playsGranted:
+          format: int32
+          minimum: 1
+          type: integer
+        amountCents:
+          format: int64
+          minimum: 0
+          type: integer
+        justification:
+          maxLength: 500
+          pattern: \S
+          type: string
     ManualResolveRequest:
       required:
       - resolution
@@ -1878,6 +2718,52 @@ components:
           type: boolean
         last:
           type: boolean
+    PageResponseCampaignResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/CampaignResponse"
+        page:
+          format: int32
+          type: integer
+        size:
+          format: int32
+          type: integer
+        totalElements:
+          format: int64
+          type: integer
+        totalPages:
+          format: int32
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+    PageResponseCommissionPolicyResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommissionPolicyResponse"
+        page:
+          format: int32
+          type: integer
+        size:
+          format: int32
+          type: integer
+        totalElements:
+          format: int64
+          type: integer
+        totalPages:
+          format: int32
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
     PageResponseEstablishmentResponse:
       type: object
       properties:
@@ -1885,6 +2771,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EstablishmentResponse"
+        page:
+          format: int32
+          type: integer
+        size:
+          format: int32
+          type: integer
+        totalElements:
+          format: int64
+          type: integer
+        totalPages:
+          format: int32
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+    PageResponseFiscalDocumentView:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/FiscalDocumentView"
         page:
           format: int32
           type: integer
@@ -1954,6 +2863,52 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PaymentResponse"
+        page:
+          format: int32
+          type: integer
+        size:
+          format: int32
+          type: integer
+        totalElements:
+          format: int64
+          type: integer
+        totalPages:
+          format: int32
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+    PageResponsePlayResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayResponse"
+        page:
+          format: int32
+          type: integer
+        size:
+          format: int32
+          type: integer
+        totalElements:
+          format: int64
+          type: integer
+        totalPages:
+          format: int32
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+    PageResponsePrizeResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrizeResponse"
         page:
           format: int32
           type: integer
@@ -2180,6 +3135,116 @@ components:
           $ref: "#/components/schemas/Instant"
         confirmedAt:
           $ref: "#/components/schemas/Instant"
+    PlayResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        machineId:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+        outcome:
+          type: string
+        amountPaidCents:
+          format: int64
+          type: integer
+        occurredAt:
+          $ref: "#/components/schemas/Instant"
+    PrizeRequest:
+      required:
+      - sku
+      - name
+      type: object
+      properties:
+        sku:
+          maxLength: 60
+          pattern: \S
+          type: string
+        name:
+          maxLength: 120
+          pattern: \S
+          type: string
+        description:
+          maxLength: 500
+          type: string
+        costCents:
+          format: int64
+          minimum: 0
+          type: integer
+        sizeCategory:
+          maxLength: 30
+          type: string
+        active:
+          type: boolean
+    PrizeResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        sku:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        costCents:
+          format: int64
+          type: integer
+        sizeCategory:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+    PublicInitiateRequest:
+      required:
+      - machineToken
+      type: object
+      properties:
+        machineToken:
+          pattern: \S
+          type: string
+        amountCents:
+          format: int64
+          minimum: 1
+          type: integer
+    PublicMachineResponse:
+      type: object
+      properties:
+        machineId:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        assetNumber:
+          type: string
+        qrCode:
+          type: string
+        playPriceCents:
+          format: int64
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+        playerPath:
+          type: string
+        sandboxEnabled:
+          type: boolean
+    PublicPaymentStatusResponse:
+      type: object
+      properties:
+        paymentId:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+        amountCents:
+          format: int64
+          type: integer
+        currency:
+          type: string
+        machineId:
+          $ref: "#/components/schemas/UUID"
     ReconciliationCaseResponse:
       type: object
       properties:
@@ -2202,6 +3267,19 @@ components:
         resolvedAt:
           $ref: "#/components/schemas/Instant"
         resolvedBy:
+          type: string
+    RemoteCommandRequest:
+      required:
+      - commandType
+      type: object
+      properties:
+        commandType:
+          pattern: \S
+          type: string
+    ResolveRequest:
+      type: object
+      properties:
+        note:
           type: string
     RoutePlanResponse:
       type: object

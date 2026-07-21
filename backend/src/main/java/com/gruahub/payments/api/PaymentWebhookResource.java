@@ -46,26 +46,45 @@ public class PaymentWebhookResource {
     @Operation(summary = "Receber webhook de pagamento")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response webhook(
-            @PathParam("provider")       String provider,
-            @HeaderParam("X-Signature")  String signature,
-            @HeaderParam("X-Tenant-Id")  String tenantIdHeader,
+            @PathParam("provider") String provider,
+            @HeaderParam("X-Signature") String signature,
+            @HeaderParam("x-signature") String signatureAlt,
+            @HeaderParam("X-Request-Id") String requestId,
+            @HeaderParam("x-request-id") String requestIdAlt,
+            @HeaderParam("X-Tenant-Id") String tenantIdHeader,
             @HeaderParam("Idempotency-Key") String idempotencyKey,
+            @QueryParam("data.id") String dataIdQuery,
             byte[] body) {
 
         if (body == null || body.length == 0) {
             return Response.status(400).entity(Map.of("error", "Empty body")).build();
         }
-        if (tenantIdHeader == null || tenantIdHeader.isBlank()) {
+
+        boolean tenantHeaderRequired = "sandbox".equalsIgnoreCase(provider);
+        if (tenantHeaderRequired && (tenantIdHeader == null || tenantIdHeader.isBlank())) {
             return Response.status(400).entity(Map.of("error", "Invalid tenant ID")).build();
         }
 
+        String effectiveSignature = signature != null && !signature.isBlank() ? signature : signatureAlt;
+        String effectiveRequestId = requestId != null && !requestId.isBlank() ? requestId : requestIdAlt;
+
         try {
-            UUID tenantId = UUID.fromString(tenantIdHeader);
-            webhookService.processWebhook(provider, tenantId, idempotencyKey, signature, body);
+            UUID tenantId = null;
+            if (tenantIdHeader != null && !tenantIdHeader.isBlank()) {
+                tenantId = UUID.fromString(tenantIdHeader);
+            }
+            webhookService.processWebhook(
+                    provider,
+                    tenantId,
+                    idempotencyKey,
+                    effectiveSignature,
+                    effectiveRequestId,
+                    dataIdQuery,
+                    body);
             return Response.ok(Map.of("received", true)).build();
 
         } catch (IllegalArgumentException e) {
-            return Response.status(400).entity(Map.of("error", "Invalid tenant ID")).build();
+            return Response.status(400).entity(Map.of("error", e.getMessage())).build();
         } catch (SecurityException e) {
             LOG.warnf("Webhook signature rejected provider=%s: %s", provider, e.getMessage());
             return Response.status(401).entity(Map.of("error", "Invalid signature")).build();
