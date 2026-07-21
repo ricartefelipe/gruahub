@@ -1,5 +1,7 @@
 package com.gruahub.fleet.application;
 
+import com.gruahub.iot.application.ControllerAdapterRegistry;
+import com.gruahub.iot.domain.ControllerAdapter;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.shared.infra.OutboxPublisher;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,6 +30,9 @@ public class MachineCommandService {
     @Inject
     OutboxPublisher outboxPublisher;
 
+    @Inject
+    ControllerAdapterRegistry controllerAdapterRegistry;
+
     public record CommandResult(String commandId, String commandType, String status) {}
 
     @Transactional
@@ -49,22 +54,14 @@ public class MachineCommandService {
         }
 
         String commandId = UUID.randomUUID().toString();
-        String payload = String.format("""
-                {
-                  "schemaVersion": 1,
-                  "messageId": "%s",
-                  "tenantId": "%s",
-                  "machineId": "%s",
-                  "type": "%s",
-                  "occurredAt": "%s",
-                  "payload": {
-                    "commandId": "%s",
-                    "commandType": "%s",
-                    "ttlSeconds": %d
-                  }
-                }""",
-                commandId, tenantId, machineId, normalized, Instant.now(),
-                commandId, normalized, commandTtlSeconds);
+        ControllerAdapter adapter = controllerAdapterRegistry.forMachine(tenantId, machineId);
+        String payload = adapter.buildRemoteCommand(new ControllerAdapter.RemoteCommand(
+                tenantId,
+                machineId,
+                commandId,
+                normalized,
+                commandTtlSeconds
+        ));
 
         em.createNativeQuery(
                 "INSERT INTO device_command " +
