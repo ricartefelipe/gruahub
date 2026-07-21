@@ -36,8 +36,11 @@ public class PaymentInitiationService {
 
     @Transactional
     public InitiateResult initiate(UUID machineId, Long amountCentsOverride, String providerOverride) {
-        UUID tenantId = TenantContext.getTenantId();
+        return initiate(TenantContext.getTenantId(), machineId, amountCentsOverride, providerOverride);
+    }
 
+    @Transactional
+    public InitiateResult initiate(UUID tenantId, UUID machineId, Long amountCentsOverride, String providerOverride) {
         Object[] machine = (Object[]) em.createNativeQuery(
                 "SELECT id, play_price_cents FROM machine WHERE id = :mid AND tenant_id = :tid"
         )
