@@ -60,6 +60,11 @@ public class PaymentWebhookResource {
             return Response.status(400).entity(Map.of("error", "Empty body")).build();
         }
 
+        boolean tenantHeaderRequired = "sandbox".equalsIgnoreCase(provider);
+        if (tenantHeaderRequired && (tenantIdHeader == null || tenantIdHeader.isBlank())) {
+            return Response.status(400).entity(Map.of("error", "Invalid tenant ID")).build();
+        }
+
         String effectiveSignature = signature != null && !signature.isBlank() ? signature : signatureAlt;
         String effectiveRequestId = requestId != null && !requestId.isBlank() ? requestId : requestIdAlt;
 
