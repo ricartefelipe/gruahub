@@ -371,6 +371,8 @@ export const paymentsApi = {
     apiClient.get<PageResponse<PaymentTransaction>>('/payments', {
       params: { page, size, ...(status ? { status } : {}) },
     }),
+  initiate: (data: { machineId: string; amountCents?: number; provider?: string }) =>
+    apiClient.post('/payments/initiate', data),
   sandboxConfirm: (transactionId: string) =>
     apiClient.post(`/payments/sandbox/confirm/${transactionId}`),
   sandboxFail: (transactionId: string) =>
