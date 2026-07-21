@@ -4,7 +4,7 @@
 
 - **Hardware real:** Nenhum firmware, ESP32, Raspberry Pi ou controlador físico é suportado. O simulador substitui hardware no MVP.
 - **Pagamento real:** Apenas `SandboxPaymentProvider`. Sem integração real com Mercado Pago, PagSeguro, Stone, Pixmaq ou Vendpago. Não há captura de PAN, CVV ou dados brutos de cartão.
-- **Emissão fiscal:** Sem NF-e, NFC-e, NFS-e ou obrigações fiscais.
+- **Emissão fiscal SEFAZ:** Sem NF-e/NFC-e/NFS-e reais. Há apenas registry stub (`fiscal_document`) + PDF com aviso “não fiscal”.
 - **Contabilidade completa:** Sem razão contábil, plano de contas ou conciliação bancária.
 - **App do jogador:** Nenhuma interface para o jogador final.
 - **Carteira digital / fidelidade / publicidade:** Fora do escopo.

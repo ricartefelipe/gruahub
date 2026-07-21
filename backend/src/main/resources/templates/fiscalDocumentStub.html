@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Documento Fiscal Stub — GruaHub</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #1f2937; }
+    .banner { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 12px; margin-bottom: 20px; font-size: 12px; font-weight: bold; text-align: center; }
+    .header { border-bottom: 3px solid #0f766e; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { color: #0f766e; margin: 0; font-size: 20px; }
+    .header .subtitle { color: #6b7280; font-size: 12px; margin-top: 4px; }
+    .field { margin-bottom: 12px; }
+    .label { font-size: 10px; color: #6b7280; text-transform: uppercase; }
+    .value { font-size: 14px; color: #111827; font-weight: 500; margin-top: 2px; }
+    .amount { font-size: 28px; font-weight: bold; color: #0f766e; margin: 16px 0; }
+    .footer { margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 10px; color: #9ca3af; text-align: center; }
+    .id-badge { font-family: monospace; background: #ccfbf1; color: #115e59; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="banner">{disclaimer}</div>
+
+  <div class="header">
+    <h1>Recibo de Pagamento (Stub)</h1>
+    <div class="subtitle">GruaHub — sem transmissao SEFAZ</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Documento</div>
+    <div class="value"><span class="id-badge">{documentId}</span> · {status} · {documentType}</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Emitente</div>
+    <div class="value">{issuerName} ({issuerDocument})</div>
+  </div>
+
+  <div class="amount">{amountLabel}</div>
+
+  <div class="field">
+    <div class="label">Maquina</div>
+    <div class="value">{assetNumber} — {machineName}</div>
+  </div>
+  <div class="field">
+    <div class="label">Pagamento</div>
+    <div class="value">{provider} / {providerTx}</div>
+  </div>
+  <div class="field">
+    <div class="label">Confirmado em</div>
+    <div class="value">{confirmedAt}</div>
+  </div>
+
+  <div class="footer">
+    Gerado em {generatedAt} — GruaHub Fiscal Stub
+  </div>
+</body>
+</html>

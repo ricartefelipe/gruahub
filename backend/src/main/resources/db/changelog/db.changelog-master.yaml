@@ -47,3 +47,5 @@ databaseChangeLog:
       file: db/changelog/022-seed-demo-bonus-plays.yaml
   - include:
       file: db/changelog/023-promotion-campaigns.yaml
+  - include:
+      file: db/changelog/024-fiscal-documents.yaml
