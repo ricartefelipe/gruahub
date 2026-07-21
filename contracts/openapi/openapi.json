@@ -13,6 +13,9 @@
     "description" : "Auto generated value"
   } ],
   "tags" : [ {
+    "name" : "Fiscal",
+    "description" : "Documentos fiscais stub (sem SEFAZ)"
+  }, {
     "name" : "Machines",
     "description" : "Gestão da frota de máquinas"
   }, {
@@ -679,6 +682,218 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/fiscal/documents" : {
+      "get" : {
+        "tags" : [ "Fiscal" ],
+        "summary" : "Listar documentos fiscais stub",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "schema" : {
+            "format" : "int32",
+            "default" : 50,
+            "type" : "integer"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseFiscalDocumentView"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/fiscal/documents/from-payment" : {
+      "post" : {
+        "tags" : [ "Fiscal" ],
+        "summary" : "Criar rascunho a partir de pagamento confirmado",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateFromPaymentRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/fiscal/documents/{id}" : {
+      "get" : {
+        "tags" : [ "Fiscal" ],
+        "summary" : "Detalhe do documento fiscal stub",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiscalDocumentView"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/fiscal/documents/{id}/cancel" : {
+      "post" : {
+        "tags" : [ "Fiscal" ],
+        "summary" : "Cancelar documento fiscal stub",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiscalDocumentView"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/fiscal/documents/{id}/issue-stub" : {
+      "post" : {
+        "tags" : [ "Fiscal" ],
+        "summary" : "Emitir stub (marca como ISSUED_STUB)",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiscalDocumentView"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE" ]
+        } ]
+      }
+    },
+    "/api/v1/fiscal/documents/{id}/pdf" : {
+      "get" : {
+        "tags" : [ "Fiscal" ],
+        "summary" : "Baixar PDF stub do documento",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           },
           "401" : {
             "description" : "Not Authorized"
@@ -2878,6 +3093,15 @@
           }
         }
       },
+      "CreateFromPaymentRequest" : {
+        "required" : [ "paymentId" ],
+        "type" : "object",
+        "properties" : {
+          "paymentId" : {
+            "$ref" : "#/components/schemas/UUID"
+          }
+        }
+      },
       "CreateMachineRequest" : {
         "required" : [ "assetNumber", "name", "playPriceCents" ],
         "type" : "object",
@@ -2980,6 +3204,48 @@
           },
           "status" : {
             "type" : "string"
+          },
+          "createdAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "FiscalDocumentView" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "documentType" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "paymentTransactionId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "settlementId" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "amountCents" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "issuerDocument" : {
+            "type" : "string"
+          },
+          "issuerName" : {
+            "type" : "string"
+          },
+          "issuedAt" : {
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "cancelledAt" : {
+            "$ref" : "#/components/schemas/Instant"
           },
           "createdAt" : {
             "$ref" : "#/components/schemas/Instant"
@@ -3386,6 +3652,39 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/EstablishmentResponse"
+            }
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageResponseFiscalDocumentView" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FiscalDocumentView"
             }
           },
           "page" : {

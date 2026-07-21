@@ -74,6 +74,12 @@ const navItems: NavItem[] = [
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE'],
   },
   {
+    href: '/dashboard/fiscal',
+    label: 'Fiscal',
+    icon: '🧾',
+    roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE'],
+  },
+  {
     href: '/dashboard/maintenance',
     label: 'Manutenção',
     icon: '🔧',

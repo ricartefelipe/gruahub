@@ -3,6 +3,7 @@ package com.gruahub.payments.application;
 import com.gruahub.payments.domain.PaymentProvider;
 import com.gruahub.payments.domain.PaymentStatus;
 import com.gruahub.payments.infra.SandboxPaymentProvider;
+import com.gruahub.fiscal.application.FiscalDocumentService;
 import com.gruahub.plays.application.CreditService;
 import com.gruahub.plays.application.PlayGrantCalculator;
 import com.gruahub.promotions.application.CampaignBonusResolver;
@@ -39,6 +40,9 @@ public class PaymentWebhookService {
 
     @Inject
     CampaignBonusResolver campaignBonusResolver;
+
+    @Inject
+    FiscalDocumentService fiscalDocumentService;
 
     @Transactional
     public void processWebhook(String providerName, UUID tenantId, String idempotencyKey,
@@ -194,6 +198,7 @@ public class PaymentWebhookService {
         }
 
         creditService.grantCreditForPayment(tenantId, machineId, paymentId, amountCents, plays);
+        fiscalDocumentService.tryCreatePaymentReceiptDraft(tenantId, paymentId);
 
         LOG.infof(
                 "Payment confirmed and credit enqueued: providerTxId=%s payment=%s machine=%s plays=%d (machineBonus=%d campaignExtra=%d)",
