@@ -102,6 +102,16 @@ export default function MachineDetailPage() {
     onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao liberar crédito'),
   });
 
+  const remoteCommand = useMutation({
+    mutationFn: (commandType: string) =>
+      api.post(`/machines/${id}/commands`, { commandType }),
+    onSuccess: (_r, commandType) => {
+      toast.success(`Comando ${commandType} enfileirado`);
+      qc.invalidateQueries({ queryKey: ['machine', id] });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.detail || 'Falha ao enviar comando'),
+  });
+
   // ── Loading / Error ──────────────────────────────────────────────────────────
   if (isLoading) return (
     <div className="flex items-center justify-center h-64 text-gray-400">
@@ -154,6 +164,17 @@ export default function MachineDetailPage() {
             className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
             Liberar crédito
+          </button>
+          <button
+            onClick={() => {
+              if (confirm('Reiniciar esta máquina remotamente?')) {
+                remoteCommand.mutate('REBOOT');
+              }
+            }}
+            disabled={remoteCommand.isPending}
+            className="px-4 py-2 text-sm font-medium bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50"
+          >
+            Reiniciar
           </button>
           {machine.status !== 'ACTIVE' && machine.status !== 'RETIRED' && (
             <button

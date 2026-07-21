@@ -1,5 +1,6 @@
 package com.gruahub.fleet.api;
 
+import com.gruahub.fleet.application.MachineCommandService;
 import com.gruahub.fleet.application.MachineService;
 import com.gruahub.fleet.domain.MachineStatus;
 import com.gruahub.shared.api.PageResponse;
@@ -7,6 +8,7 @@ import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -24,6 +26,11 @@ public class MachineResource {
 
     @Inject
     MachineService machineService;
+
+    @Inject
+    MachineCommandService machineCommandService;
+
+    public record RemoteCommandRequest(@NotBlank String commandType) {}
 
     @GET
     @Operation(summary = "Listar máquinas do tenant")
@@ -74,5 +81,16 @@ public class MachineResource {
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER", "FINANCE"})
     public MachineService.MachineStatusSummary statusSummary() {
         return machineService.getStatusSummary();
+    }
+
+    @POST
+    @Path("/{id}/commands")
+    @Operation(summary = "Enviar comando remoto à máquina (REBOOT, LOCK, UNLOCK)")
+    @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "OPERATIONS_MANAGER", "TECHNICIAN"})
+    public Response sendCommand(
+            @PathParam("id") UUID id,
+            @Valid RemoteCommandRequest request) {
+        var result = machineCommandService.enqueue(id, request.commandType());
+        return Response.accepted(result).build();
     }
 }

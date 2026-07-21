@@ -296,6 +296,8 @@ export const machinesApi = {
   changeStatus: (id: string, status: string) =>
     apiClient.post<Machine>(`/machines/${id}/status`, null, { params: { status } }),
   statusSummary: () => apiClient.get<MachineStatusSummary>('/machines/summary/status'),
+  sendCommand: (id: string, commandType: string) =>
+    apiClient.post(`/machines/${id}/commands`, { commandType }),
 };
 
 export const alertsApi = {
