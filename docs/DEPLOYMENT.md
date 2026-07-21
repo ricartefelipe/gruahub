@@ -116,6 +116,11 @@ eas build --platform android --profile production
 eas build --platform ios --profile production
 ```
 
+## Checklist de piloto
+
+Antes de DNS público / Let's Encrypt / tráfego real, siga `docs/PILOT_CHECKLIST.md`
+(sandbox off, sem seed demo, safety guard, backup offsite, player public só se necessário).
+
 ## Docker Compose — profiles comerciais (prod-like)
 
 O compose principal expõe profiles opcionais. O modo **prod-like** usa ainda o overlay `docker-compose.prod-like.yml` (fecha exposição de app/admin no host).

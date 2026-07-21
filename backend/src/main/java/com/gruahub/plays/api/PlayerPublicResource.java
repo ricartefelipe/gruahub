@@ -43,6 +43,9 @@ public class PlayerPublicResource {
     @ConfigProperty(name = "gruahub.sandbox.enabled", defaultValue = "false")
     boolean sandboxEnabled;
 
+    @ConfigProperty(name = "gruahub.player-public.enabled", defaultValue = "true")
+    boolean playerPublicEnabled;
+
     @Inject
     PlayerMachineLookup machineLookup;
 
@@ -100,6 +103,7 @@ public class PlayerPublicResource {
     @Path("/machines/{token}")
     @Operation(summary = "Resolver máquina pública por QR / patrimônio / UUID")
     public PublicMachineResponse getMachine(@PathParam("token") String token) {
+        ensurePlayerPublicEnabled();
         var machine = machineLookup.resolve(token);
         String stickerToken = machine.qrCode() != null && !machine.qrCode().isBlank()
                 ? machine.qrCode()
@@ -121,6 +125,7 @@ public class PlayerPublicResource {
     @Path("/payments/initiate")
     @Operation(summary = "Iniciar pagamento Pix do jogador")
     public Response initiate(@Valid PublicInitiateRequest request) {
+        ensurePlayerPublicEnabled();
         var machine = machineLookup.resolve(request.machineToken());
         var result = initiationService.initiate(
                 machine.tenantId(),
@@ -146,6 +151,7 @@ public class PlayerPublicResource {
     @Path("/payments/{paymentId}/status")
     @Operation(summary = "Consultar status do pagamento do jogador")
     public PublicPaymentStatusResponse paymentStatus(@PathParam("paymentId") UUID paymentId) {
+        ensurePlayerPublicEnabled();
         Object[] row = loadPayment(paymentId);
         return new PublicPaymentStatusResponse(
                 UUID.fromString(row[0].toString()),
@@ -160,6 +166,7 @@ public class PlayerPublicResource {
     @Path("/payments/{paymentId}/sandbox-confirm")
     @Operation(summary = "[SANDBOX] Confirmar pagamento do jogador sem autenticação")
     public Response sandboxConfirm(@PathParam("paymentId") UUID paymentId) {
+        ensurePlayerPublicEnabled();
         if (!sandboxEnabled) {
             throw new NotFoundException();
         }
@@ -199,6 +206,12 @@ public class PlayerPublicResource {
                 "paymentId", paymentId.toString(),
                 "status", refreshed[1].toString()
         )).build();
+    }
+
+    private void ensurePlayerPublicEnabled() {
+        if (!playerPublicEnabled) {
+            throw new NotFoundException();
+        }
     }
 
     private Object[] loadPayment(UUID paymentId) {
