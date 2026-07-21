@@ -29,13 +29,13 @@ public class MercadoPagoPaymentProvider implements PaymentProvider {
     private static final Logger LOG = Logger.getLogger(MercadoPagoPaymentProvider.class);
     private static final String API_BASE = "https://api.mercadopago.com";
 
-    @ConfigProperty(name = "gruahub.payment.mercadopago.access-token", defaultValue = "")
-    String accessToken;
+    @ConfigProperty(name = "gruahub.payment.mercadopago.access-token")
+    Optional<String> accessToken;
 
-    @ConfigProperty(name = "gruahub.payment.mercadopago.webhook-secret", defaultValue = "")
-    String webhookSecret;
+    @ConfigProperty(name = "gruahub.payment.mercadopago.webhook-secret")
+    Optional<String> webhookSecret;
 
-    @ConfigProperty(name = "gruahub.payment.mercadopago.notification-url", defaultValue = "")
+    @ConfigProperty(name = "gruahub.payment.mercadopago.notification-url")
     Optional<String> notificationUrl;
 
     @ConfigProperty(name = "gruahub.payment.mercadopago.payer-email", defaultValue = "pagamentos@gruahub.local")
@@ -71,7 +71,7 @@ public class MercadoPagoPaymentProvider implements PaymentProvider {
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(API_BASE + "/v1/payments"))
                     .timeout(Duration.ofSeconds(20))
-                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Authorization", "Bearer " + accessToken.orElseThrow())
                     .header("Content-Type", "application/json")
                     .header("X-Idempotency-Key", request.paymentId().toString())
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
@@ -123,7 +123,7 @@ public class MercadoPagoPaymentProvider implements PaymentProvider {
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(API_BASE + "/v1/payments/" + providerTransactionId))
                     .timeout(Duration.ofSeconds(15))
-                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Authorization", "Bearer " + accessToken.orElseThrow())
                     .GET()
                     .build();
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -147,7 +147,8 @@ public class MercadoPagoPaymentProvider implements PaymentProvider {
 
     @Override
     public boolean verifyWebhookSignature(WebhookSignatureContext context) {
-        if (webhookSecret == null || webhookSecret.isBlank()) {
+        String secret = webhookSecret.filter(s -> !s.isBlank()).orElse(null);
+        if (secret == null) {
             LOG.warn("[MP] Webhook secret not configured");
             return false;
         }
@@ -177,7 +178,7 @@ public class MercadoPagoPaymentProvider implements PaymentProvider {
             manifest.append("ts:").append(ts).append(";");
 
             Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             String expected = HexFormat.of().formatHex(mac.doFinal(manifest.toString().getBytes(StandardCharsets.UTF_8)));
             return MessageDigest.isEqual(
                     expected.getBytes(StandardCharsets.UTF_8),
@@ -210,7 +211,7 @@ public class MercadoPagoPaymentProvider implements PaymentProvider {
     }
 
     private void requireAccessToken() {
-        if (accessToken == null || accessToken.isBlank()) {
+        if (accessToken.filter(s -> !s.isBlank()).isEmpty()) {
             throw new IllegalStateException("Mercado Pago access token not configured");
         }
     }

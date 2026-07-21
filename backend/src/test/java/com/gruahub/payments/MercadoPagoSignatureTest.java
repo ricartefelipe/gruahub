@@ -22,7 +22,7 @@ class MercadoPagoSignatureTest {
     @BeforeEach
     void setUp() throws Exception {
         provider = new MercadoPagoPaymentProvider();
-        setField(provider, "webhookSecret", "test-secret");
+        setField(provider, "webhookSecret", java.util.Optional.of("test-secret"));
         setField(provider, "objectMapper", new ObjectMapper());
     }
 
