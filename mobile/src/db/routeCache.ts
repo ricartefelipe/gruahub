@@ -7,6 +7,8 @@ export interface CachedRouteStop {
   address: string;
   score: number;
   reason: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 const CACHE_TTL_HOURS = 24;

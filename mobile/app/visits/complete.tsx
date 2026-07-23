@@ -177,7 +177,7 @@ export default function CompleteVisitScreen() {
               Evidência fotográfica
             </AppText>
             <AppText variant="caption" color={colors.textSecondary} style={styles.hint}>
-              Opcional — foto do ponto, sangria ou máquina para auditoria.
+              Opcional — salva no aparelho. O envio ao servidor fica na fila até a API de anexos existir.
             </AppText>
             {photoUri ? (
               <Image source={{ uri: photoUri }} style={styles.preview} accessibilityLabel="Prévia da foto" />
@@ -210,7 +210,7 @@ export default function CompleteVisitScreen() {
             <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
               <AppText variant="caption" color={colors.textSecondary}>Foto</AppText>
               <AppText variant="caption" style={styles.summaryValue}>
-                {photoUri ? 'Anexada' : 'Sem foto'}
+                {photoUri ? 'No aparelho (aguarda API)' : 'Sem foto'}
               </AppText>
             </View>
             <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
