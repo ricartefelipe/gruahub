@@ -23,7 +23,9 @@ import {
 } from '../db/offlineQueue';
 import { useAuthStore } from '../store/authStore';
 import { apiFetch, ApiError } from '../api/apiClient';
+import { uploadVisitAttachment } from '../api/uploadAttachment';
 import { isDeferredSyncOperation } from '../sync/deferredOperations';
+import { OPERATION_TYPES } from '../db/schema';
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -91,16 +93,39 @@ export function useSyncQueue() {
         await markSyncing(op.id);
 
         try {
-          await apiFetch(getEndpoint(op.operationType), {
-            method: 'POST',
-            body: JSON.stringify({
-              ...op.payload,
-              clientOperationId: op.clientOperationId,
-            }),
-            accessToken: useAuthStore.getState().accessToken ?? freshToken,
-            tenantId: freshTenantId ?? undefined,
-            operationId: op.clientOperationId,
-          });
+          const token = useAuthStore.getState().accessToken ?? freshToken;
+          if (op.operationType === OPERATION_TYPES.UPLOAD_PHOTO) {
+            const p = op.payload as {
+              visitId?: string;
+              localUri?: string;
+              kind?: string;
+              machineId?: string;
+            };
+            if (!p.visitId || !p.localUri) {
+              throw new ApiError(422, 'urn:gruahub:error:payload', 'Payload inválido', 'UPLOAD_PHOTO sem visitId/localUri');
+            }
+            await uploadVisitAttachment(
+              {
+                visitId: p.visitId,
+                clientOperationId: op.clientOperationId,
+                localUri: p.localUri,
+                kind: p.kind,
+                machineId: p.machineId,
+              },
+              { accessToken: token, tenantId: freshTenantId ?? undefined },
+            );
+          } else {
+            await apiFetch(getEndpoint(op.operationType), {
+              method: 'POST',
+              body: JSON.stringify({
+                ...op.payload,
+                clientOperationId: op.clientOperationId,
+              }),
+              accessToken: token,
+              tenantId: freshTenantId ?? undefined,
+              operationId: op.clientOperationId,
+            });
+          }
 
           // apiFetch lança em não-2xx — se chegou aqui, é sucesso
           await markSynced(op.id);

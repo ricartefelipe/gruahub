@@ -1,0 +1,72 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-001-visit-attachment-client-op
+      author: gruahub
+      changes:
+        - addColumn:
+            tableName: visit_attachment
+            columns:
+              - column:
+                  name: client_operation_id
+                  type: varchar(100)
+        - createIndex:
+            indexName: idx_visit_attachment_client_op
+            tableName: visit_attachment
+            unique: true
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: client_operation_id
+
+  - changeSet:
+      id: 025-002-device-token
+      author: gruahub
+      changes:
+        - createTable:
+            tableName: device_token
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expo_push_token
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: platform
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: NOW()
+        - addUniqueConstraint:
+            tableName: device_token
+            columnNames: tenant_id, expo_push_token
+            constraintName: uq_device_token_tenant_token
+        - createIndex:
+            indexName: idx_device_token_tenant
+            tableName: device_token
+            columns:
+              - column:
+                  name: tenant_id
