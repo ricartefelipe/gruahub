@@ -25,7 +25,22 @@ export type ThemeColors = {
   scoreMed: string;
   scoreLow: string;
   shadow: string;
+  warningBannerBg: string;
+  warningBannerText: string;
+  success: string;
+  warning: string;
 };
+
+export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const;
+export const radius = { sm: 8, md: 12, lg: 16, full: 999 } as const;
+export const typography = {
+  hero: { fontSize: 22, fontWeight: '800' as const },
+  title: { fontSize: 18, fontWeight: '700' as const },
+  body: { fontSize: 15, fontWeight: '400' as const },
+  caption: { fontSize: 12, fontWeight: '500' as const },
+  cta: { fontSize: 16, fontWeight: '800' as const },
+} as const;
+export const touchTarget = { min: 44 } as const;
 
 export const THEME_STORAGE_KEY = 'gruahub-theme';
 
@@ -54,6 +69,10 @@ export const lightColors: ThemeColors = {
   scoreMed: '#d97706',
   scoreLow: '#6b7280',
   shadow: '#000000',
+  warningBannerBg: '#fef3c7',
+  warningBannerText: '#92400e',
+  success: '#16a34a',
+  warning: '#d97706',
 };
 
 export const darkColors: ThemeColors = {
@@ -81,6 +100,10 @@ export const darkColors: ThemeColors = {
   scoreMed: '#fbbf24',
   scoreLow: '#94a3b8',
   shadow: '#000000',
+  warningBannerBg: '#78350f',
+  warningBannerText: '#fde68a',
+  success: '#4ade80',
+  warning: '#fbbf24',
 };
 
 export function colorsForTheme(theme: ThemeName): ThemeColors {
