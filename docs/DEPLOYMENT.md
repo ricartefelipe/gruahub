@@ -269,7 +269,7 @@ Scripts alinhados: `pg-backup.sh` (dump + retenção local + upload opcional), `
 
 Ainda aberto: PITR, retenção S3 automatizada no job, failover multi-região, Vault/SM com rotação.
 
-### Push notifications (stub)
+### Push notifications
 
 Backend: porta `PushNotifier` com providers:
 
@@ -277,10 +277,17 @@ Backend: porta `PushNotifier` com providers:
 |-------------------------|---------------|
 | `noop` (default) | Log `[PUSH-NOOP]` — sem entrega externa |
 | `http-stub` | POST JSON em `GRUAHUB_PUSH_HTTP_STUB_URL` (webhook de teste) |
+| `expo` | Expo Push API + tokens em `device_token` |
 
-Disparo atual: alerta novo `MACHINE_OFFLINE` no `HeartbeatTimeoutScheduler`. **Não** é integração FCM/Google completa (sem service account, sem device registry, sem Expo Push Service em produção).
+Registro de device: `POST /api/v1/devices/push-tokens` `{ token, platform }`.
 
-Mobile: hook `usePushNotifications` pede permissão e obtém token Expo (log local). Registry no backend e credenciais FCM/EAS ainda abertos.
+Mobile: `usePushNotifications` pede permissão, obtém Expo push token (requer `EXPO_PUBLIC_EAS_PROJECT_ID` / `eas init`) e registra no backend.
+
+Piloto recomendado: `GRUAHUB_PUSH_PROVIDER=expo` + build EAS preview com projectId real.
+
+### Anexos de visita (fotos)
+
+`POST /api/v1/visits/{visitId}/attachments` (JSON base64, idempotente via `clientOperationId`) grava em MinIO/S3 (`visit_attachment`). O app mobile enfileira `UPLOAD_PHOTO` e sincroniza automaticamente.
 
 ### Monitoramento (uptime)
 
@@ -358,8 +365,9 @@ Além dos profiles locais, um deploy público deve:
 | `AWS_SECRET_ACCESS_KEY`           | Segredo MinIO/S3                       |
 | `NEXTAUTH_SECRET`                 | Segredo de sessão Next.js              |
 | `KEYCLOAK_SECRET`                 | Client secret do cliente gruahub-web   |
-| `GRUAHUB_PUSH_PROVIDER`           | `noop` ou `http-stub` (default `noop`) |
+| `GRUAHUB_PUSH_PROVIDER`           | `noop`, `http-stub` ou `expo` (default `noop`) |
 | `GRUAHUB_PUSH_HTTP_STUB_URL`      | URL POST do stub (só com `http-stub`)  |
+| `GRUAHUB_PUSH_EXPO_URL`           | Expo Push API (default oficial)        |
 | `BACKUP_RETENTION_DAYS`           | Retenção local dos dumps (default 7)   |
 | `BACKUP_S3_ENDPOINT`              | Offsite S3-compatible (opcional)       |
 

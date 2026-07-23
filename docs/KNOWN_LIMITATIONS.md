@@ -16,7 +16,7 @@
 ## Limitações Técnicas do MVP
 
 - **Outbox via polling:** Latência de até 1s entre evento de domínio e publicação. Suficiente para demonstração; em produção substituir por CDC (Debezium) ou Kafka.
-- **Push notifications:** Stub `noop` / `http-stub` no backend + permissão/token Expo no mobile. Sem FCM Google, sem Expo Push Service em produção, sem registry de devices.
+- **Push nativo FCM direto:** Entrega via Expo Push Service (`GRUAHUB_PUSH_PROVIDER=expo` + registry `device_token`). Sem Firebase service account próprio no backend (caminho Expo).
 - **SMS / e-mail:** Não implementados no MVP.
 - **Multi-idioma:** Interface em `pt-BR` apenas. Internacionalização não implementada.
 - **Algoritmo de roteirização geoespacial:** Integração com mapas (Google Maps, OSRM) é opcional e não configurada localmente.

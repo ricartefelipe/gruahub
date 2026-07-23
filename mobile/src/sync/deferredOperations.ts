@@ -1,11 +1,9 @@
 /**
- * Operações enfileiradas no aparelho, mas ainda sem endpoint/API de envio.
- * Devem permanecer PENDING sem tentar POST JSON (evita FAILED_PERMANENT falso).
+ * Operações que ainda não podem ir no sync automático.
+ * Vazio após API de anexos — mantido para extensões futuras.
  */
-export const DEFERRED_SYNC_OPERATION_TYPES = ['UPLOAD_PHOTO'] as const;
-
-export type DeferredSyncOperationType = (typeof DEFERRED_SYNC_OPERATION_TYPES)[number];
+export const DEFERRED_SYNC_OPERATION_TYPES: readonly string[] = [];
 
 export function isDeferredSyncOperation(operationType: string): boolean {
-  return (DEFERRED_SYNC_OPERATION_TYPES as readonly string[]).includes(operationType);
+  return DEFERRED_SYNC_OPERATION_TYPES.includes(operationType);
 }
