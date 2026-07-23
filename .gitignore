@@ -49,3 +49,6 @@ __pycache__/
 # Misc
 *.log
 *.tmp
+
+# Brainstorm visual companion (local only)
+.superpowers/

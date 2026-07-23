@@ -25,4 +25,11 @@ describe('colorsForTheme', () => {
     expect(darkColors.background).not.toBe(lightColors.background);
     expect(darkColors.surface).not.toBe(lightColors.surface);
   });
+
+  it('expõe cores de warning, success e banner', () => {
+    expect(lightColors.warningBannerBg).toBe('#fef3c7');
+    expect(lightColors.success).toBe('#16a34a');
+    expect(darkColors.warning).toBe('#fbbf24');
+    expect(darkColors.warningBannerText).toBe('#fde68a');
+  });
 });

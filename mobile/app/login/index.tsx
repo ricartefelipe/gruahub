@@ -1,6 +1,4 @@
-import {
-  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, exchangeCodeAsync } from 'expo-auth-session';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -13,7 +11,8 @@ import {
   KEYCLOAK_URL,
   isLocalhostUrl,
 } from '../../src/config/env';
-import { ThemeColors, useTheme } from '../../src/theme';
+import { radius, spacing, useTheme } from '../../src/theme';
+import { Screen, AppText, AppButton, ErrorBanner } from '../../src/ui';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -58,9 +57,10 @@ function formatTokenExchangeError(err: unknown): string {
 
 export default function LoginScreen() {
   const { setAuth, accessToken } = useAuthStore();
-  const { colors, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors.header), [colors.header]);
   const [exchanging, setExchanging] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const exchangedCodesRef = useRef(new Set<string>());
   const codeVerifierRef = useRef<string | null>(null);
 
@@ -89,6 +89,7 @@ export default function LoginScreen() {
     if (exchangedCodesRef.current.has(code)) return;
     exchangedCodesRef.current.add(code);
     setExchanging(true);
+    setAuthError(null);
     try {
       const tokenResponse = await exchangeCodeAsync(
         {
@@ -130,9 +131,8 @@ export default function LoginScreen() {
       exchangedCodesRef.current.delete(code);
       const detail = formatTokenExchangeError(err);
       console.warn('[Auth] Token exchange falhou:', detail, err);
-      Alert.alert(
-        'Erro de autenticação',
-        `Não foi possível trocar o código por token.\n${detail}\n\nRedirect: ${redirectUri}`
+      setAuthError(
+        `Não foi possível trocar o código por token. ${detail} Redirect: ${redirectUri}`
       );
     } finally {
       setExchanging(false);
@@ -140,19 +140,16 @@ export default function LoginScreen() {
   }
 
   async function handleLogin() {
+    setAuthError(null);
     try {
       if (!request?.codeVerifier) {
-        Alert.alert(
-          'Erro de autenticação',
-          'PKCE ainda não está pronto. Aguarde e tente novamente.'
-        );
+        setAuthError('PKCE ainda não está pronto. Aguarde e tente novamente.');
         return;
       }
       codeVerifierRef.current = request.codeVerifier;
       const result = await promptAsync();
       if (result.type === 'error') {
-        Alert.alert(
-          'Erro de autenticação',
+        setAuthError(
           result.error?.message ??
             'Falha no login Keycloak. Verifique EXPO_PUBLIC_KEYCLOAK_URL e o client gruahub-mobile.'
         );
@@ -162,17 +159,14 @@ export default function LoginScreen() {
         const code = result.params.code;
         const codeVerifier = codeVerifierRef.current;
         if (!code || !codeVerifier) {
-          Alert.alert(
-            'Erro de autenticação',
-            'Retorno OAuth sem código ou code_verifier. Tente novamente.'
-          );
+          setAuthError('Retorno OAuth sem código ou code_verifier. Tente novamente.');
           return;
         }
         await exchangeAuthCode(code, codeVerifier);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Não foi possível abrir o navegador.';
-      Alert.alert('Erro', message);
+      setAuthError(message);
     }
   }
 
@@ -183,108 +177,99 @@ export default function LoginScreen() {
       : null;
 
   return (
-    <View style={styles.container}>
+    <Screen style={styles.screen}>
       <View style={styles.brand}>
-        <Text style={styles.appName}>GruaHub</Text>
-        <Text style={styles.tagline}>Gestão de gruas no campo</Text>
+        <AppText variant="hero" color={colors.headerText} style={styles.appName}>
+          GruaHub
+        </AppText>
+        <AppText variant="body" color={colors.headerMuted} style={styles.tagline}>
+          Operação de campo
+        </AppText>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Acesso do operador</Text>
-        <Text style={styles.cardDesc}>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <AppText variant="title">Acesso do operador</AppText>
+        <AppText variant="body" color={colors.textSecondary} style={styles.cardDesc}>
           Entre com a conta Keycloak para ver a rota do dia, registrar visitas e sincronizar offline.
-        </Text>
+        </AppText>
 
-        {isLoading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
-        ) : (
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleLogin}
-            accessibilityLabel="Entrar com Keycloak"
-            accessibilityRole="button"
-          >
-            <Text style={styles.buttonText}>Entrar com Keycloak</Text>
-          </TouchableOpacity>
-        )}
+        {authError ? (
+          <View style={styles.errorWrap}>
+            <ErrorBanner message={authError} />
+          </View>
+        ) : null}
 
-        <Text style={styles.envHint}>
+        <AppButton
+          label="Entrar com Keycloak"
+          onPress={handleLogin}
+          loading={isLoading}
+          style={styles.loginButton}
+        />
+
+        <AppText variant="caption" color={colors.textMuted} style={styles.envHint}>
           API: {API_URL}{'\n'}
           Auth: {KEYCLOAK_URL}{'\n'}
           Redirect: {redirectUri}
-        </Text>
-        {deviceHint ? <Text style={styles.deviceHint}>{deviceHint}</Text> : null}
+        </AppText>
+        {deviceHint ? (
+          <AppText variant="caption" color={colors.warning} style={styles.deviceHint}>
+            {deviceHint}
+          </AppText>
+        ) : null}
       </View>
 
       <View style={styles.offlineNote}>
-        <Text style={styles.offlineNoteText}>
+        <AppText variant="caption" color={colors.headerMuted} style={styles.offlineNoteText}>
           Após o primeiro login, operações ficam na fila local e sincronizam ao reconectar.
-        </Text>
+        </AppText>
       </View>
 
-      <Text style={styles.version}>GruaHub Mobile v1.0.0-mvp</Text>
-    </View>
+      <AppText variant="caption" color={colors.primaryMuted} style={styles.version}>
+        GruaHub Mobile v1.0.0-mvp
+      </AppText>
+    </Screen>
   );
 }
 
-function createStyles(colors: ThemeColors, isDark: boolean) {
+function createStyles(headerBg: string) {
   return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.header,
+    screen: {
+      backgroundColor: headerBg,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 24,
+      padding: spacing.lg,
     },
-    brand: { alignItems: 'center', marginBottom: 40 },
-    appName: { fontSize: 36, fontWeight: 'bold', color: colors.headerText },
-    tagline: { fontSize: 14, color: colors.headerMuted, marginTop: 6 },
+    brand: { alignItems: 'center', marginBottom: spacing.xl },
+    appName: { fontSize: 36 },
+    tagline: { marginTop: spacing.sm },
     card: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 24,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
       width: '100%',
-      shadowColor: colors.shadow,
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
-      elevation: 8,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: colors.border,
+      borderWidth: 1,
     },
-    cardTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 },
-    cardDesc: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
-    button: {
-      backgroundColor: colors.primary,
-      borderRadius: 10,
-      padding: 16,
-      alignItems: 'center',
-      marginTop: 24,
-    },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    cardDesc: { marginTop: spacing.sm, lineHeight: 20 },
+    errorWrap: { marginTop: spacing.md, marginHorizontal: -spacing.md },
+    loginButton: { marginTop: spacing.lg },
     envHint: {
-      marginTop: 16,
-      fontSize: 11,
-      color: colors.textMuted,
+      marginTop: spacing.md,
       lineHeight: 16,
     },
     deviceHint: {
-      marginTop: 8,
-      fontSize: 12,
-      color: isDark ? '#fbbf24' : '#b45309',
+      marginTop: spacing.sm,
       lineHeight: 17,
     },
     offlineNote: {
-      marginTop: 24,
+      marginTop: spacing.lg,
       backgroundColor: 'rgba(255,255,255,0.12)',
-      borderRadius: 10,
-      padding: 14,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      width: '100%',
     },
     offlineNoteText: {
-      color: colors.headerMuted,
-      fontSize: 13,
       lineHeight: 18,
       textAlign: 'center',
     },
-    version: { marginTop: 32, color: colors.primaryMuted, fontSize: 11 },
+    version: { marginTop: spacing.xl },
   });
 }

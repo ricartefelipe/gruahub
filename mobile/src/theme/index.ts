@@ -6,4 +6,8 @@ export {
   darkColors,
   lightColors,
   parseStoredTheme,
+  spacing,
+  radius,
+  typography,
+  touchTarget,
 } from './tokens';

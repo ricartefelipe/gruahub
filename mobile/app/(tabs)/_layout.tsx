@@ -4,13 +4,15 @@
  */
 
 import { Tabs, Redirect } from 'expo-router';
-import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store/authStore';
+import { useOfflineBanner } from '../../src/hooks/useOfflineBanner';
 import { useTheme } from '../../src/theme';
 
 export default function TabLayout() {
   const { accessToken } = useAuthStore();
   const { colors } = useTheme();
+  const { pendingCount } = useOfflineBanner();
 
   if (!accessToken) {
     return <Redirect href="/login" />;
@@ -32,7 +34,9 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Rota',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>R</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="map" size={size} color={color} />
+          ),
           tabBarAccessibilityLabel: 'Rota do dia',
         }}
       />
@@ -40,7 +44,10 @@ export default function TabLayout() {
         name="queue"
         options={{
           title: 'Fila',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>F</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cloud-upload" size={size} color={color} />
+          ),
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
           tabBarAccessibilityLabel: 'Fila de sincronização',
         }}
       />
@@ -48,7 +55,9 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 16, fontWeight: '700' }}>P</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
           tabBarAccessibilityLabel: 'Meu perfil',
         }}
       />

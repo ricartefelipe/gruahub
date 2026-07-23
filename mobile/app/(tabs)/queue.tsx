@@ -5,13 +5,14 @@
  */
 
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, FlatList, StyleSheet,
   RefreshControl, Alert,
 } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getDb, retryManual } from '../../src/db/offlineQueue';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
-import { ThemeColors, useTheme } from '../../src/theme';
+import { ThemeColors, spacing, useTheme } from '../../src/theme';
+import { AppHeader, SyncQueueRow, Screen } from '../../src/ui';
 
 interface QueueEntry {
   id: string;
@@ -57,6 +58,20 @@ function formatDate(iso: string | null) {
     day: '2-digit', month: '2-digit',
     hour: '2-digit', minute: '2-digit',
   });
+}
+
+function buildSubtitle(item: QueueEntry): string {
+  const parts = [
+    `ID: ${item.clientOperationId.slice(0, 8)}…`,
+    `Criado: ${formatDate(item.createdAt)}`,
+  ];
+  if (item.syncedAt) parts.push(`Sync: ${formatDate(item.syncedAt)}`);
+  if (item.retryCount > 0) parts.push(`Tentativas: ${item.retryCount}`);
+  if (item.nextRetryAt && item.status === 'FAILED_RETRYABLE') {
+    parts.push(`Próx. retry: ${formatDate(item.nextRetryAt)}`);
+  }
+  if (item.errorMessage) parts.push(item.errorMessage);
+  return parts.join(' · ');
 }
 
 export default function QueueScreen() {
@@ -143,11 +158,11 @@ export default function QueueScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Fila de Sincronização</Text>
-        <Text style={styles.subtitle}>Puxe para forçar sincronização</Text>
-      </View>
+    <Screen>
+      <AppHeader
+        title="Fila de Sincronização"
+        subtitle="Puxe para forçar sincronização"
+      />
 
       <View style={styles.statsBar}>
         {statKeys.map(({ key, label, value }) => {
@@ -174,54 +189,14 @@ export default function QueueScreen() {
           const isPermanent = item.status === 'FAILED_PERMANENT';
 
           return (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.opType} numberOfLines={1}>
-                  {OP_LABELS[item.operationType] ?? item.operationType}
-                </Text>
-                <View style={[styles.badge, { backgroundColor: statusMeta.bg }]}>
-                  <Text style={[styles.badgeText, { color: statusMeta.color }]}>
-                    {statusMeta.label}
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.opId}>
-                ID: {item.clientOperationId.slice(0, 8)}…
-              </Text>
-
-              <View style={styles.meta}>
-                <Text style={styles.metaText}>Criado: {formatDate(item.createdAt)}</Text>
-                {item.syncedAt ? (
-                  <Text style={styles.metaText}>Sync: {formatDate(item.syncedAt)}</Text>
-                ) : null}
-                {item.retryCount > 0 ? (
-                  <Text style={styles.metaText}>Tentativas: {item.retryCount}</Text>
-                ) : null}
-                {item.nextRetryAt && item.status === 'FAILED_RETRYABLE' ? (
-                  <Text style={styles.metaText}>
-                    Próx. retry: {formatDate(item.nextRetryAt)}
-                  </Text>
-                ) : null}
-              </View>
-
-              {item.errorMessage ? (
-                <Text style={styles.error} numberOfLines={3}>
-                  {item.errorMessage}
-                </Text>
-              ) : null}
-
-              {isPermanent && (
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={() => handleRetry(item.id)}
-                  accessibilityLabel="Re-tentar operação com falha permanente"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.retryButtonText}>↺ Re-tentar manualmente</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <SyncQueueRow
+              title={OP_LABELS[item.operationType] ?? item.operationType}
+              statusLabel={statusMeta.label}
+              statusColor={statusMeta.color}
+              statusBg={statusMeta.bg}
+              subtitle={buildSubtitle(item)}
+              onRetry={isPermanent ? () => handleRetry(item.id) : undefined}
+            />
           );
         }}
         ListEmptyComponent={
@@ -231,16 +206,12 @@ export default function QueueScreen() {
         }
         contentContainerStyle={styles.list}
       />
-    </View>
+    </Screen>
   );
 }
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    header: { backgroundColor: colors.header, padding: 20, paddingTop: 60 },
-    title: { fontSize: 20, fontWeight: 'bold', color: colors.headerText },
-    subtitle: { fontSize: 13, color: colors.headerMuted, marginTop: 4 },
     statsBar: {
       flexDirection: 'row',
       gap: 6,
@@ -252,44 +223,7 @@ function createStyles(colors: ThemeColors) {
     statChip: { flex: 1, borderRadius: 8, padding: 7, alignItems: 'center' },
     statCount: { fontSize: 16, fontWeight: 'bold' },
     statLabel: { fontSize: 9, marginTop: 1, textAlign: 'center' },
-    list: { padding: 12, gap: 8 },
-    card: {
-      backgroundColor: colors.surface,
-      borderRadius: 10,
-      padding: 14,
-      shadowColor: colors.shadow,
-      shadowOpacity: 0.04,
-      shadowRadius: 4,
-      elevation: 1,
-    },
-    cardHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: 8,
-    },
-    opType: { fontSize: 14, fontWeight: '600', color: colors.text, flex: 1 },
-    badge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
-    badgeText: { fontSize: 10, fontWeight: '700' },
-    opId: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
-    meta: { marginTop: 8, gap: 2 },
-    metaText: { fontSize: 12, color: colors.textSecondary },
-    error: {
-      marginTop: 8,
-      fontSize: 12,
-      color: colors.dangerText,
-      backgroundColor: colors.errorBannerBg,
-      borderRadius: 6,
-      padding: 6,
-    },
-    retryButton: {
-      marginTop: 10,
-      backgroundColor: colors.primary,
-      borderRadius: 8,
-      padding: 10,
-      alignItems: 'center',
-    },
-    retryButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+    list: { paddingVertical: spacing.sm, flexGrow: 1 },
     empty: { padding: 40, alignItems: 'center' },
     emptyText: { color: colors.textMuted, fontSize: 15 },
   });
