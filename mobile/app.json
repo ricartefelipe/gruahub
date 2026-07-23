@@ -2,29 +2,36 @@
   "expo": {
     "name": "GruaHub",
     "slug": "gruahub",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+    "primaryColor": "#1e3a8a",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#1e3a8a"
     },
-
     "plugins": [
       "expo-router",
       [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#1e40af"
+          "color": "#1e3a8a"
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "GruaHub precisa da câmera para ler QR codes das máquinas."
+          "cameraPermission": "GruaHub precisa da câmera para ler QR codes das máquinas e registrar evidências."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "GruaHub precisa da câmera para fotos de evidência da visita.",
+          "photosPermission": "GruaHub pode anexar fotos da galeria como evidência da visita."
         }
       ],
       [
@@ -38,13 +45,26 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1e40af"
+        "backgroundColor": "#1e3a8a"
       },
-      "package": "com.gruahub.mobile"
+      "package": "com.gruahub.mobile",
+      "versionCode": 2,
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "VIBRATE"
+      ]
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.gruahub.mobile"
+      "bundleIdentifier": "com.gruahub.mobile",
+      "buildNumber": "2",
+      "infoPlist": {
+        "NSCameraUsageDescription": "GruaHub precisa da câmera para QR codes e evidências de visita.",
+        "NSLocationWhenInUseUsageDescription": "GruaHub usa a localização para registrar check-in nas visitas.",
+        "NSPhotoLibraryUsageDescription": "GruaHub pode anexar fotos como evidência da visita."
+      }
     },
     "extra": {
       "apiUrl": "http://localhost:8080",

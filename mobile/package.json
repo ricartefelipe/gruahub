@@ -7,6 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "build": "expo export",
+    "build:preview": "eas build --profile preview --platform all",
+    "build:android-preview": "eas build --profile preview --platform android",
     "lint": "eslint app/**/*.{ts,tsx}",
     "typecheck": "tsc --noEmit",
     "test": "jest --watchAll=false"
