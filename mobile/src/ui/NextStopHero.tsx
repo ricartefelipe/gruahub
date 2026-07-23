@@ -1,5 +1,6 @@
-import { StyleSheet, View } from 'react-native';
-import { radius, spacing, useTheme } from '../theme';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { radius, spacing, touchTarget, useTheme } from '../theme';
+import { openMapsForStop } from '../location/openMaps';
 import { AppButton } from './AppButton';
 import { AppText } from './AppText';
 
@@ -25,29 +26,47 @@ export function NextStopHero({
       style={[
         styles.root,
         {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
+          backgroundColor: colors.header,
           shadowColor: colors.shadow,
         },
       ]}
     >
-      {indexLabel ? (
-        <AppText variant="caption" color={colors.primary}>
-          {indexLabel}
-        </AppText>
-      ) : null}
-      <AppText variant="hero">{pointName}</AppText>
+      <AppText variant="caption" color={colors.headerMuted}>
+        {indexLabel ?? 'AGORA'}
+      </AppText>
+      <AppText variant="hero" color={colors.headerText}>
+        {pointName}
+      </AppText>
       {address ? (
-        <AppText variant="body" color={colors.textSecondary}>
+        <AppText variant="body" color={colors.headerMuted}>
           {address}
         </AppText>
       ) : null}
       {reason ? (
-        <AppText variant="caption" color={colors.textMuted}>
+        <AppText variant="caption" color={colors.primaryMuted}>
           {reason}
         </AppText>
       ) : null}
-      <AppButton label="Iniciar visita" onPress={onStart} style={styles.cta} />
+      <AppButton
+        label="Iniciar visita"
+        variant="secondary"
+        onPress={onStart}
+        style={styles.cta}
+      />
+      {address || pointName ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Abrir no mapa"
+          onPress={() => {
+            void openMapsForStop({ address, pointName });
+          }}
+          style={styles.mapBtn}
+        >
+          <AppText variant="cta" color={colors.headerMuted}>
+            Abrir no mapa
+          </AppText>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -56,13 +75,17 @@ const styles = StyleSheet.create({
   root: {
     marginHorizontal: spacing.md,
     marginVertical: spacing.sm,
-    padding: spacing.md,
+    padding: spacing.lg,
     borderRadius: radius.lg,
-    borderWidth: 1,
     gap: spacing.sm,
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
   },
   cta: { marginTop: spacing.sm },
+  mapBtn: {
+    minHeight: touchTarget.min,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

@@ -28,9 +28,10 @@ export function usePushNotifications(): void {
           return;
         }
 
-        const token = await Notifications.getExpoPushTokenAsync();
+        // Sem projectId EAS válido o getExpoPushTokenAsync pode travar no Expo Go.
+        // No MVP o push é stub — só logamos a permissão.
         if (!cancelled) {
-          console.info('[push] stub local — sem FCM/registry:', token.data);
+          console.info('[push] stub local — permissão ok, sem registro FCM/EAS');
         }
       } catch (err) {
         console.info('[push] stub local — sem entrega remota:', err);
