@@ -23,7 +23,11 @@ interface LineState {
 }
 
 export default function ReplenishStockScreen() {
-  const { machineId } = useLocalSearchParams<{ machineId: string }>();
+  const { machineId, visitId, pointName } = useLocalSearchParams<{
+    machineId: string;
+    visitId?: string;
+    pointName?: string;
+  }>();
   const { accessToken, tenantId } = useAuthStore();
   const [lines, setLines] = useState<LineState[]>([]);
   const [assetNumber, setAssetNumber] = useState<string>('');
@@ -122,7 +126,21 @@ export default function ReplenishStockScreen() {
       Alert.alert(
         'Reposição enfileirada',
         `${payloads.length} movimentação(ões) salvas localmente. Sincronizam ao reconectar.`,
-        [{ text: 'OK', onPress: () => router.back() }]
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              if (visitId) {
+                router.replace({
+                  pathname: '/visits/complete',
+                  params: { visitId, pointName: pointName ?? '' },
+                });
+                return;
+              }
+              router.back();
+            },
+          },
+        ]
       );
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'erro desconhecido';

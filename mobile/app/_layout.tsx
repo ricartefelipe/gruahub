@@ -1,12 +1,13 @@
 import 'react-native-get-random-values';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { getDb } from '../src/db/offlineQueue';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
 import { useAuthStore } from '../src/store/authStore';
 import { ThemeProvider, useTheme } from '../src/theme';
+import { AppText } from '../src/ui';
 
 function RootNavigator() {
   const [dbReady, setDbReady] = useState(false);
@@ -29,9 +30,13 @@ function RootNavigator() {
     return (
       <View style={[styles.boot, { backgroundColor: colors.header }]}>
         <StatusBar style="light" />
-        <Text style={[styles.bootBrand, { color: colors.headerText }]}>GruaHub</Text>
+        <AppText variant="hero" color={colors.headerText}>
+          GruaHub
+        </AppText>
         <ActivityIndicator color={colors.headerText} size="large" style={{ marginTop: 20 }} />
-        <Text style={[styles.bootText, { color: colors.headerMuted }]}>Preparando app…</Text>
+        <AppText variant="body" color={colors.headerMuted} style={styles.bootText}>
+          Preparando app…
+        </AppText>
       </View>
     );
   }
@@ -49,6 +54,7 @@ function RootNavigator() {
           options={{ headerShown: false, presentation: 'modal' }}
         />
         <Stack.Screen name="visits/checklist" options={{ headerShown: false }} />
+        <Stack.Screen name="visits/stock-step" options={{ headerShown: false }} />
         <Stack.Screen name="visits/complete" options={{ headerShown: false }} />
         <Stack.Screen
           name="qr-scan"
@@ -75,6 +81,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bootBrand: { fontSize: 28, fontWeight: '700' },
-  bootText: { marginTop: 12, fontSize: 14 },
+  bootText: { marginTop: 12 },
 });

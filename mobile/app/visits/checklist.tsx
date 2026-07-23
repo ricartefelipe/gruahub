@@ -4,13 +4,21 @@
  */
 
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Switch,
+  View, FlatList, StyleSheet, Alert, Switch, Pressable,
 } from 'react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { v4 as uuidv4 } from 'uuid';
 import { enqueue } from '../../src/db/offlineQueue';
 import { OPERATION_TYPES } from '../../src/db/schema';
+import { spacing, useTheme } from '../../src/theme';
+import {
+  Screen,
+  AppHeader,
+  VisitStepHeader,
+  AppButton,
+  AppText,
+} from '../../src/ui';
 
 interface ChecklistItem {
   key: string;
@@ -33,6 +41,8 @@ export default function ChecklistScreen() {
   const { visitId, pointName } = useLocalSearchParams<{
     visitId: string; pointName: string;
   }>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(), []);
   const [items, setItems] = useState<ChecklistItem[]>(DEFAULT_CHECKLIST);
   const [saving, setSaving] = useState(false);
 
@@ -45,22 +55,26 @@ export default function ChecklistScreen() {
   const checkedCount = items.filter(i => i.checked).length;
   const allChecked = checkedCount === items.length;
 
+  function goToStockStep() {
+    router.replace({
+      pathname: '/visits/stock-step',
+      params: { visitId, pointName },
+    });
+  }
+
   async function handleSaveChecklist() {
     setSaving(true);
     try {
-      // Enfileira o resultado do checklist completo como uma única operação
       await enqueue(uuidv4(), OPERATION_TYPES.ADD_CHECKLIST_ITEM, {
         visitId,
         items: items.map(i => ({ key: i.key, checked: i.checked })),
         completedAt: new Date().toISOString(),
       });
 
-      router.replace({
-        pathname: '/visits/complete',
-        params: { visitId, pointName },
-      });
-    } catch (err: any) {
-      Alert.alert('Erro', 'Não foi possível salvar o checklist: ' + err.message);
+      goToStockStep();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'erro desconhecido';
+      Alert.alert('Erro', 'Não foi possível salvar o checklist: ' + message);
     } finally {
       setSaving(false);
     }
@@ -75,28 +89,29 @@ export default function ChecklistScreen() {
         {
           text: 'Pular',
           style: 'destructive',
-          onPress: () => router.replace({
-            pathname: '/visits/complete',
-            params: { visitId, pointName },
-          }),
+          onPress: goToStockStep,
         },
       ]
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Checklist da Visita</Text>
-        <Text style={styles.subtitle}>{pointName}</Text>
-        <Text style={styles.progress}>
+    <Screen>
+      <AppHeader title="Checklist da Visita" subtitle="Verificação no ponto" />
+      <VisitStepHeader step={2} pointName={pointName ?? ''} />
+
+      <View style={styles.progressBlock}>
+        <AppText variant="caption" color={colors.textSecondary}>
           {checkedCount}/{items.length} itens verificados
-        </Text>
-        <View style={styles.progressBar}>
+        </AppText>
+        <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
           <View
             style={[
               styles.progressFill,
-              { width: `${(checkedCount / items.length) * 100}%` },
+              {
+                width: `${(checkedCount / items.length) * 100}%`,
+                backgroundColor: colors.success,
+              },
             ]}
           />
         </View>
@@ -106,88 +121,94 @@ export default function ChecklistScreen() {
         data={items}
         keyExtractor={item => item.key}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.item, item.checked && styles.itemChecked]}
+          <Pressable
+            style={[
+              styles.item,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              item.checked && styles.itemChecked,
+            ]}
             onPress={() => toggleItem(item.key)}
-            accessibilityLabel={`${item.label}: ${item.checked ? 'verificado' : 'não verificado'}`}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: item.checked }}
+            accessibilityLabel={`${item.label}: ${item.checked ? 'verificado' : 'não verificado'}`}
           >
             <Switch
               value={item.checked}
               onValueChange={() => toggleItem(item.key)}
-              trackColor={{ false: '#d1d5db', true: '#bbf7d0' }}
-              thumbColor={item.checked ? '#16a34a' : '#f3f4f6'}
+              trackColor={{ false: colors.border, true: '#bbf7d0' }}
+              thumbColor={item.checked ? colors.success : colors.background}
               accessibilityLabel={item.label}
             />
-            <Text style={[styles.itemLabel, item.checked && styles.itemLabelChecked]}>
+            <AppText
+              variant="body"
+              color={item.checked ? '#166534' : colors.text}
+              style={styles.itemLabel}
+            >
               {item.label}
-            </Text>
-          </TouchableOpacity>
+            </AppText>
+          </Pressable>
         )}
         contentContainerStyle={styles.list}
       />
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.skipButton}
+      <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        <AppButton
+          label="Pular"
+          variant="secondary"
           onPress={handleSkip}
-          accessibilityLabel="Pular checklist"
-        >
-          <Text style={styles.skipText}>Pular</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.nextButton, saving && styles.buttonDisabled]}
+          style={styles.skipButton}
+        />
+        <AppButton
+          label={
+            saving
+              ? 'Salvando...'
+              : allChecked
+                ? 'Concluir Checklist ✓'
+                : 'Salvar e Continuar'
+          }
           onPress={handleSaveChecklist}
+          loading={saving}
           disabled={saving}
-          accessibilityLabel="Salvar checklist e continuar"
-          accessibilityRole="button"
-        >
-          <Text style={styles.nextText}>
-            {saving ? 'Salvando...' : allChecked ? 'Concluir Checklist ✓' : 'Salvar e Continuar'}
-          </Text>
-        </TouchableOpacity>
+          style={styles.nextButton}
+        />
       </View>
-    </View>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { backgroundColor: '#1e40af', padding: 20, paddingTop: 60 },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  subtitle: { fontSize: 14, color: '#bfdbfe', marginTop: 4 },
-  progress: { fontSize: 13, color: '#93c5fd', marginTop: 8 },
-  progressBar: {
-    height: 4, backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 2, marginTop: 6,
-  },
-  progressFill: {
-    height: 4, backgroundColor: '#34d399', borderRadius: 2,
-  },
-  list: { padding: 16, gap: 8 },
-  item: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#fff', borderRadius: 10, padding: 14,
-    borderWidth: 1, borderColor: '#e5e7eb',
-  },
-  itemChecked: { borderColor: '#bbf7d0', backgroundColor: '#f0fdf4' },
-  itemLabel: { flex: 1, fontSize: 14, color: '#374151' },
-  itemLabelChecked: { color: '#166534' },
-  footer: {
-    flexDirection: 'row', gap: 12, padding: 16,
-    backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#e5e7eb',
-  },
-  skipButton: {
-    flex: 1, borderRadius: 10, padding: 14, alignItems: 'center',
-    borderWidth: 1, borderColor: '#d1d5db',
-  },
-  skipText: { color: '#6b7280', fontSize: 15, fontWeight: '600' },
-  nextButton: {
-    flex: 2, backgroundColor: '#2563eb', borderRadius: 10,
-    padding: 14, alignItems: 'center',
-  },
-  buttonDisabled: { backgroundColor: '#93c5fd' },
-  nextText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-});
+function createStyles() {
+  return StyleSheet.create({
+    progressBlock: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+      gap: spacing.xs,
+    },
+    progressBar: {
+      height: 4,
+      borderRadius: 2,
+    },
+    progressFill: {
+      height: 4,
+      borderRadius: 2,
+    },
+    list: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    item: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      borderRadius: 10,
+      padding: 14,
+      borderWidth: 1,
+    },
+    itemChecked: { borderColor: '#bbf7d0', backgroundColor: '#f0fdf4' },
+    itemLabel: { flex: 1 },
+    footer: {
+      flexDirection: 'row',
+      gap: 12,
+      padding: spacing.md,
+      borderTopWidth: 1,
+    },
+    skipButton: { flex: 1 },
+    nextButton: { flex: 2 },
+  });
+}

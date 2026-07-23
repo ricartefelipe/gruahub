@@ -63,6 +63,18 @@ export default function QrScanScreen() {
       return;
     }
 
+    if (returnTo === 'stock-step') {
+      router.replace({
+        pathname: '/stock/replenish',
+        params: {
+          machineId,
+          visitId: visitId ?? '',
+          pointName: pointName ?? '',
+        },
+      });
+      return;
+    }
+
     if (returnTo === 'stock') {
       router.replace({
         pathname: '/stock/replenish',
