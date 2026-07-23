@@ -16,15 +16,30 @@ function RootNavigator() {
   usePushNotifications();
 
   useEffect(() => {
+    let cancelled = false;
+    const bootTimeout = setTimeout(() => {
+      if (!cancelled) {
+        console.warn('[Boot] timeout — seguindo sem esperar DB/sessão');
+        setDbReady(true);
+      }
+    }, 8000);
+
     getDb()
-      .then(() => setDbReady(true))
+      .then(() => {
+        if (!cancelled) setDbReady(true);
+      })
       .catch((err) => {
         console.error('[DB] Falha ao inicializar banco offline:', err);
-        setDbReady(true);
-      });
+        if (!cancelled) setDbReady(true);
+      })
+      .finally(() => clearTimeout(bootTimeout));
 
     restoreSession();
-  }, []);
+    return () => {
+      cancelled = true;
+      clearTimeout(bootTimeout);
+    };
+  }, [restoreSession]);
 
   if (!dbReady || isRestoring) {
     return (

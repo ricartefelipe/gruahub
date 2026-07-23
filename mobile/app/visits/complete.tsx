@@ -1,9 +1,10 @@
 import {
-  View, TextInput, StyleSheet,
+  View, TextInput, StyleSheet, Image,
   Alert, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useMemo, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuidv4 } from 'uuid';
 import { enqueue } from '../../src/db/offlineQueue';
 import { OPERATION_TYPES } from '../../src/db/schema';
@@ -26,11 +27,27 @@ export default function CompleteVisitScreen() {
   const [cashCollectedCents, setCashCollectedCents] = useState('');
   const [cashNotes, setCashNotes] = useState('');
   const [machineId, setMachineId] = useState(machineIdParam ?? '');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
 
   function parseCentavos(value: string): number {
     const digits = value.replace(/\D/g, '');
     return parseInt(digits, 10) || 0;
+  }
+
+  async function takePhoto() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Câmera', 'Permissão de câmera necessária para evidência da visita.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+      allowsEditing: false,
+    });
+    if (!result.canceled && result.assets[0]?.uri) {
+      setPhotoUri(result.assets[0].uri);
+    }
   }
 
   async function handleComplete() {
@@ -50,6 +67,17 @@ export default function CompleteVisitScreen() {
         );
       }
 
+      if (photoUri) {
+        ops.push(
+          enqueue(uuidv4(), OPERATION_TYPES.UPLOAD_PHOTO, {
+            visitId,
+            localUri: photoUri,
+            kind: 'VISIT_EVIDENCE',
+            capturedAt: new Date().toISOString(),
+          })
+        );
+      }
+
       ops.push(
         enqueue(uuidv4(), OPERATION_TYPES.COMPLETE_VISIT, {
           visitId,
@@ -60,14 +88,9 @@ export default function CompleteVisitScreen() {
 
       await Promise.all(ops);
 
-      const tip =
-        cents > 0 && !machineId
-          ? ' Sangria registrada na visita; para cash_collection separado, identifique a máquina via QR.'
-          : '';
-
       Alert.alert(
         'Visita concluída',
-        `Dados salvos localmente e serão sincronizados ao reconectar.${tip}`,
+        'Dados salvos na fila local e serão sincronizados ao reconectar.',
         [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
       );
     } catch (err: unknown) {
@@ -91,7 +114,7 @@ export default function CompleteVisitScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <AppHeader title="Concluir Visita" subtitle="Sangria e finalização" />
+        <AppHeader title="Concluir Visita" subtitle="Sangria, foto e finalização" />
         <VisitStepHeader step={4} pointName={pointName ?? ''} />
 
         <ScrollView
@@ -130,7 +153,7 @@ export default function CompleteVisitScreen() {
               accessibilityLabel="Observações da sangria"
             />
             <AppText variant="caption" color={colors.textSecondary} style={styles.label}>
-              Máquina (opcional para cash_collection)
+              Máquina (opcional)
             </AppText>
             <AppText variant="caption" color={colors.textSecondary} style={styles.hint}>
               {machineId
@@ -147,11 +170,28 @@ export default function CompleteVisitScreen() {
                 })
               }
             />
-            {machineId ? (
+          </View>
+
+          <View style={[styles.section, { backgroundColor: colors.surface }]}>
+            <AppText variant="title" style={styles.sectionTitle}>
+              Evidência fotográfica
+            </AppText>
+            <AppText variant="caption" color={colors.textSecondary} style={styles.hint}>
+              Opcional — foto do ponto, sangria ou máquina para auditoria.
+            </AppText>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.preview} accessibilityLabel="Prévia da foto" />
+            ) : null}
+            <AppButton
+              label={photoUri ? 'Tirar outra foto' : 'Tirar foto'}
+              variant="secondary"
+              onPress={() => { void takePhoto(); }}
+            />
+            {photoUri ? (
               <AppButton
-                label="Limpar máquina"
+                label="Remover foto"
                 variant="ghost"
-                onPress={() => setMachineId('')}
+                onPress={() => setPhotoUri(null)}
                 style={styles.clearMachine}
               />
             ) : null}
@@ -162,20 +202,20 @@ export default function CompleteVisitScreen() {
               Resumo da visita
             </AppText>
             <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
-              <AppText variant="caption" color={colors.textSecondary}>
-                Sangria
-              </AppText>
+              <AppText variant="caption" color={colors.textSecondary}>Sangria</AppText>
               <AppText variant="caption" style={styles.summaryValue}>
-                {cashCollectedCents
-                  ? formatCurrency(cashCollectedCents)
-                  : 'Não informada'}
+                {cashCollectedCents ? formatCurrency(cashCollectedCents) : 'Não informada'}
               </AppText>
             </View>
             <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
-              <AppText variant="caption" color={colors.textSecondary}>
-                Status sync
+              <AppText variant="caption" color={colors.textSecondary}>Foto</AppText>
+              <AppText variant="caption" style={styles.summaryValue}>
+                {photoUri ? 'Anexada' : 'Sem foto'}
               </AppText>
-              <AppText variant="caption" color={colors.warningBannerText} style={styles.summaryValue}>
+            </View>
+            <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
+              <AppText variant="caption" color={colors.textSecondary}>Status sync</AppText>
+              <AppText variant="caption" color={colors.warning} style={styles.summaryValue}>
                 Pendente (fila local)
               </AppText>
             </View>
@@ -215,6 +255,13 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     textarea: { minHeight: 64 },
     hint: { lineHeight: 18, marginBottom: 12 },
     clearMachine: { marginTop: spacing.sm },
+    preview: {
+      width: '100%',
+      height: 180,
+      borderRadius: 10,
+      marginBottom: spacing.sm,
+      backgroundColor: colors.border,
+    },
     summary: {
       margin: spacing.md,
       borderRadius: 12,

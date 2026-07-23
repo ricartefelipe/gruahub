@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -9,7 +9,6 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 type NavItem = {
   href: string;
   label: string;
-  icon: string;
   roles: string[];
 };
 
@@ -23,91 +22,84 @@ const ALL_ROLES = [
 ];
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊', roles: ALL_ROLES },
-  { href: '/dashboard/machines', label: 'Máquinas', icon: '🎰', roles: ALL_ROLES },
+  { href: '/dashboard', label: 'Dashboard', roles: ALL_ROLES },
+  { href: '/dashboard/machines', label: 'Máquinas', roles: ALL_ROLES },
   {
     href: '/dashboard/locations',
     label: 'Pontos',
-    icon: '📍',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'OPERATIONS_MANAGER', 'FIELD_OPERATOR', 'FINANCE'],
   },
   {
     href: '/dashboard/payments',
     label: 'Pagamentos',
-    icon: '💳',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE', 'OPERATIONS_MANAGER'],
   },
   {
     href: '/dashboard/promotions',
     label: 'Promoções',
-    icon: '🎯',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'OPERATIONS_MANAGER', 'FINANCE'],
   },
   {
     href: '/dashboard/reconciliation',
     label: 'Conciliação',
-    icon: '⚖️',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE', 'OPERATIONS_MANAGER'],
   },
   {
     href: '/dashboard/inventory',
     label: 'Estoque',
-    icon: '📦',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FIELD_OPERATOR', 'FINANCE', 'TECHNICIAN', 'OPERATIONS_MANAGER'],
   },
   {
     href: '/dashboard/visits',
     label: 'Visitas',
-    icon: '🗓️',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FIELD_OPERATOR', 'OPERATIONS_MANAGER'],
   },
   {
     href: '/dashboard/routes',
     label: 'Rotas',
-    icon: '🗺️',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FIELD_OPERATOR', 'OPERATIONS_MANAGER'],
   },
   {
     href: '/dashboard/finance',
     label: 'Financeiro',
-    icon: '💰',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE'],
   },
   {
     href: '/dashboard/fiscal',
     label: 'Fiscal',
-    icon: '🧾',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE'],
   },
   {
     href: '/dashboard/maintenance',
     label: 'Manutenção',
-    icon: '🔧',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'TECHNICIAN', 'FIELD_OPERATOR', 'OPERATIONS_MANAGER'],
   },
   {
     href: '/dashboard/alerts',
     label: 'Alertas',
-    icon: '🔔',
     roles: ALL_ROLES,
   },
   {
     href: '/dashboard/reports',
     label: 'Relatórios',
-    icon: '📈',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN', 'FINANCE', 'OPERATIONS_MANAGER'],
   },
   {
     href: '/dashboard/audit',
     label: 'Auditoria',
-    icon: '🔍',
     roles: ['PLATFORM_ADMIN', 'TENANT_ADMIN'],
   },
 ];
 
+function isActivePath(pathname: string, href: string): boolean {
+  if (href === '/dashboard') return pathname === '/dashboard';
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname() ?? '/dashboard';
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -115,55 +107,66 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [status, router]);
 
-  const roles: string[] = (session as any)?.roles ?? [];
+  const roles: string[] = (session as { roles?: string[] } | null)?.roles ?? [];
 
   const visibleNav = useMemo(() => {
     if (roles.length === 0) return navItems;
-    return navItems.filter(item => item.roles.some(r => roles.includes(r)));
+    return navItems.filter((item) => item.roles.some((r) => roles.includes(r)));
   }, [roles]);
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="text-gray-500">Carregando sessão...</span>
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-blue-400">GruaHub</p>
+          <p className="text-sm text-slate-400 mt-2">Carregando sessão…</p>
+        </div>
       </div>
     );
   }
 
   if (!session) return null;
 
+  const email = (session.user as { email?: string } | undefined)?.email ?? '';
+
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-slate-900">
-      <aside className="w-64 bg-gray-900 text-white flex flex-col flex-shrink-0">
-        <div className="p-4 border-b border-gray-700">
-          <h1 className="text-xl font-bold text-blue-400">GruaHub</h1>
-          <p className="text-xs text-gray-400 mt-1">{(session.user as any)?.email}</p>
+    <div className="flex h-screen bg-slate-100 dark:bg-slate-950">
+      <aside className="w-60 bg-slate-950 text-white flex flex-col flex-shrink-0 border-r border-slate-800">
+        <div className="px-5 py-5 border-b border-slate-800">
+          <p className="text-xl font-bold tracking-tight text-white">GruaHub</p>
+          <p className="text-xs text-slate-400 mt-1 truncate" title={email}>
+            {email}
+          </p>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-2" aria-label="Navegação principal">
-          <ul className="space-y-1">
-            {visibleNav.map(item => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300
-                             hover:bg-gray-700 hover:text-white transition-colors duration-150
-                             focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <span aria-hidden="true">{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            ))}
+        <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Navegação principal">
+          <ul className="space-y-0.5">
+            {visibleNav.map((item) => {
+              const active = isActivePath(pathname, item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={
+                      active
+                        ? 'flex items-center px-3 py-2 rounded-md text-sm font-semibold bg-blue-600 text-white'
+                        : 'flex items-center px-3 py-2 rounded-md text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors'
+                    }
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-4 border-t border-slate-800 space-y-3">
           <ThemeToggle />
           <button
+            type="button"
             onClick={() => signOut({ callbackUrl: '/login' })}
-            className="w-full text-sm text-gray-400 hover:text-white transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            className="w-full text-left text-sm text-slate-400 hover:text-white transition-colors rounded px-1 py-1"
             aria-label="Sair do sistema"
           >
             Sair
@@ -171,8 +174,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto dark:bg-slate-900">
-        <div className="p-6">{children}</div>
+      <main className="flex-1 overflow-auto">
+        <div className="p-6 md:p-8 max-w-7xl mx-auto">{children}</div>
       </main>
     </div>
   );

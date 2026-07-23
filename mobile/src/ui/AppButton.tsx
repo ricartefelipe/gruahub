@@ -2,13 +2,14 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
+  Vibration,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { radius, spacing, touchTarget, useTheme } from '../theme';
 import { AppText } from './AppText';
 
-type AppButtonVariant = 'primary' | 'secondary' | 'ghost';
+type AppButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 type AppButtonProps = {
   label: string;
@@ -30,29 +31,47 @@ export function AppButton({
   const { colors } = useTheme();
   const isDisabled = disabled || loading;
 
-  const backgroundColor =
-    variant === 'primary'
-      ? colors.primary
-      : variant === 'secondary'
-        ? colors.surface
-        : 'transparent';
+  let backgroundColor: string;
+  let textColor: string;
+  let borderColor: string;
 
-  const textColor =
-    variant === 'primary'
-      ? colors.headerText
-      : variant === 'secondary'
-        ? colors.text
-        : colors.primary;
-
-  const borderColor =
-    variant === 'secondary' ? colors.border : 'transparent';
+  switch (variant) {
+    case 'primary':
+      backgroundColor = colors.primary;
+      textColor = colors.headerText;
+      borderColor = 'transparent';
+      break;
+    case 'secondary':
+      backgroundColor = colors.surface;
+      textColor = colors.text;
+      borderColor = colors.border;
+      break;
+    case 'ghost':
+      backgroundColor = 'transparent';
+      textColor = colors.primary;
+      borderColor = 'transparent';
+      break;
+    case 'danger':
+      backgroundColor = colors.dangerBg;
+      textColor = colors.dangerText;
+      borderColor = colors.dangerText;
+      break;
+    default: {
+      const _exhaustive: never = variant;
+      return _exhaustive;
+    }
+  }
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
-      onPress={onPress}
+      onPress={() => {
+        Vibration.vibrate(10);
+        onPress();
+      }}
       style={({ pressed }) => [
         styles.base,
         {
