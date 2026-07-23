@@ -54,7 +54,9 @@ public class RoutingResource {
         int stopOrder,
         int priorityScore,
         String priorityExplanation,
-        String status
+        String status,
+        Double latitude,
+        Double longitude
     ) {}
 
     // ── Plans ─────────────────────────────────────────────────────────────────────
@@ -129,7 +131,8 @@ public class RoutingResource {
             "SELECT rs.id, rs.route_plan_id, rs.operating_point_id, op.name, " +
             "CONCAT(op.address_street, ', ', op.address_city, '/', op.address_state), " +
             "COALESCE(rs.stop_order, rs.sequence_order), " +
-            "rs.priority_score, rs.priority_explanation::text, rs.status " +
+            "rs.priority_score, rs.priority_explanation::text, rs.status, " +
+            "op.latitude, op.longitude " +
             "FROM route_stop rs " +
             "JOIN operating_point op ON op.id = rs.operating_point_id " +
             "JOIN route_plan rp ON rp.id = rs.route_plan_id " +
@@ -144,7 +147,9 @@ public class RoutingResource {
             (UUID) r[0], (UUID) r[1], (UUID) r[2], (String) r[3], (String) r[4],
             ((Number) r[5]).intValue(),
             r[6] != null ? ((Number) r[6]).intValue() : 0,
-            (String) r[7], (String) r[8]
+            (String) r[7], (String) r[8],
+            r[9] != null ? ((Number) r[9]).doubleValue() : null,
+            r[10] != null ? ((Number) r[10]).doubleValue() : null
         )).toList();
         return PageResponse.of(content, 0, Math.max(content.size(), 1), content.size());
     }

@@ -61,6 +61,8 @@ async function fetchTodayRoute(accessToken: string, tenantId: string): Promise<R
     score?: number;
     priorityExplanation?: string;
     reason?: string;
+    latitude?: number | null;
+    longitude?: number | null;
   }>(stopsBody);
 
   return stops
@@ -72,6 +74,8 @@ async function fetchTodayRoute(accessToken: string, tenantId: string): Promise<R
       address: s.address ?? '',
       score: s.priorityScore ?? s.score ?? 0,
       reason: (s.priorityExplanation ?? s.reason ?? '').replace(/^"|"$/g, ''),
+      latitude: s.latitude ?? null,
+      longitude: s.longitude ?? null,
     }));
 }
 
@@ -210,6 +214,8 @@ export default function RouteScreen() {
                   pointName={next.pointName}
                   address={next.address || undefined}
                   reason={next.reason || undefined}
+                  latitude={next.latitude}
+                  longitude={next.longitude}
                   indexLabel="#1 · Próxima parada"
                   onStart={() => openVisit(next)}
                 />
