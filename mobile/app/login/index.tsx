@@ -1,4 +1,5 @@
 import { View, StyleSheet, Alert } from 'react-native';
+import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, exchangeCodeAsync } from 'expo-auth-session';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -13,6 +14,9 @@ import {
 } from '../../src/config/env';
 import { radius, spacing, useTheme } from '../../src/theme';
 import { Screen, AppText, AppButton, ErrorBanner } from '../../src/ui';
+
+const APP_VERSION =
+  Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.1';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -206,26 +210,34 @@ export default function LoginScreen() {
           style={styles.loginButton}
         />
 
-        <AppText variant="caption" color={colors.textMuted} style={styles.envHint}>
-          API: {API_URL}{'\n'}
-          Auth: {KEYCLOAK_URL}{'\n'}
-          Redirect: {redirectUri}
-        </AppText>
-        {deviceHint ? (
-          <AppText variant="caption" color={colors.warning} style={styles.deviceHint}>
-            {deviceHint}
+        {__DEV__ ? (
+          <>
+            <AppText variant="caption" color={colors.textMuted} style={styles.envHint}>
+              API: {API_URL}{'\n'}
+              Auth: {KEYCLOAK_URL}{'\n'}
+              Redirect: {redirectUri}
+            </AppText>
+            {deviceHint ? (
+              <AppText variant="caption" color={colors.warning} style={styles.deviceHint}>
+                {deviceHint}
+              </AppText>
+            ) : null}
+          </>
+        ) : (
+          <AppText variant="caption" color={colors.textMuted} style={styles.envHint}>
+            Build de piloto · use a conta do operador fornecida pela operação
           </AppText>
-        ) : null}
+        )}
       </View>
 
       <View style={styles.offlineNote}>
         <AppText variant="caption" color={colors.headerMuted} style={styles.offlineNoteText}>
-          Após o primeiro login, operações ficam na fila local e sincronizam ao reconectar.
+          Após o login, visitas e sangrias ficam na fila local e sincronizam ao reconectar.
         </AppText>
       </View>
 
       <AppText variant="caption" color={colors.primaryMuted} style={styles.version}>
-        GruaHub Mobile v1.0.0-mvp
+        GruaHub Mobile v{APP_VERSION}
       </AppText>
     </Screen>
   );
