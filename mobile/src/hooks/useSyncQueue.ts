@@ -23,6 +23,7 @@ import {
 } from '../db/offlineQueue';
 import { useAuthStore } from '../store/authStore';
 import { apiFetch, ApiError } from '../api/apiClient';
+import { isDeferredSyncOperation } from '../sync/deferredOperations';
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -36,7 +37,6 @@ function getEndpoint(operationType: string): string {
     REPLENISH_STOCK:    '/api/v1/inventory/movements',
     CASH_COLLECTION:    '/api/v1/finance/cash-collections',
     OPEN_MAINTENANCE:   '/api/v1/maintenance',
-    UPLOAD_PHOTO:       '/api/v1/attachments',
   };
   return map[operationType] ?? '/api/v1/operations';
 }
@@ -83,6 +83,11 @@ export function useSyncQueue() {
       console.log(`[SyncQueue] Sincronizando ${operations.length} operação(ões)…`);
 
       for (const op of operations) {
+        if (isDeferredSyncOperation(op.operationType)) {
+          // Sem endpoint ainda (ex.: foto local) — não POST JSON nem queima retries
+          continue;
+        }
+
         await markSyncing(op.id);
 
         try {

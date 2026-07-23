@@ -52,7 +52,7 @@ const OP_LABELS: Record<string, string> = {
   REPLENISH_STOCK:     'Reposição',
   CASH_COLLECTION:     'Sangria',
   OPEN_MAINTENANCE:    'Chamado de manutenção',
-  UPLOAD_PHOTO:        'Upload de foto',
+  UPLOAD_PHOTO:        'Foto (aguardando API)',
 };
 
 function formatDate(iso: string | null) {
@@ -67,6 +67,9 @@ function buildSubtitle(item: QueueEntry): string {
   const parts = [
     `Criado: ${formatDate(item.createdAt)}`,
   ];
+  if (item.operationType === 'UPLOAD_PHOTO' && item.status === 'PENDING') {
+    parts.push('Arquivo local no aparelho · envio aguarda API de anexos');
+  }
   if (item.syncedAt) parts.push(`Sync: ${formatDate(item.syncedAt)}`);
   if (item.retryCount > 0) parts.push(`Tentativas: ${item.retryCount}`);
   if (item.nextRetryAt && item.status === 'FAILED_RETRYABLE') {
@@ -103,7 +106,7 @@ export default function QueueScreen() {
   const [entries, setEntries] = useState<QueueEntry[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const [filter, setFilter] = useState<FilterKey>('waiting');
   const [stats, setStats] = useState({
     pending: 0, syncing: 0, synced: 0, failedRetryable: 0, failedPermanent: 0,
   });

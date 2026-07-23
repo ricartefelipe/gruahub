@@ -9,6 +9,8 @@ type NextStopHeroProps = {
   address?: string;
   reason?: string;
   indexLabel?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   onStart: () => void;
 };
 
@@ -17,6 +19,8 @@ export function NextStopHero({
   address,
   reason,
   indexLabel,
+  latitude,
+  longitude,
   onStart,
 }: NextStopHeroProps) {
   const { colors } = useTheme();
@@ -58,7 +62,12 @@ export function NextStopHero({
           accessibilityRole="button"
           accessibilityLabel="Abrir no mapa"
           onPress={() => {
-            void openMapsForStop({ address, pointName });
+            void openMapsForStop({
+              address,
+              pointName,
+              latitude: latitude ?? undefined,
+              longitude: longitude ?? undefined,
+            });
           }}
           style={styles.mapBtn}
         >
