@@ -27,7 +27,8 @@ Plataforma B2B multi-tenant para gestão de máquinas de pelúcia e gruas: telem
 ```bash
 cp infra/.env.example infra/.env   # segredos obrigatórios — sem defaults no compose
 cd infra
-docker compose up -d
+./run.sh up    # libera :8080/:8180/:3000 (stack fantasma / docker-proxy) e sobe tudo
+# só limpar portas: ./run.sh free-ports
 ```
 
 Aguarde todos os serviços ficarem `healthy` (30–60 s):

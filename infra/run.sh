@@ -5,12 +5,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 BACKEND_DIR="$ROOT_DIR/backend"
 INFRA_DIR="$SCRIPT_DIR"
+FREE_PORTS_SCRIPT="$INFRA_DIR/scripts/free-host-ports.sh"
 
 COMMAND="${1:-up}"
 
 step() { printf '\n==> %s\n' "$1"; }
 ok()   { printf '    OK: %s\n' "$1"; }
 fail() { printf '    ERRO: %s\n' "$1" >&2; }
+
+# Libera 8080/8180/3000/etc. (docker-proxy órfão, backend Created, quarkus:dev no host).
+free_host_ports() {
+    if [ ! -x "$FREE_PORTS_SCRIPT" ]; then
+        chmod +x "$FREE_PORTS_SCRIPT" 2>/dev/null || true
+    fi
+    if [ ! -f "$FREE_PORTS_SCRIPT" ]; then
+        fail "Script ausente: $FREE_PORTS_SCRIPT"
+        exit 1
+    fi
+    step "Liberando portas do host antes do compose..."
+    bash "$FREE_PORTS_SCRIPT"
+}
 
 build_backend() {
     step "Compilando backend Quarkus no host..."
@@ -44,6 +58,7 @@ case "${COMMAND,,}" in
         build_backend
         ;;
     up)
+        free_host_ports
         build_backend
         step "Construindo imagem Docker do backend..."
         docker compose build backend
@@ -57,21 +72,25 @@ case "${COMMAND,,}" in
         printf '  MinIO:    http://localhost:9001  (minioadmin/minioadmin)\n\n'
         ;;
     infra)
+        free_host_ports
         step "Subindo apenas infraestrutura (sem backend/web)..."
         docker compose up -d postgres keycloak emqx emqx-users minio minio-setup
         ok "Infra iniciada."
         printf '\n  Para rodar o backend em modo dev (hot-reload):\n'
         printf '  cd backend && ./mvnw quarkus:dev\n\n'
         ;;
+    free-ports)
+        free_host_ports
+        ;;
     down)
         step "Parando serviços..."
-        docker compose down
+        docker compose down --remove-orphans
         ok "Serviços parados."
         ;;
     logs)
         docker compose logs -f
         ;;
     *)
-        printf 'Uso: ./run.sh [up | down | build | logs | infra]\n'
+        printf 'Uso: ./run.sh [up | down | build | logs | infra | free-ports]\n'
         ;;
 esac

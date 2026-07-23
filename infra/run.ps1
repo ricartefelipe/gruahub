@@ -1,12 +1,13 @@
 # ================================================================
 # GruaHub — Orquestrador local
-# Uso: .\run.ps1 [up | down | build | logs | infra]
+# Uso: .\run.ps1 [up | down | build | logs | infra | free-ports]
 #
-#   up     — compila backend + sobe todos os serviços (padrão)
-#   infra  — sobe só a infra (postgres, keycloak, emqx, minio) sem backend
-#   build  — só compila o backend no host
-#   down   — para e remove containers
-#   logs   — tail dos logs
+#   up         — libera portas + compila backend + sobe todos os serviços
+#   infra      — libera portas + sobe só a infra (sem backend/web)
+#   free-ports — só libera 8080/8180/3000/... (containers + processos)
+#   build      — só compila o backend no host
+#   down       — para e remove containers
+#   logs       — tail dos logs
 # ================================================================
 
 param(
@@ -26,6 +27,44 @@ function Write-OK([string]$msg) {
 }
 function Write-Fail([string]$msg) {
     Write-Host "    ERRO: $msg" -ForegroundColor Red
+}
+
+function Free-HostPorts {
+    Write-Step "Liberando portas do host (8080, 8180, 3000, ...)..."
+    $ports = @(8080, 8180, 3000, 5432, 1883, 8883, 18083, 9000, 9001)
+    $contexts = @('default')
+    try {
+        $active = (docker context show 2>$null)
+        if ($active) { $contexts += $active }
+        docker context ls -q 2>$null | ForEach-Object { if ($_ -and ($contexts -notcontains $_)) { $contexts += $_ } }
+    } catch {}
+    $contexts = $contexts | Select-Object -Unique
+
+    foreach ($ctx in $contexts) {
+        foreach ($port in $ports) {
+            $ids = docker -c $ctx ps -aq --filter "publish=$port" 2>$null
+            if ($ids) {
+                Write-Host "    [$ctx] Removendo containers na :$port"
+                docker -c $ctx rm -f $ids | Out-Null
+            }
+        }
+        $ghost = docker -c $ctx ps -aq --filter "name=gruahub-" 2>$null
+        if ($ghost -and $ctx -ne (docker context show 2>$null)) {
+            Write-Host "    [$ctx] Removendo stack GruaHub fantasma"
+            docker -c $ctx rm -f $ghost | Out-Null
+        }
+    }
+
+    Get-Process -Name java -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+            if ($cmd -match 'quarkus:dev|quarkus-run\.jar') {
+                Write-Host "    Encerrando Quarkus no host (pid $($_.Id))"
+                Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+            }
+        } catch {}
+    }
+    Write-OK "Limpeza de portas concluída."
 }
 
 # ----------------------------------------------------------------
@@ -117,6 +156,7 @@ switch ($Command.ToLower()) {
     }
 
     "up" {
+        Free-HostPorts
         Build-Backend
         Write-Step "Construindo imagem Docker do backend..."
         docker compose build backend
@@ -131,6 +171,7 @@ switch ($Command.ToLower()) {
     }
 
     "infra" {
+        Free-HostPorts
         Write-Step "Subindo apenas infraestrutura (sem backend/web)..."
         docker compose up -d postgres keycloak emqx emqx-users minio minio-setup
         Write-OK "Infra iniciada."
@@ -138,9 +179,13 @@ switch ($Command.ToLower()) {
         Write-Host "  cd backend && mvn quarkus:dev`n"
     }
 
+    "free-ports" {
+        Free-HostPorts
+    }
+
     "down" {
         Write-Step "Parando serviços..."
-        docker compose down
+        docker compose down --remove-orphans
         Write-OK "Serviços parados."
     }
 
@@ -149,6 +194,6 @@ switch ($Command.ToLower()) {
     }
 
     default {
-        Write-Host "Uso: .\run.ps1 [up | down | build | logs | infra]"
+        Write-Host "Uso: .\run.ps1 [up | down | build | logs | infra | free-ports]"
     }
 }
