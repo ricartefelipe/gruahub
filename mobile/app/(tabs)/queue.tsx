@@ -52,7 +52,7 @@ const OP_LABELS: Record<string, string> = {
   REPLENISH_STOCK:     'Reposição',
   CASH_COLLECTION:     'Sangria',
   OPEN_MAINTENANCE:    'Chamado de manutenção',
-  UPLOAD_PHOTO:        'Foto (aguardando API)',
+  UPLOAD_PHOTO:        'Foto da visita',
 };
 
 function formatDate(iso: string | null) {
@@ -68,7 +68,7 @@ function buildSubtitle(item: QueueEntry): string {
     `Criado: ${formatDate(item.createdAt)}`,
   ];
   if (item.operationType === 'UPLOAD_PHOTO' && item.status === 'PENDING') {
-    parts.push('Arquivo local no aparelho · envio aguarda API de anexos');
+    parts.push('Arquivo local · será enviado no próximo sync');
   }
   if (item.syncedAt) parts.push(`Sync: ${formatDate(item.syncedAt)}`);
   if (item.retryCount > 0) parts.push(`Tentativas: ${item.retryCount}`);

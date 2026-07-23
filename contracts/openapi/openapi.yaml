@@ -2063,6 +2063,89 @@ paths:
         - PLATFORM_ADMIN
         - TENANT_ADMIN
         - FIELD_OPERATOR
+  /api/v1/visits/{visitId}/attachments:
+    get:
+      tags:
+      - Visit Attachment Resource
+      parameters:
+      - name: visitId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FIELD_OPERATOR
+        - FINANCE
+    post:
+      tags:
+      - Visit Attachment Resource
+      parameters:
+      - name: visitId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadAttachmentRequest"
+      responses:
+        "201":
+          description: Created
+        "409":
+          description: Conflict
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FIELD_OPERATOR
+  /api/v1/devices/push-tokens:
+    post:
+      tags:
+      - Device Token Resource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, platform]
+              properties:
+                token:
+                  type: string
+                platform:
+                  type: string
+      responses:
+        "201":
+          description: Created
+        "200":
+          description: Updated
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+      security:
+      - SecurityScheme:
+        - PLATFORM_ADMIN
+        - TENANT_ADMIN
+        - FIELD_OPERATOR
+        - TECHNICIAN
+        - OPERATIONS_MANAGER
+        - FINANCE
   /api/v1/visits/checklist:
     post:
       tags:
@@ -3359,6 +3442,24 @@ components:
           type: integer
         createdAt:
           $ref: "#/components/schemas/Instant"
+    UploadAttachmentRequest:
+      type: object
+      required:
+        - clientOperationId
+        - base64Data
+      properties:
+        clientOperationId:
+          $ref: "#/components/schemas/UUID"
+        base64Data:
+          type: string
+        contentType:
+          type: string
+        filename:
+          type: string
+        attachmentType:
+          type: string
+        machineId:
+          $ref: "#/components/schemas/UUID"
     StartVisitRequest:
       required:
       - visitId

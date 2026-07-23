@@ -35,10 +35,12 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [x] E2E Playwright smoke em CI (`web/e2e/smoke.spec.ts`; specs autenticados ainda locais com Keycloak)
 - [ ] WAF comercial / rate-limit distribuído (edge Caddy leve + API in-memory já ativos; multi-instância aberto)
 - [ ] TLS público com DNS real (template LE pronto; CI só valida `tls internal`)
-- [x] Push stub honesto (`PushNotifier` noop/http-stub + hook mobile Expo token); FCM Google completo ainda aberto
+- [x] Push Expo (`noop` / `http-stub` / `expo`) + registry `device_token` + hook mobile com EAS projectId
+- [x] Anexos de visita (MinIO/S3 + `POST /visits/{id}/attachments`) e sync mobile `UPLOAD_PHOTO`
 - [x] Runbook DR de backup/restore/retenção em `DEPLOYMENT.md` (alinhado a `pg-backup*` / restore drill)
 - [x] Monitoramento mínimo: profile Compose `monitoring` (Uptime Kuma) + doc de uptime externo em health
-- [ ] FCM/Expo Push Service em produção + registry de devices; SMS/e-mail
+- [ ] SMS/e-mail
+- [ ] FCM Google nativo (service account próprio); hoje a entrega é via Expo Push Service
 - [ ] Vault / AWS Secrets Manager com rotação (hoje: `.env` + `*_FILE`)
 - [ ] Pagamento real / hardware físico / adaptadores de controlador
 - [ ] Escala horizontal (outbox polling, locks in-memory, rate-limit in-memory)

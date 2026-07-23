@@ -49,3 +49,5 @@ databaseChangeLog:
       file: db/changelog/023-promotion-campaigns.yaml
   - include:
       file: db/changelog/024-fiscal-documents.yaml
+  - include:
+      file: db/changelog/025-attachments-device-tokens.yaml
