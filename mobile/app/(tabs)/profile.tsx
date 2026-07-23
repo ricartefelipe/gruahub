@@ -1,24 +1,38 @@
 /**
- * Tela de perfil — exibe dados do usuário autenticado e permite logout.
+ * Tela de perfil — conta do operador, sync e preferências de campo.
  */
 
 import { View, StyleSheet, Alert, Switch, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import Constants from 'expo-constants';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { getQueueStats, QueueStats } from '../../src/db/offlineQueue';
 import { radius, spacing, useTheme } from '../../src/theme';
 import { Screen, AppHeader, AppButton, AppText } from '../../src/ui';
+
+const APP_VERSION =
+  Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.1';
 
 export default function ProfileScreen() {
   const { userEmail, tenantId, userId, clearAuth } = useAuthStore();
   const { sync } = useSyncQueue();
   const { theme, colors, setTheme } = useTheme();
   const [syncing, setSyncing] = useState(false);
-  const [, setStats] = useState<QueueStats | null>(null);
+  const [stats, setStats] = useState<QueueStats | null>(null);
   const styles = useMemo(() => createStyles(colors.surface, colors.border), [colors.surface, colors.border]);
   const isDark = theme === 'dark';
+
+  const refreshStats = useCallback(async () => {
+    setStats(await getQueueStats());
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshStats();
+    }, [refreshStats]),
+  );
 
   async function handleSync() {
     setSyncing(true);
@@ -26,10 +40,15 @@ export default function ProfileScreen() {
       await sync();
       const s = await getQueueStats();
       setStats(s);
-      const failed = s.failedRetryable + s.failedPermanent;
+      const waiting = s.pending + s.syncing + s.failedRetryable;
+      const failed = s.failedPermanent;
       Alert.alert(
         'Sincronização concluída',
-        `Pendentes: ${s.pending} | Falhas: ${failed}`
+        failed > 0
+          ? `${waiting} ainda aguardando · ${failed} com falha permanente (veja a Fila).`
+          : waiting > 0
+            ? `${waiting} operação(ões) ainda aguardando envio.`
+            : 'Tudo enviado ao servidor.',
       );
     } finally {
       setSyncing(false);
@@ -37,18 +56,31 @@ export default function ProfileScreen() {
   }
 
   function handleLogout() {
-    Alert.alert('Sair', 'Tem certeza que deseja sair? Operações offline pendentes serão perdidas.', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: () => {
-          clearAuth();
-          router.replace('/login');
+    const waiting = stats
+      ? stats.pending + stats.syncing + stats.failedRetryable + stats.failedPermanent
+      : 0;
+    Alert.alert(
+      'Sair',
+      waiting > 0
+        ? `Há ${waiting} operação(ões) na fila. Sincronize antes de sair se puder — dados locais não são enviados no logout.`
+        : 'Deseja sair da conta neste aparelho?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: () => {
+            clearAuth();
+            router.replace('/login');
+          },
         },
-      },
-    ]);
+      ],
+    );
   }
+
+  const waitingCount = stats
+    ? stats.pending + stats.syncing + stats.failedRetryable
+    : null;
 
   return (
     <Screen>
@@ -107,13 +139,17 @@ export default function ProfileScreen() {
           <View style={[styles.row, { borderBottomColor: colors.border }]}>
             <AppText variant="body">Versão</AppText>
             <AppText variant="body" color={colors.textSecondary}>
-              1.0.0-mvp
+              {APP_VERSION}
             </AppText>
           </View>
           <View style={[styles.row, styles.rowLast]}>
-            <AppText variant="body">Modo</AppText>
+            <AppText variant="body">Fila local</AppText>
             <AppText variant="body" color={colors.textSecondary}>
-              Offline-first
+              {waitingCount == null
+                ? '—'
+                : waitingCount > 0
+                  ? `${waitingCount} aguardando`
+                  : 'Em dia'}
             </AppText>
           </View>
         </View>
@@ -139,26 +175,23 @@ export default function ProfileScreen() {
             Sincronização
           </AppText>
           <AppButton
-            label={syncing ? 'Sincronizando...' : 'Sincronizar agora'}
+            label={syncing ? 'Sincronizando…' : 'Sincronizar agora'}
             onPress={handleSync}
             loading={syncing}
             style={styles.sectionButton}
           />
           <AppButton
-            label="Ver Fila de Operações"
+            label="Abrir fila de operações"
             variant="secondary"
             onPress={() => router.push('/(tabs)/queue')}
           />
         </View>
 
         <AppButton
-          label="Sair da Conta"
-          variant="secondary"
+          label="Sair da conta"
+          variant="danger"
           onPress={handleLogout}
-          style={[
-            styles.logoutButton,
-            { backgroundColor: colors.dangerBg, borderColor: colors.dangerBg },
-          ]}
+          style={styles.logoutButton}
         />
       </ScrollView>
     </Screen>
