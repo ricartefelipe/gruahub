@@ -49,6 +49,7 @@ function RootNavigator() {
           options={{ headerShown: false, presentation: 'modal' }}
         />
         <Stack.Screen name="visits/checklist" options={{ headerShown: false }} />
+        <Stack.Screen name="visits/stock-step" options={{ headerShown: false }} />
         <Stack.Screen name="visits/complete" options={{ headerShown: false }} />
         <Stack.Screen
           name="qr-scan"

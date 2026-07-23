@@ -1,5 +1,5 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
-import { useEffect, useState } from 'react';
+import { View, TextInput, StyleSheet, Alert, ScrollView } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { v4 as uuidv4 } from 'uuid';
 import { enqueue } from '../../src/db/offlineQueue';
@@ -8,9 +8,19 @@ import {
   CheckinLocation,
   getCheckinLocation,
 } from '../../src/location/getCheckinLocation';
+import { spacing, useTheme } from '../../src/theme';
+import {
+  Screen,
+  AppHeader,
+  VisitStepHeader,
+  AppButton,
+  AppText,
+} from '../../src/ui';
 
 export default function StartVisitScreen() {
   const { pointId, pointName } = useLocalSearchParams<{ pointId: string; pointName: string }>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [responsibleName, setResponsibleName] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -105,49 +115,56 @@ export default function StartVisitScreen() {
         : styles.gpsMuted;
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Voltar">
-          <Text style={styles.back}>← Voltar</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Iniciar Visita</Text>
-        <Text style={styles.subtitle}>{pointName}</Text>
-      </View>
+    <Screen>
+      <AppHeader title="Iniciar Visita" subtitle="Check-in no ponto" />
+      <VisitStepHeader step={1} pointName={pointName ?? ''} />
 
-      <View style={styles.form}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={[styles.gpsBanner, gpsTone]} accessibilityLiveRegion="polite">
-          <Text style={styles.gpsText}>{gpsLabel}</Text>
+          <AppText variant="caption" style={styles.gpsText}>
+            {gpsLabel}
+          </AppText>
           {!gpsLoading && location?.status !== 'ok' ? (
-            <TouchableOpacity
+            <AppButton
+              label="Tentar novamente"
+              variant="ghost"
               onPress={async () => {
                 setGpsLoading(true);
                 const result = await getCheckinLocation();
                 setLocation(result);
                 setGpsLoading(false);
               }}
-              accessibilityLabel="Tentar obter GPS novamente"
-            >
-              <Text style={styles.gpsRetry}>Tentar novamente</Text>
-            </TouchableOpacity>
+              style={styles.gpsRetry}
+            />
           ) : null}
         </View>
 
-        <Text style={styles.label}>Nome do Responsável *</Text>
+        <AppText variant="caption" color={colors.textSecondary} style={styles.label}>
+          Nome do Responsável *
+        </AppText>
         <TextInput
           style={styles.input}
           value={responsibleName}
           onChangeText={setResponsibleName}
           placeholder="Nome do responsável no local"
+          placeholderTextColor={colors.textMuted}
           accessibilityLabel="Nome do responsável"
           returnKeyType="next"
         />
 
-        <Text style={styles.label}>Observações</Text>
+        <AppText variant="caption" color={colors.textSecondary} style={styles.label}>
+          Observações
+        </AppText>
         <TextInput
           style={[styles.input, styles.textarea]}
           value={notes}
           onChangeText={setNotes}
           placeholder="Observações da visita (opcional)"
+          placeholderTextColor={colors.textMuted}
           multiline
           numberOfLines={3}
           textAlignVertical="top"
@@ -155,60 +172,57 @@ export default function StartVisitScreen() {
         />
 
         <View style={styles.offlineNote}>
-          <Text style={styles.offlineNoteText}>
+          <AppText variant="caption" color={colors.warningBannerText}>
             Modo offline-first: a visita vai para a fila local e sincroniza ao reconectar.
-          </Text>
+          </AppText>
         </View>
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+        <AppButton
+          label={loading ? 'Iniciando...' : 'Confirmar Check-in'}
           onPress={handleCheckin}
+          loading={loading}
           disabled={loading}
-          accessibilityLabel="Confirmar check-in e iniciar visita"
-          accessibilityRole="button"
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Iniciando...' : 'Confirmar Check-in'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          style={styles.cta}
+        />
+      </ScrollView>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { backgroundColor: '#1e40af', padding: 20, paddingTop: 60 },
-  back: { color: '#bfdbfe', fontSize: 14, marginBottom: 8 },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  subtitle: { fontSize: 14, color: '#bfdbfe', marginTop: 4 },
-  form: { padding: 20 },
-  gpsBanner: {
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    marginBottom: 4,
-  },
-  gpsOk: { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' },
-  gpsWarn: { backgroundColor: '#fffbeb', borderColor: '#fde68a' },
-  gpsMuted: { backgroundColor: '#f3f4f6', borderColor: '#e5e7eb' },
-  gpsText: { fontSize: 13, color: '#374151', fontWeight: '600' },
-  gpsRetry: { marginTop: 6, color: '#2563eb', fontWeight: '600', fontSize: 13 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 16 },
-  input: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db',
-    borderRadius: 8, padding: 12, fontSize: 15, color: '#111827',
-  },
-  textarea: { minHeight: 80 },
-  offlineNote: {
-    backgroundColor: '#fef3c7', borderRadius: 8, padding: 12, marginTop: 20,
-    borderWidth: 1, borderColor: '#fde68a',
-  },
-  offlineNoteText: { fontSize: 13, color: '#92400e' },
-  button: {
-    backgroundColor: '#2563eb', borderRadius: 10, padding: 16,
-    alignItems: 'center', marginTop: 24,
-  },
-  buttonDisabled: { backgroundColor: '#93c5fd' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-});
+function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
+  return StyleSheet.create({
+    scroll: { flex: 1 },
+    form: { padding: spacing.md, paddingBottom: spacing.xl },
+    gpsBanner: {
+      borderRadius: 8,
+      padding: spacing.sm + 4,
+      borderWidth: 1,
+      marginBottom: spacing.xs,
+    },
+    gpsOk: { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' },
+    gpsWarn: { backgroundColor: '#fffbeb', borderColor: '#fde68a' },
+    gpsMuted: { backgroundColor: colors.background, borderColor: colors.border },
+    gpsText: { fontWeight: '600', color: colors.text },
+    gpsRetry: { marginTop: spacing.xs, alignSelf: 'flex-start' },
+    label: { fontWeight: '600', marginBottom: spacing.xs, marginTop: spacing.md },
+    input: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 15,
+      color: colors.text,
+    },
+    textarea: { minHeight: 80 },
+    offlineNote: {
+      backgroundColor: colors.warningBannerBg,
+      borderRadius: 8,
+      padding: 12,
+      marginTop: spacing.lg,
+      borderWidth: 1,
+      borderColor: '#fde68a',
+    },
+    cta: { marginTop: spacing.lg },
+  });
+}
