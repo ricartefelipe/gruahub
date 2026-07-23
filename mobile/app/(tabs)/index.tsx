@@ -8,7 +8,7 @@ import { useSyncQueue } from '../../src/hooks/useSyncQueue';
 import { useOfflineBanner } from '../../src/hooks/useOfflineBanner';
 import { apiGet, ApiError } from '../../src/api/apiClient';
 import { loadCachedRoute, saveCachedRoute, CachedRouteStop } from '../../src/db/routeCache';
-import { spacing, useTheme } from '../../src/theme';
+import { spacing, touchTarget, useTheme } from '../../src/theme';
 import {
   Screen,
   AppHeader,
@@ -199,6 +199,7 @@ export default function RouteScreen() {
               ))}
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Ver foco na próxima parada"
                 onPress={() => setShowAll(false)}
                 style={styles.toggle}
               >
@@ -239,6 +240,7 @@ export default function RouteScreen() {
               {route.length > 1 ? (
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel="Ver todas as paradas"
                   onPress={() => setShowAll(true)}
                   style={styles.toggle}
                 >
@@ -266,6 +268,8 @@ function createStyles() {
     },
     toggle: {
       alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: touchTarget.min,
       paddingVertical: spacing.md,
       marginHorizontal: spacing.md,
     },

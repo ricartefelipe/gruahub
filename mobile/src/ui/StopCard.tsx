@@ -21,9 +21,18 @@ export function StopCard({ pointName, address, score, onPress }: StopCardProps) 
           ? colors.scoreMed
           : colors.scoreLow;
 
+  const accessibilityLabel = [
+    pointName,
+    score != null ? `pontuação ${score}` : null,
+    address || null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => [
         styles.root,

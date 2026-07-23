@@ -184,6 +184,13 @@ export default function StartVisitScreen() {
           disabled={loading}
           style={styles.cta}
         />
+        <AppButton
+          label="Voltar"
+          variant="ghost"
+          onPress={() => router.back()}
+          disabled={loading}
+          style={styles.back}
+        />
       </ScrollView>
     </Screen>
   );
@@ -224,5 +231,6 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       borderColor: '#fde68a',
     },
     cta: { marginTop: spacing.lg },
+    back: { marginTop: spacing.sm },
   });
 }

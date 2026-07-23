@@ -157,38 +157,6 @@ export default function CompleteVisitScreen() {
             ) : null}
           </View>
 
-          <View style={[styles.section, { backgroundColor: colors.surface }]}>
-            <AppText variant="title" style={styles.sectionTitle}>
-              Reposição de estoque
-            </AppText>
-            <AppText variant="caption" color={colors.textSecondary} style={styles.hint}>
-              Escaneie o QR da máquina para carregar os itens e registrar a reposição (fila offline).
-            </AppText>
-            <AppButton
-              label="Repor estoque (QR)"
-              variant="secondary"
-              onPress={() =>
-                router.push({
-                  pathname: '/qr-scan',
-                  params: { returnTo: 'stock' },
-                })
-              }
-            />
-            {machineId ? (
-              <AppButton
-                label="Usar máquina já identificada"
-                variant="secondary"
-                onPress={() =>
-                  router.push({
-                    pathname: '/stock/replenish',
-                    params: { machineId, visitId, pointName },
-                  })
-                }
-                style={styles.secondaryGap}
-              />
-            ) : null}
-          </View>
-
           <View style={[styles.summary, { backgroundColor: colors.surface }]}>
             <AppText variant="caption" color={colors.textSecondary} style={styles.summaryTitle}>
               Resumo da visita
@@ -247,7 +215,6 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     textarea: { minHeight: 64 },
     hint: { lineHeight: 18, marginBottom: 12 },
     clearMachine: { marginTop: spacing.sm },
-    secondaryGap: { marginTop: 10 },
     summary: {
       margin: spacing.md,
       borderRadius: 12,
