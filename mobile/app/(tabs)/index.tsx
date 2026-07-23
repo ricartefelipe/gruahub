@@ -5,14 +5,12 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
-import { useOfflineBanner } from '../../src/hooks/useOfflineBanner';
 import { apiGet, ApiError } from '../../src/api/apiClient';
 import { loadCachedRoute, saveCachedRoute, CachedRouteStop } from '../../src/db/routeCache';
 import { spacing, touchTarget, useTheme } from '../../src/theme';
 import {
   Screen,
   AppHeader,
-  OfflineBanner,
   ErrorBanner,
   LoadingBlock,
   EmptyState,
@@ -84,7 +82,6 @@ function visitHref(stop: RouteStop) {
 export default function RouteScreen() {
   const { userEmail, accessToken, tenantId, refreshAccessToken, clearAuth } = useAuthStore();
   const { sync } = useSyncQueue();
-  const { message, refresh: refreshBanner } = useOfflineBanner();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(), []);
   const [route, setRoute] = useState<RouteStop[]>([]);
@@ -152,9 +149,8 @@ export default function RouteScreen() {
     setRefreshing(true);
     await sync();
     await loadRoute();
-    await refreshBanner();
     setRefreshing(false);
-  }, [sync, loadRoute, refreshBanner]);
+  }, [sync, loadRoute]);
 
   const { next, rest } = splitRouteStops(route);
 
@@ -165,7 +161,6 @@ export default function RouteScreen() {
   return (
     <Screen>
       <AppHeader title="GruaHub" subtitle={userEmail || 'Operador'} />
-      <OfflineBanner message={message} />
       {error ? <ErrorBanner message={error} /> : null}
 
       {loading ? (

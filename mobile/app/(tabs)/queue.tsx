@@ -1,18 +1,19 @@
 /**
- * Tela de Fila de Sincronização — exibe status das operações offline.
- * Suporta todos os 5 estados: PENDING, SYNCING, SYNCED, FAILED_RETRYABLE, FAILED_PERMANENT.
- * Oferece botão de retry manual para FAILED_PERMANENT.
+ * Tela de Fila de Sincronização — estados claros, filtros e retry manual.
+ * PENDING | SYNCING | SYNCED | FAILED_RETRYABLE | FAILED_PERMANENT
  */
 
 import {
-  View, Text, FlatList, StyleSheet,
+  View, FlatList, StyleSheet, Pressable,
   RefreshControl, Alert,
 } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getDb, retryManual } from '../../src/db/offlineQueue';
 import { useSyncQueue } from '../../src/hooks/useSyncQueue';
-import { ThemeColors, spacing, useTheme } from '../../src/theme';
-import { AppHeader, SyncQueueRow, Screen } from '../../src/ui';
+import { ThemeColors, spacing, radius, touchTarget, useTheme } from '../../src/theme';
+import {
+  AppHeader, SyncQueueRow, Screen, EmptyState, AppButton, AppText,
+} from '../../src/ui';
 
 interface QueueEntry {
   id: string;
@@ -26,20 +27,22 @@ interface QueueEntry {
   nextRetryAt: string | null;
 }
 
+type FilterKey = 'all' | 'waiting' | 'failed';
+
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:           { label: 'Pendente',        color: '#92400e', bg: '#fef3c7' },
-  SYNCING:           { label: 'Sincronizando',   color: '#1e40af', bg: '#dbeafe' },
-  SYNCED:            { label: 'Sincronizado',    color: '#166534', bg: '#dcfce7' },
-  FAILED_RETRYABLE:  { label: 'Falha (retry)',   color: '#c2410c', bg: '#ffedd5' },
-  FAILED_PERMANENT:  { label: 'Falha permanente',color: '#991b1b', bg: '#fee2e2' },
+  PENDING:           { label: 'Pendente',         color: '#92400e', bg: '#fef3c7' },
+  SYNCING:           { label: 'Sincronizando',    color: '#1e40af', bg: '#dbeafe' },
+  SYNCED:            { label: 'Sincronizado',     color: '#166534', bg: '#dcfce7' },
+  FAILED_RETRYABLE:  { label: 'Nova tentativa',   color: '#c2410c', bg: '#ffedd5' },
+  FAILED_PERMANENT:  { label: 'Falha permanente', color: '#991b1b', bg: '#fee2e2' },
 };
 
 const STATUS_LABELS_DARK: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:           { label: 'Pendente',        color: '#fde68a', bg: '#78350f' },
-  SYNCING:           { label: 'Sincronizando',   color: '#93c5fd', bg: '#1e3a8a' },
-  SYNCED:            { label: 'Sincronizado',    color: '#86efac', bg: '#14532d' },
-  FAILED_RETRYABLE:  { label: 'Falha (retry)',   color: '#fdba74', bg: '#7c2d12' },
-  FAILED_PERMANENT:  { label: 'Falha permanente',color: '#fca5a5', bg: '#7f1d1d' },
+  PENDING:           { label: 'Pendente',         color: '#fde68a', bg: '#78350f' },
+  SYNCING:           { label: 'Sincronizando',    color: '#93c5fd', bg: '#1e3a8a' },
+  SYNCED:            { label: 'Sincronizado',     color: '#86efac', bg: '#14532d' },
+  FAILED_RETRYABLE:  { label: 'Nova tentativa',   color: '#fdba74', bg: '#7c2d12' },
+  FAILED_PERMANENT:  { label: 'Falha permanente', color: '#fca5a5', bg: '#7f1d1d' },
 };
 
 const OP_LABELS: Record<string, string> = {
@@ -62,21 +65,45 @@ function formatDate(iso: string | null) {
 
 function buildSubtitle(item: QueueEntry): string {
   const parts = [
-    `ID: ${item.clientOperationId.slice(0, 8)}…`,
     `Criado: ${formatDate(item.createdAt)}`,
   ];
   if (item.syncedAt) parts.push(`Sync: ${formatDate(item.syncedAt)}`);
   if (item.retryCount > 0) parts.push(`Tentativas: ${item.retryCount}`);
   if (item.nextRetryAt && item.status === 'FAILED_RETRYABLE') {
-    parts.push(`Próx. retry: ${formatDate(item.nextRetryAt)}`);
+    parts.push(`Próxima tentativa: ${formatDate(item.nextRetryAt)}`);
   }
-  if (item.errorMessage) parts.push(item.errorMessage);
+  if (item.status === 'FAILED_PERMANENT') {
+    parts.push(
+      item.errorMessage
+        ? `Erro: ${item.errorMessage}`
+        : 'Não será reenviada automaticamente. Use Re-tentar se o problema foi corrigido.',
+    );
+  } else if (item.errorMessage) {
+    parts.push(item.errorMessage);
+  }
   return parts.join(' · ');
+}
+
+function matchesFilter(status: string, filter: FilterKey): boolean {
+  switch (filter) {
+    case 'all':
+      return true;
+    case 'waiting':
+      return status === 'PENDING' || status === 'SYNCING' || status === 'FAILED_RETRYABLE';
+    case 'failed':
+      return status === 'FAILED_RETRYABLE' || status === 'FAILED_PERMANENT';
+    default: {
+      const _exhaustive: never = filter;
+      return _exhaustive;
+    }
+  }
 }
 
 export default function QueueScreen() {
   const [entries, setEntries] = useState<QueueEntry[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [filter, setFilter] = useState<FilterKey>('all');
   const [stats, setStats] = useState({
     pending: 0, syncing: 0, synced: 0, failedRetryable: 0, failedPermanent: 0,
   });
@@ -109,11 +136,23 @@ export default function QueueScreen() {
     const s = { pending: 0, syncing: 0, synced: 0, failedRetryable: 0, failedPermanent: 0 };
     for (const r of statRows) {
       switch (r.status) {
-        case 'PENDING':          s.pending = r.count; break;
-        case 'SYNCING':          s.syncing = r.count; break;
-        case 'SYNCED':           s.synced = r.count; break;
-        case 'FAILED_RETRYABLE': s.failedRetryable = r.count; break;
-        case 'FAILED_PERMANENT': s.failedPermanent = r.count; break;
+        case 'PENDING':
+          s.pending = r.count;
+          break;
+        case 'SYNCING':
+          s.syncing = r.count;
+          break;
+        case 'SYNCED':
+          s.synced = r.count;
+          break;
+        case 'FAILED_RETRYABLE':
+          s.failedRetryable = r.count;
+          break;
+        case 'FAILED_PERMANENT':
+          s.failedPermanent = r.count;
+          break;
+        default:
+          break;
       }
     }
     setStats(s);
@@ -121,17 +160,26 @@ export default function QueueScreen() {
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
 
+  const runSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await sync();
+      await loadEntries();
+    } finally {
+      setSyncing(false);
+    }
+  }, [sync, loadEntries]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await sync();
-    await loadEntries();
+    await runSync();
     setRefreshing(false);
-  }, [sync, loadEntries]);
+  }, [runSync]);
 
   async function handleRetry(id: string) {
     Alert.alert(
       'Tentar novamente?',
-      'A operação será re-enfileirada e sincronizada na próxima oportunidade.',
+      'A operação volta para a fila e será enviada na próxima sincronização.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -139,54 +187,89 @@ export default function QueueScreen() {
           onPress: async () => {
             await retryManual(id);
             await loadEntries();
+            await runSync();
           },
         },
       ]
     );
   }
 
-  const statKeys: Array<{ key: string; label: string; value: number }> = [
-    { key: 'pending',         label: 'Pendente',      value: stats.pending },
-    { key: 'syncing',         label: 'Sync…',         value: stats.syncing },
-    { key: 'synced',          label: 'Sincronizado',  value: stats.synced },
-    { key: 'failedRetryable', label: 'Retry',         value: stats.failedRetryable },
-    { key: 'failedPermanent', label: 'Permanente',    value: stats.failedPermanent },
+  const waitingCount = stats.pending + stats.syncing + stats.failedRetryable;
+  const failedCount = stats.failedRetryable + stats.failedPermanent;
+
+  const filtered = useMemo(
+    () => entries.filter((e) => matchesFilter(e.status, filter)),
+    [entries, filter],
+  );
+
+  const filters: Array<{ key: FilterKey; label: string; count: number }> = [
+    { key: 'all', label: 'Todas', count: entries.length },
+    { key: 'waiting', label: 'Aguardando', count: waitingCount },
+    { key: 'failed', label: 'Falhas', count: failedCount },
   ];
-  const statusForKey: Record<string, string> = {
-    pending: 'PENDING', syncing: 'SYNCING', synced: 'SYNCED',
-    failedRetryable: 'FAILED_RETRYABLE', failedPermanent: 'FAILED_PERMANENT',
-  };
 
   return (
     <Screen>
       <AppHeader
-        title="Fila de Sincronização"
-        subtitle="Puxe para forçar sincronização"
+        title="Fila de sincronização"
+        subtitle="Operações salvas no aparelho até o envio ao servidor"
       />
 
-      <View style={styles.statsBar}>
-        {statKeys.map(({ key, label, value }) => {
-          const meta = statusLabels[statusForKey[key]] ??
-            { label, color: colors.text, bg: colors.background };
+      <View style={styles.toolbar}>
+        <AppButton
+          label={syncing ? 'Sincronizando…' : 'Sincronizar agora'}
+          onPress={() => { void runSync(); }}
+          loading={syncing}
+          style={styles.syncBtn}
+        />
+        <AppText variant="caption" color={colors.textMuted}>
+          {waitingCount > 0
+            ? `${waitingCount} aguardando envio`
+            : failedCount > 0
+              ? `${failedCount} com falha — revise abaixo`
+              : 'Tudo sincronizado'}
+        </AppText>
+      </View>
+
+      <View style={styles.filterBar}>
+        {filters.map(({ key, label, count }) => {
+          const active = filter === key;
           return (
-            <View key={key} style={[styles.statChip, { backgroundColor: meta.bg }]}>
-              <Text style={[styles.statCount, { color: meta.color }]}>{value}</Text>
-              <Text style={[styles.statLabel, { color: meta.color }]}>{label}</Text>
-            </View>
+            <Pressable
+              key={key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`Filtro ${label}`}
+              onPress={() => setFilter(key)}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: active ? colors.primary : colors.surface,
+                  borderColor: active ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <AppText
+                variant="caption"
+                color={active ? colors.headerText : colors.text}
+              >
+                {label} ({count})
+              </AppText>
+            </Pressable>
           );
         })}
       </View>
 
       <FlatList
-        data={entries}
-        keyExtractor={item => item.id}
+        data={filtered}
+        keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         renderItem={({ item }) => {
           const statusMeta = statusLabels[item.status] ??
             { label: item.status, color: colors.text, bg: colors.background };
-          const isPermanent = item.status === 'FAILED_PERMANENT';
+          const canRetry = item.status === 'FAILED_PERMANENT';
 
           return (
             <SyncQueueRow
@@ -195,14 +278,27 @@ export default function QueueScreen() {
               statusColor={statusMeta.color}
               statusBg={statusMeta.bg}
               subtitle={buildSubtitle(item)}
-              onRetry={isPermanent ? () => handleRetry(item.id) : undefined}
+              onRetry={canRetry ? () => handleRetry(item.id) : undefined}
             />
           );
         }}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>Nenhuma operação na fila.</Text>
-          </View>
+          <EmptyState
+            title={
+              filter === 'failed'
+                ? 'Nenhuma falha na fila'
+                : filter === 'waiting'
+                  ? 'Nada aguardando envio'
+                  : 'Fila vazia'
+            }
+            description={
+              filter === 'all'
+                ? 'As operações feitas offline aparecem aqui até sincronizarem.'
+                : 'Puxe para atualizar ou toque em Sincronizar agora.'
+            }
+            actionLabel="Sincronizar agora"
+            onAction={() => { void runSync(); }}
+          />
         }
         contentContainerStyle={styles.list}
       />
@@ -212,19 +308,29 @@ export default function QueueScreen() {
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    statsBar: {
-      flexDirection: 'row',
-      gap: 6,
-      padding: 10,
+    toolbar: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
       backgroundColor: colors.surface,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    statChip: { flex: 1, borderRadius: 8, padding: 7, alignItems: 'center' },
-    statCount: { fontSize: 16, fontWeight: 'bold' },
-    statLabel: { fontSize: 9, marginTop: 1, textAlign: 'center' },
+    syncBtn: { alignSelf: 'stretch' },
+    filterBar: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    filterChip: {
+      minHeight: touchTarget.min,
+      paddingHorizontal: spacing.md,
+                  borderRadius: radius.full,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     list: { paddingVertical: spacing.sm, flexGrow: 1 },
-    empty: { padding: 40, alignItems: 'center' },
-    emptyText: { color: colors.textMuted, fontSize: 15 },
   });
 }
