@@ -15,6 +15,7 @@
 
 ## Limitações Técnicas do MVP
 
+- **CI remoto (GitHub Actions):** Jobs do PR podem falhar sem executar se billing/spending limit da conta bloquear Actions. Enquanto isso, use `./scripts/ci-local.sh` (contracts + simulators + firmware por padrão).
 - **Outbox via polling:** Latência de até 1s entre evento de domínio e publicação. Suficiente para demonstração; em produção substituir por CDC (Debezium) ou Kafka.
 - **Push nativo FCM direto:** Entrega via Expo Push Service (`GRUAHUB_PUSH_PROVIDER=expo` + registry `device_token`). Sem Firebase service account próprio no backend (caminho Expo).
 - **SMS / e-mail:** Não implementados no MVP.
