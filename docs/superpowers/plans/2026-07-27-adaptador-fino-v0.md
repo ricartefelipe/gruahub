@@ -48,7 +48,7 @@
 - [x] Reescrever `docs/MQTT_CONTRACT.md` para tópicos `v1/{tenantId}/machines/{machineId}/...`, envelope real (`messageId`, `schemaVersion`, `occurredAt`, …) e comando no formato `GenericMqttAdapter`.
 - [x] Apontar exemplos em `contracts/mqtt/examples/` e política ACL.
 - [x] Garantir que README linka o guia de hardware sem expandir escopo de produto.
-- [ ] Commit: `docs: alinhar contrato MQTT e guia do adaptador fino`
+- [x] Commit: `docs: alinhar contrato MQTT e guia do adaptador fino`
 
 ---
 
