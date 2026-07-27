@@ -47,8 +47,28 @@ O backend em profile `prod` **recusa subir** se sandbox estiver ligado ou se o p
 - [ ] PITR
 - [ ] NF-e SEFAZ real
 
+## Hardware — Adaptador Fino (bancada / piloto)
+
+Pré-requisitos: firmware em `firmware/adaptador-fino/`, guia `docs/HARDWARE_ADAPTER.md`.
+
+- [ ] Flash ESP32 (`pio run -t upload`) com env `esp32dev` ou `esp32c3`
+- [ ] Provisionar NVS via Serial ou `scripts/provision-adaptador-nvs.sh` (sem commit de segredos)
+- [ ] LED/relé no `CREDIT_OUT` (GPIO 26 default)
+- [ ] Heartbeat → máquina ONLINE no dashboard
+- [ ] Sandbox/Pix → `GRANT_CREDIT` → N pulsos observados
+- [ ] `CREDIT_RECEIVED` / crédito ACK no backend
+- [ ] Reenvio do mesmo `commandId` → sem segundo pulso (idempotência)
+- [ ] Comando com TTL expirado → `REJECTED`, sem pulso
+- [ ] Reconexão Wi‑Fi / MQTT após queda breve
+- [ ] Sem `PLAY_IN`: modo ACK-only (sem inventar `PLAY_STARTED`)
+- [ ] Com `PLAY_IN` (se harness tiver): borda gera `PLAY_STARTED` / `PLAY_COMPLETED`
+- [ ] Field-swap: desplug harness → outro DevKit provisionado → ONLINE
+- [ ] BOM sem display / USB host / multi-I/O reserva
+
 ## Referências
 
 - `docs/DEPLOYMENT.md` — Compose prod-like, LE, backup
 - `docs/COMMERCIAL_READINESS.md` — gaps comerciais
 - `docs/SECURITY.md` — sandbox e segredos
+- `docs/HARDWARE_ADAPTER.md` — adaptador fino
+- `firmware/adaptador-fino/README.md` — build e provisionamento

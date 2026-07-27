@@ -42,11 +42,41 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [ ] SMS/e-mail
 - [ ] FCM Google nativo (service account próprio); hoje a entrega é via Expo Push Service
 - [ ] Vault / AWS Secrets Manager com rotação (hoje: `.env` + `*_FILE`)
-- [ ] Pagamento real / hardware físico / adaptadores de controlador
+- [ ] Pagamento real (1 adquirente Pix em tenant piloto)
+- [ ] Hardware físico — Adaptador Fino v0 (pulse); ver `docs/HARDWARE_ADAPTER.md` e plano `docs/superpowers/plans/2026-07-27-adaptador-fino-v0.md`
+- [x] Firmware `firmware/adaptador-fino/` (heartbeat + GRANT_CREDIT idempotente + ACK) — build `esp32dev` OK
+- [x] Provisionamento NVS de lab (`scripts/provision-adaptador-nvs.sh` + Serial)
+- [ ] E2E bancada com hardware físico (checklist em `docs/PILOT_CHECKLIST.md`)
+- [ ] Piloto 3–10 máquinas com harness (não PCB all-in-one)
+- [ ] Adaptador vendor real (Eletek/Sega) — P1 após pulse
 - [ ] Escala horizontal (outbox polling, locks in-memory, rate-limit in-memory)
 - [ ] PITR / retenção S3 automatizada no job de backup; alerta Kuma pré-configurado no compose
+
+## Hardware — backlog priorizado
+
+### P0
+
+- [x] Spec Adaptador Fino v0 (`docs/superpowers/specs/2026-07-27-adaptador-fino-v0-design.md`)
+- [x] Plano/backlog (`docs/superpowers/plans/2026-07-27-adaptador-fino-v0.md`)
+- [x] Guia operacional (`docs/HARDWARE_ADAPTER.md`) + contrato MQTT alinhado a `v1/...`
+- [x] Scaffold firmware Pulse + GRANT_CREDIT idempotente
+- [x] Provisionamento NVS lab
+- [ ] E2E bancada (EMQX + backend + pulso físico)
+- [ ] 1 Pix real (PR payments) + piloto 3–10 máquinas
+
+### P1
+
+- [ ] Harness por fabricante (SKU de cabo)
+- [ ] Vendor adapter com protocolo real
+- [ ] Provisionamento QR + bind mobile
+- [ ] TLS MQTT + ACL por device em produção
+- [ ] Dashboard operacional crédito/mismatch
+
+### Rejeitado (anti all-in-one)
+
+Display na placa GruaHub, USB host genérico, multi-relé/optos “reserva”, lógica de preço no firmware, bornes de parafuso como interface principal.
 
 ## Fora do MVP (comercial longo)
 
 Ver `docs/COMMERCIAL_READINESS.md` e `docs/KNOWN_LIMITATIONS.md`:
-adquirente real, NF-e, Kafka/K8s, roteirização geoespacial, PCI/pen-test, SLA.
+adquirente real (além do piloto), NF-e, Kafka/K8s, roteirização geoespacial, PCI/pen-test, SLA, PCB própria, OTA.
