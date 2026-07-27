@@ -6,6 +6,8 @@ Hardware: o sistema fica no cloud; o device é um **Adaptador Fino** (MQTT + cr�
 
 Checks locais (quando Actions remoto estiver indisponível): `./scripts/ci-local.sh`
 
+Diagnóstico para sócios (PDF): [docs/diagnostico/GruaHub-Diagnostico-Executivo.pdf](docs/diagnostico/GruaHub-Diagnostico-Executivo.pdf) — regenerar com `python3 scripts/generate-diagnostico-pdf.py`.
+
 ## Componentes
 
 | Componente | Stack | Porta |
