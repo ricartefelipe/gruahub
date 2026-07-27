@@ -2,7 +2,7 @@
 
 ## Fora do Escopo do MVP (por design)
 
-- **Hardware real:** Nenhum firmware flashável no monorepo ainda. O simulador substitui hardware no MVP. Direção de produto: Adaptador Fino (pulse DevKit + harness), não placa all-in-one — ver `docs/HARDWARE_ADAPTER.md`.
+- **Hardware real:** Firmware Pulse Adapter em `firmware/adaptador-fino/` (PlatformIO). Sem PCB própria; DevKit + harness. Validação E2E em máquina física ainda aberta — ver `docs/HARDWARE_ADAPTER.md`.
 - **Pagamento real:** Apenas `SandboxPaymentProvider`. Sem integração real com Mercado Pago, PagSeguro, Stone, Pixmaq ou Vendpago. Não há captura de PAN, CVV ou dados brutos de cartão.
 - **Emissão fiscal SEFAZ:** Sem NF-e/NFC-e/NFS-e reais. Há apenas registry stub (`fiscal_document`) + PDF com aviso “não fiscal”.
 - **Contabilidade completa:** Sem razão contábil, plano de contas ou conciliação bancária.
@@ -39,6 +39,7 @@ Consulte `docs/TASKS.md` (estado real) e `docs/MVP_READINESS.md`.
 | Frontend Web Next.js 14 | ✅ Completo |
 | App Mobile Expo 51 | ✅ Completo |
 | Simuladores (máquina + pagamento) | ✅ Completo |
+| Firmware Adaptador Fino (Pulse) | ✅ Build esp32dev; E2E físico aberto |
 | Seed demonstrativo | ✅ Completo |
 | Testes unitários (mobile, 17/17) | ✅ Completo |
 | Testes de integração (backend) | ✅ Completo |

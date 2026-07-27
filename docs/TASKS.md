@@ -44,8 +44,9 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [ ] Vault / AWS Secrets Manager com rotação (hoje: `.env` + `*_FILE`)
 - [ ] Pagamento real (1 adquirente Pix em tenant piloto)
 - [ ] Hardware físico — Adaptador Fino v0 (pulse); ver `docs/HARDWARE_ADAPTER.md` e plano `docs/superpowers/plans/2026-07-27-adaptador-fino-v0.md`
-- [ ] Firmware `firmware/adaptador-fino/` (heartbeat + GRANT_CREDIT idempotente + ACK)
-- [ ] Provisionamento NVS de lab + checklist de bancada E2E
+- [x] Firmware `firmware/adaptador-fino/` (heartbeat + GRANT_CREDIT idempotente + ACK) — build `esp32dev` OK
+- [x] Provisionamento NVS de lab (`scripts/provision-adaptador-nvs.sh` + Serial)
+- [ ] E2E bancada com hardware físico (checklist em `docs/PILOT_CHECKLIST.md`)
 - [ ] Piloto 3–10 máquinas com harness (não PCB all-in-one)
 - [ ] Adaptador vendor real (Eletek/Sega) — P1 após pulse
 - [ ] Escala horizontal (outbox polling, locks in-memory, rate-limit in-memory)
@@ -58,9 +59,9 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [x] Spec Adaptador Fino v0 (`docs/superpowers/specs/2026-07-27-adaptador-fino-v0-design.md`)
 - [x] Plano/backlog (`docs/superpowers/plans/2026-07-27-adaptador-fino-v0.md`)
 - [x] Guia operacional (`docs/HARDWARE_ADAPTER.md`) + contrato MQTT alinhado a `v1/...`
-- [ ] Scaffold firmware Pulse + GRANT_CREDIT idempotente
-- [ ] Provisionamento NVS lab
-- [ ] E2E bancada (EMQX + backend + pulso)
+- [x] Scaffold firmware Pulse + GRANT_CREDIT idempotente
+- [x] Provisionamento NVS lab
+- [ ] E2E bancada (EMQX + backend + pulso físico)
 - [ ] 1 Pix real (PR payments) + piloto 3–10 máquinas
 
 ### P1

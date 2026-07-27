@@ -66,8 +66,31 @@ Troca de adaptador: desplug harness → plug no novo DevKit provisionado → ONL
 
 ## Firmware
 
-Pasta prevista: `firmware/adaptador-fino/` (ver plano). Até existir, o oráculo de comportamento é `simulators/machine-simulator/`.
+Pasta: `firmware/adaptador-fino/` (PlatformIO + Arduino).
+
+```bash
+cd firmware/adaptador-fino
+pio run -e esp32dev
+pio run -t upload
+# provisionar: scripts/provision-adaptador-nvs.sh /caminho/lab.env
+```
+
+Oráculo de comportamento sem hardware: `simulators/machine-simulator/`.
+
+## Esquema do harness (ASCII)
+
+```
+ ESP32 DevKit                 Harness 4 vias              Máquina
+ ┌──────────┐                ┌────────────┐             ┌────────┐
+ │ GPIO26 ──┼── CREDIT_OUT ──┤ 2          ├─────────────┤ crédito│
+ │ GND    ──┼── GND ─────────┤ 1          ├─────────────┤ GND    │
+ │ GPIOx  ──┼── PLAY_IN ─────┤ 3 (opc.)   ├─────────────┤ ciclo  │
+ │ 5V     ──┼── +5V ─────────┤ 4 (opc.)   ├─────────────┤ 5V     │
+ └──────────┘                └────────────┘             └────────┘
+```
+
+Um SKU de cabo por fabricante; o DevKit permanece genérico.
 
 ## Critérios de aceite do piloto
 
-Ver spec §12. Em resumo: ONLINE, crédito E2E, idempotência, field-swap, BOM sem complexidade PagPlush-like.
+Ver spec §12 e seção Hardware em `docs/PILOT_CHECKLIST.md`.

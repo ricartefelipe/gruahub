@@ -204,6 +204,9 @@ gruahub/
 │   ├── machine-simulator/      # Node/TS — simula heartbeat, jogadas, ACK
 │   └── payment-simulator/      # Node/TS — simula webhooks de pagamento
 │
+├── firmware/
+│   └── adaptador-fino/         # ESP32 Pulse Adapter (PlatformIO)
+│
 ├── infra/
 │   ├── docker-compose.yml      # Serviços + profiles tls/backup/prod-like/simulators
 │   ├── caddy/Caddyfile         # HTTPS local

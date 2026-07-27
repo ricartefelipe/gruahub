@@ -58,12 +58,12 @@
 - Create: `firmware/adaptador-fino/` (PlatformIO **ou** ESP-IDF — escolher um e documentar a escolha no README do firmware)
 - Create: `firmware/adaptador-fino/README.md`
 
-- [ ] Criar projeto com Wi‑Fi + MQTT client + NVS stubs.
-- [ ] Definir GPIO default de `CREDIT_OUT` e opcional `PLAY_IN` via `sdkconfig`/build flags/`platformio.ini`.
-- [ ] Implementar conexão MQTT com `clientId=machine-{machineId}`, subscribe em `.../commands`.
-- [ ] Publicar heartbeat no formato envelope do simulador (`type`/`payload` compatível com backend).
-- [ ] Sem comentários no código-fonte.
-- [ ] Commit: `feat: scaffold firmware do adaptador fino pulse`
+- [x] Criar projeto com Wi‑Fi + MQTT client + NVS stubs.
+- [x] Definir GPIO default de `CREDIT_OUT` e opcional `PLAY_IN` via `sdkconfig`/build flags/`platformio.ini`.
+- [x] Implementar conexão MQTT com `clientId=machine-{machineId}`, subscribe em `.../commands`.
+- [x] Publicar heartbeat no formato envelope do simulador (`type`/`payload` compatível com backend).
+- [x] Sem comentários no código-fonte.
+- [x] Commit: `feat: scaffold firmware do adaptador fino pulse`
 
 ---
 
@@ -73,13 +73,13 @@
 - Modify: fontes em `firmware/adaptador-fino/`
 - Test: bancada com LED no lugar do relé; opcionalmente EMQX local + backend demo
 
-- [ ] Parsear comando `GRANT_CREDIT` (envelope Generic **e** payload flat do exemplo JSON — aceitar o que o backend realmente publica; espelhar parser do simulador).
-- [ ] Respeitar `ttlSeconds`.
-- [ ] Idempotência por `commandId` (NVS ou RAM com persistência mínima).
-- [ ] Gerar `playsGranted` pulsos (`pulseMs` / `pulseGapMs` configuráveis).
-- [ ] Publicar `command_ack` em `.../command-acks` com `commandType`, `creditGrantId`, `success`.
-- [ ] Teste manual: publicar comando no EMQX → N pulsos → ACK.
-- [ ] Commit: `feat: grant credit idempotente no adaptador fino`
+- [x] Parsear comando `GRANT_CREDIT` (envelope Generic **e** payload flat do exemplo JSON — aceitar o que o backend realmente publica; espelhar parser do simulador).
+- [x] Respeitar `ttlSeconds`.
+- [x] Idempotência por `commandId` (NVS ou RAM com persistência mínima).
+- [x] Gerar `playsGranted` pulsos (`pulseMs` / `pulseGapMs` configuráveis).
+- [x] Publicar `command_ack` em `.../command-acks` com `commandType`, `creditGrantId`, `success`.
+- [ ] Teste manual: publicar comando no EMQX → N pulsos → ACK (requer hardware; checklist pronto).
+- [x] Commit: `feat: grant credit idempotente no adaptador fino`
 
 ---
 
@@ -89,11 +89,11 @@
 - Modify: `firmware/adaptador-fino/`
 - Reference: `simulators/machine-simulator/src/index.ts`
 
-- [ ] Se `PLAY_IN` configurado: emitir `play_started` / `play_completed` (ou tipos que o backend já normaliza — validar em `MqttMessageProcessor`).
-- [ ] Se não houver `PLAY_IN`: documentar modo ACK-only; não inventar jogadas falsas.
-- [ ] `error_report` em falha de config/atuador.
-- [ ] `firmwareVersion` estável no heartbeat (semver `0.1.0-pulse`).
-- [ ] Commit: `feat: telemetria e erros no adaptador fino`
+- [x] Se `PLAY_IN` configurado: emitir `play_started` / `play_completed` (ou tipos que o backend já normaliza — validar em `MqttMessageProcessor`).
+- [x] Se não houver `PLAY_IN`: documentar modo ACK-only; não inventar jogadas falsas.
+- [x] `error_report` em falha de config/atuador.
+- [x] `firmwareVersion` estável no heartbeat (semver `0.1.0-pulse`).
+- [x] Commit: `feat: telemetria e erros no adaptador fino`
 
 ---
 
@@ -103,10 +103,10 @@
 - Create: `scripts/provision-adaptador-nvs.sh` (ou ferramenta serial documentada)
 - Modify: `firmware/adaptador-fino/README.md`
 
-- [ ] Script/procedimento que grava `tenantId`, `machineId`, Wi‑Fi, MQTT user/pass, timings de pulso.
-- [ ] Checklist: criar controller/machine no dashboard → flash → NVS → ONLINE.
-- [ ] Credenciais de exemplo só para lab; nunca commit de segredos reais.
-- [ ] Commit: `feat: provisionamento NVS do adaptador fino`
+- [x] Script/procedimento que grava `tenantId`, `machineId`, Wi‑Fi, MQTT user/pass, timings de pulso.
+- [x] Checklist: criar controller/machine no dashboard → flash → NVS → ONLINE.
+- [x] Credenciais de exemplo só para lab; nunca commit de segredos reais.
+- [x] Commit: `feat: provisionamento NVS do adaptador fino`
 
 ---
 
@@ -116,11 +116,11 @@
 - Modify: `docs/HARDWARE_ADAPTER.md` (fotos/esquema ASCII do cabo, tabela por fabricante genérico)
 - Optional: `docs/PILOT_CHECKLIST.md` (itens de hardware)
 
-- [ ] Montar DevKit + opto/relé + LED de prova.
+- [ ] Montar DevKit + opto/relé + LED de prova (campo / lab físico).
 - [ ] Medir largura de pulso; ajustar defaults.
 - [ ] Rodar fluxo E2E: sandbox Pix (ou payment simulator) → outbox → MQTT → pulso → ACK → UI ONLINE/crédito.
-- [ ] Registrar no checklist: idempotência, timeout TTL, reconexão Wi‑Fi.
-- [ ] Commit: `docs: checklist de bancada do adaptador fino`
+- [x] Registrar no checklist: idempotência, timeout TTL, reconexão Wi‑Fi.
+- [x] Commit: `docs: checklist de bancada do adaptador fino`
 
 ---
 

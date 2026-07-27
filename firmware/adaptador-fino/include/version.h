@@ -1,0 +1,21 @@
+#pragma once
+
+#define ADAPTADOR_FIRMWARE_VERSION FIRMWARE_VERSION
+
+#ifndef CREDIT_OUT_GPIO
+#define CREDIT_OUT_GPIO 26
+#endif
+
+#ifndef PLAY_IN_GPIO
+#define PLAY_IN_GPIO -1
+#endif
+
+#ifndef MQTT_BUFFER_SIZE
+#define MQTT_BUFFER_SIZE 1024
+#endif
+
+#define HEARTBEAT_INTERVAL_MS 30000
+#define WIFI_RETRY_MS 5000
+#define MQTT_RETRY_MS 3000
+#define IDEMPOTENCY_SLOTS 32
+#define SERIAL_LINE_MAX 512
