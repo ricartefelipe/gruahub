@@ -2,6 +2,8 @@
 
 Plataforma B2B multi-tenant para gestão de máquinas de pelúcia e gruas: telemetria IoT, pagamentos, jogadas, estoque, visitas de campo e portal de parceiros.
 
+Hardware: o sistema fica no cloud; o device é um **Adaptador Fino** (MQTT + crédito), não uma placa all-in-one. Ver [docs/HARDWARE_ADAPTER.md](docs/HARDWARE_ADAPTER.md) e o contrato [docs/MQTT_CONTRACT.md](docs/MQTT_CONTRACT.md).
+
 ## Componentes
 
 | Componente | Stack | Porta |

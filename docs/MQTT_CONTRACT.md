@@ -1,164 +1,173 @@
 # GruaHub — Contrato MQTT v1
 
 O contrato completo em JSON Schema está em `contracts/mqtt/schema-v1.json`.
-Este documento é a referência em prosa.
+A política de tópicos e ACL está em `contracts/mqtt/broker-policy-v1.json`.
+Exemplos validados pelo CI: `contracts/mqtt/examples/`.
+Comportamento de referência do device: `simulators/machine-simulator/`.
+Hardware fino: `docs/HARDWARE_ADAPTER.md` e `docs/superpowers/specs/2026-07-27-adaptador-fino-v0-design.md`.
 
 ## Broker
 
-| Ambiente    | Host          | Porta     | TLS  |
-|-------------|---------------|-----------|------|
-| Local (dev) | localhost     | 1883      | não  |
-| Produção    | emqx.gruahub  | 8883      | sim  |
+| Ambiente | Host | Porta | TLS |
+|----------|------|-------|-----|
+| Local (dev) | localhost | 1883 | não |
+| Produção / piloto público | broker do tenant | 8883 | sim |
 
-## Estrutura de Tópicos
+Autenticação: username/password por cliente MQTT. Em produção, ACL por `machineId`.
+
+## Estrutura de tópicos
+
+Prefixo canônico: **`v1/`** (não usar o prefixo legado `gruahub/`).
 
 ```
-gruahub/{tenantId}/machines/{machineId}/telemetry/heartbeat
-gruahub/{tenantId}/machines/{machineId}/telemetry/play_started
-gruahub/{tenantId}/machines/{machineId}/telemetry/play_completed
-gruahub/{tenantId}/machines/{machineId}/telemetry/error_report
-gruahub/{tenantId}/machines/{machineId}/commands/grant_credit
-gruahub/{tenantId}/machines/{machineId}/commands/ack
+v1/{tenantId}/machines/{machineId}/commands          ← backend → device
+v1/{tenantId}/machines/{machineId}/telemetry         ← device → backend
+v1/{tenantId}/machines/{machineId}/events            ← device → backend
+v1/{tenantId}/machines/{machineId}/status            ← device → backend
+v1/{tenantId}/machines/{machineId}/command-acks      ← device → backend
 ```
 
-**Convenção:**
-- Tópicos `telemetry/*` → publicados pelo dispositivo, consumidos pelo backend
-- Tópicos `commands/*` → publicados pelo backend, consumidos pelo dispositivo
+| Sufixo | Quem publica | Conteúdo típico |
+|--------|--------------|-----------------|
+| `commands` | Backend | `GRANT_CREDIT`, `REBOOT`, `LOCK`, `UNLOCK`, `UPDATE_CONFIG` |
+| `telemetry` | Device | `heartbeat` |
+| `events` | Device | início/fim de jogada |
+| `status` | Device | mudanças de estado |
+| `command-acks` | Device | ACK de comando |
 
-## Envelope Padrão
+`clientId` do device: padrão `machine-{machineId}` (ver `broker-policy-v1.json`).
 
-Todo payload segue o envelope:
+## Envelope padrão (device → backend)
 
 ```json
 {
-  "v": 1,
-  "ts": "2026-07-16T12:00:00Z",
-  "machineId": "uuid-da-maquina",
-  "tenantId":  "uuid-do-tenant",
-  "type":      "heartbeat",
-  "payload":   { ... }
+  "messageId": "uuid",
+  "schemaVersion": 1,
+  "tenantId": "uuid",
+  "machineId": "uuid",
+  "sequence": 1,
+  "type": "heartbeat",
+  "occurredAt": "2026-07-27T12:00:00.000Z",
+  "payload": { }
 }
 ```
 
-| Campo      | Tipo     | Descrição                                 |
-|------------|----------|-------------------------------------------|
-| `v`        | integer  | Versão do protocolo (atualmente 1)        |
-| `ts`       | ISO 8601 | Timestamp UTC do dispositivo              |
-| `machineId`| UUID     | ID da máquina (deve pertencer ao tenant)  |
-| `tenantId` | UUID     | Tenant do dispositivo                     |
-| `type`     | string   | Tipo da mensagem (ver abaixo)             |
-| `payload`  | object   | Payload específico do tipo                |
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `messageId` | UUID | Id da mensagem |
+| `schemaVersion` | int | Sempre `1` |
+| `tenantId` | UUID | Tenant do device |
+| `machineId` | UUID | Máquina associada |
+| `sequence` | int ≥ 0 | Sequência monotônica do device |
+| `type` | string | Tipo da mensagem |
+| `occurredAt` | ISO 8601 | Timestamp UTC |
+| `payload` | object | Corpo específico do tipo |
+| `controllerId` | string | Opcional; usado pelo simulador |
 
-## Tipos de Mensagem
+## Tipos device → backend
 
-### `heartbeat`
-
-Publicado pelo dispositivo a cada `HEARTBEAT_INTERVAL_MS` (padrão: 30 s).
+### `heartbeat` (tópico `telemetry`, QoS 0)
 
 ```json
 {
   "online": true,
   "uptimeSeconds": 3600,
-  "firmwareVersion": "1.2.3",
-  "coinBoxFull": false,
-  "motorFault": false,
-  "prizeDetected": true,
-  "prizeLevelPct": 65,
-  "signalStrength": -72
+  "firmwareVersion": "0.1.0-pulse",
+  "creditsAvailable": 0,
+  "doorOpen": false,
+  "motorFault": false
 }
 ```
 
-O backend atualiza `machine_reported_state` e marca a máquina como ACTIVE.
-Se nenhum heartbeat for recebido em `HEARTBEAT_TIMEOUT_SECONDS` (padrão: 90 s),
-o `HeartbeatTimeoutScheduler` marca a máquina como OFFLINE e cria um alerta.
+Sem heartbeat em `HEARTBEAT_TIMEOUT_SECONDS` (padrão 90 s), o backend marca a máquina OFFLINE.
 
-### `play_started`
+### `play_started` / `PLAY_STARTED` (tópico `events`, QoS 1)
 
-Publicado quando o jogador insere crédito e inicia uma jogada.
+Payload mínimo alinhado ao schema: `creditGrantId`, `playSessionId` (quando aplicável).
+O backend normaliza aliases via `ControllerAdapter`.
+
+### `play_completed` / `PLAY_COMPLETED` (tópico `events`, QoS 1)
+
+Campos: `playSessionId`, `prizeDelivered`, opcionalmente `creditGrantId`, `durationSeconds`.
+
+### `error_report` (QoS 1)
 
 ```json
 {
-  "playId":          "uuid-local",
-  "amountPaidCents": 200,
-  "currency":        "BRL",
-  "paymentMethod":   "CREDIT_SANDBOX"
+  "errorCode": "MOTOR_FAULT",
+  "errorMessage": "opcional",
+  "doorOpen": false,
+  "motorFault": true
 }
 ```
 
-### `play_completed`
-
-Publicado quando a garra pousa (fim da jogada).
+### `command_ack` (tópico `command-acks`, QoS 1)
 
 ```json
 {
-  "playId":   "uuid-local",
-  "outcome":  "WIN",
-  "prizeId":  "uuid-do-premio"
+  "commandId": "uuid",
+  "commandType": "GRANT_CREDIT",
+  "creditGrantId": "uuid",
+  "success": true,
+  "failureReason": null
 }
 ```
 
-`outcome`: `WIN`, `LOSE`, `TIMEOUT`, `ERROR`
+`commandType`: `GRANT_CREDIT` | `REBOOT` | `LOCK` | `UNLOCK` | `UPDATE_CONFIG`.
 
-### `error_report`
+O simulador também emite formas legacy (`CREDIT_RECEIVED`, `COMMAND_ACK`); o processador inbound normaliza. Firmware novo deve preferir `command_ack` + `success` boolean conforme schema/exemplos.
 
-Falha de hardware/firmware.
+## Comando backend → device (`GRANT_CREDIT`)
+
+Publicado em `.../commands` pelo `GenericMqttAdapter`:
 
 ```json
 {
-  "errorCode":    "MOTOR_FAULT",
-  "errorMessage": "Motor X não respondeu",
-  "severity":     "HIGH"
+  "schemaVersion": 1,
+  "messageId": "uuid",
+  "tenantId": "uuid",
+  "machineId": "uuid",
+  "type": "GRANT_CREDIT",
+  "occurredAt": "2026-07-27T12:00:00Z",
+  "payload": {
+    "commandId": "uuid",
+    "creditGrantId": "uuid",
+    "playsGranted": 1,
+    "amountCents": 200,
+    "ttlSeconds": 120
+  }
 }
 ```
 
-O backend cria automaticamente um `alert` e possivelmente um `maintenance_ticket`.
+O device:
 
-### `grant_credit` (comando backend → dispositivo)
+1. Ignora se `ttlSeconds` expirou.
+2. Trata `commandId` como chave de idempotência.
+3. Aplica `playsGranted` créditos/pulsos.
+4. Responde em `command-acks`.
 
-```json
-{
-  "commandId":       "uuid-do-comando",
-  "credits":         1,
-  "paymentTransactionId": "uuid-da-transacao"
-}
-```
-
-O dispositivo executa o crédito e responde com `command_ack`.
-
-### `command_ack`
-
-```json
-{
-  "commandId": "uuid-do-comando",
-  "status":    "EXECUTED",
-  "message":   null
-}
-```
-
-`status`: `EXECUTED`, `REJECTED`, `TIMEOUT`
+Exemplo flat (schema `grant_credit_command`) também existe em `contracts/mqtt/examples/grant_credit_command.json` para validação; o payload **publicado em runtime** é o envelope do adapter acima.
 
 ## QoS
 
-| Direção               | QoS | Justificativa                              |
-|-----------------------|-----|--------------------------------------------|
-| heartbeat             | 0   | Tolerante à perda; próximo heartbeat corrige|
-| play_started          | 1   | Ao menos uma entrega; idempotente pelo playId|
-| play_completed        | 1   | Ao menos uma entrega; idempotente pelo playId|
-| error_report          | 1   | Ao menos uma entrega                       |
-| grant_credit (cmd)    | 1   | Ao menos uma entrega; dispositivo verifica commandId|
-| command_ack           | 1   | Ao menos uma entrega                       |
+| Mensagem | QoS | Nota |
+|----------|-----|------|
+| heartbeat | 0 | Próximo heartbeat corrige perda |
+| events financeiros / jogada | 1 | Idempotência na aplicação |
+| error_report | 1 | |
+| commands | 1 | |
+| command-acks | 1 | |
 
-## ACL (Produção)
+## ACL (produção)
 
-```
-# Backend
-allow gruahub/+/machines/+/# subscribe
-allow gruahub/+/machines/+/commands/# publish
+Conforme `broker-policy-v1.json`:
 
-# Dispositivo (por machineId)
-allow gruahub/{tenantId}/machines/{machineId}/telemetry/# publish
-allow gruahub/{tenantId}/machines/{machineId}/commands/# subscribe
-deny #
-```
+- Backend: subscribe/publish em `v1/#` (client dedicado).
+- Device: subscribe só em `v1/{tenantId}/machines/{machineId}/commands`; publish só nos sufixos da própria máquina.
+- Device não publica/subscreve tópicos de outras máquinas.
 
-Modo local (dev): sem ACL (`emqx_acl.conf` com `{allow, all, all, [\"#\"]}`).
+Dev local: ACL permissiva no Compose (ver `infra/emqx/`).
+
+## Relação com o Adaptador Fino
+
+O adaptador físico é um cliente MQTT igual ao simulador, com GPIO no lugar da simulação de crédito. Não introduz tópicos novos no v0.

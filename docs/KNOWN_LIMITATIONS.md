@@ -2,7 +2,7 @@
 
 ## Fora do Escopo do MVP (por design)
 
-- **Hardware real:** Nenhum firmware, ESP32, Raspberry Pi ou controlador físico é suportado. O simulador substitui hardware no MVP.
+- **Hardware real:** Nenhum firmware flashável no monorepo ainda. O simulador substitui hardware no MVP. Direção de produto: Adaptador Fino (pulse DevKit + harness), não placa all-in-one — ver `docs/HARDWARE_ADAPTER.md`.
 - **Pagamento real:** Apenas `SandboxPaymentProvider`. Sem integração real com Mercado Pago, PagSeguro, Stone, Pixmaq ou Vendpago. Não há captura de PAN, CVV ou dados brutos de cartão.
 - **Emissão fiscal SEFAZ:** Sem NF-e/NFC-e/NFS-e reais. Há apenas registry stub (`fiscal_document`) + PDF com aviso “não fiscal”.
 - **Contabilidade completa:** Sem razão contábil, plano de contas ou conciliação bancária.
@@ -22,7 +22,7 @@
 - **Algoritmo de roteirização geoespacial:** Integração com mapas (Google Maps, OSRM) é opcional e não configurada localmente.
 - **Assinatura digital qualificada:** Confirmação de responsável na visita é simples (checkbox/código), sem certificado digital.
 - **Escalabilidade horizontal do backend:** Monólito modular em instância única. Escalonamento horizontal requer adaptação do outbox e locks distribuídos.
-- **Suporte a múltiplos controladores:** Contrato MQTT genérico. Controladores específicos (Eletek, Sega, etc.) exigem adaptadores não implementados.
+- **Suporte a múltiplos controladores:** Contrato MQTT genérico. Pulse Adapter (HMV) e vendor (Eletek/Sega) seguem o plano do Adaptador Fino; stubs Java existem, protocolo físico ainda aberto.
 - **TLS em produção pública:** HTTPS local via Caddy (`tls internal`) + template `Caddyfile.public.example` para Let's Encrypt. DNS real / cert ACME não são exercitados no CI.
 - **Edge / WAF:** rate-limit leve e bloqueio de paths no Caddy; não substitui WAF comercial nem store distribuído multi-instância.
 - **Backup / DR:** `pg_dump` local + upload S3-compatible opcional + restore drill + runbook em `DEPLOYMENT.md`. Sem PITR; retenção offsite depende de lifecycle do bucket; restore destrutivo é manual.
