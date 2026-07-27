@@ -61,7 +61,8 @@ Estes itens funcionam hoje, sem condicionantes:
 | Otimização de IA/ML | Preditivo de falha, precificação dinâmica |
 | Kubernetes / Kafka | Para escala acima de ~100 máquinas por instância |
 | Carteira digital do jogador | Produto separado (B2C) |
-| Adaptadores por controlador (Eletek, Sega) | Requere parceria técnica com fabricante |
+| Adaptadores por controlador (Eletek, Sega) | Após Pulse Adapter; parceria técnica com fabricante |
+| PCB própria / OTA / 4G embarcado | Só com ROI; HMV continua fino (ver HARDWARE_ADAPTER.md) |
 
 ---
 
@@ -106,14 +107,21 @@ Mês 2 (Notificações + Monitoramento):
   └── Auditoria de penetração (externa)
 
 Mês 3 (Piloto com cliente beta):
-  ├── 1–2 clientes com hardware simulado
+  ├── 1–2 clientes (simulador e/ou Adaptador Fino pulse em bancada)
   ├── Coleta de feedback operacional
   └── Correções críticas de UX
 
-Mês 4–6 (Hardware real):
-  ├── Adaptador para 1 fabricante de controlador
-  ├── Integração com adquirente sandbox
-  └── Testes em campo
+Mês 3–4 (Elo físico mínimo — em paralelo ao piloto):
+  ├── Adaptador Fino v0 (DevKit + harness pulse) — spec em docs/HARDWARE_ADAPTER.md
+  ├── Firmware heartbeat + GRANT_CREDIT idempotente + ACK
+  ├── 1 adquirente Pix real em tenant piloto
+  └── Bancada E2E → 3–10 máquinas em campo
+
+Mês 4–6 (Portabilidade de frota):
+  ├── Harness por fabricante (SKU de cabo, não PCB monstro)
+  ├── 1 adaptador vendor (Eletek/Sega ou equivalente da frota-alvo)
+  ├── TLS MQTT + ACL por device
+  └── Explicitamente fora: display/USB host/all-in-one estilo concorrente
 ```
 
 ---
