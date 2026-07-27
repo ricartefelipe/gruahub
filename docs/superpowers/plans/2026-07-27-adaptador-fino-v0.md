@@ -141,8 +141,8 @@
 
 ## Task 8: Abrir PR (gitflow)
 
-- [ ] `git push -u origin HEAD`
-- [ ] `gh pr create` base `develop`, sem menções a IA, com:
+- [x] `git push -u origin HEAD`
+- [x] `gh pr create` base `develop`, sem menções a IA, com:
   - Summary: spec + plano + docs MQTT/hardware (+ firmware se já nesta branch)
   - Test plan: checklist bancada / simulador / aceite piloto
 - [ ] Apagar branch local/remota após merge (quando o usuário pedir merge)
