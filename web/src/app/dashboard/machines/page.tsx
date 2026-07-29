@@ -101,43 +101,38 @@ export default function MachinesPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 gh-fade-up">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-            Frota
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">Frota</p>
+          <h1 className="font-display mt-1 text-3xl font-bold tracking-tight text-[color:var(--text)] md:text-4xl">
             Máquinas
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="mt-1 text-sm text-[color:var(--text-muted)]">
             Status da frota · atualização automática a cada 30s
           </p>
         </div>
-        <Link
-          href="/dashboard/machines/new"
-          className="inline-flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
+        <Link href="/dashboard/machines/new" className="gh-btn-primary">
           Nova máquina
         </Link>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4" aria-label="Resumo da frota">
-        <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 border-l-4 border-l-emerald-500">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Online</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-50 mt-2 tabular-nums">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Resumo da frota">
+        <div className="gh-metric" style={{ ['--metric-accent' as string]: 'var(--signal)' }}>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-soft)]">Online</p>
+          <p className="font-display mt-2 text-3xl font-bold tabular-nums text-[color:var(--text)]">
             {summary?.online ?? '—'}
           </p>
         </div>
-        <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 border-l-4 border-l-rose-500">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Offline</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-50 mt-2 tabular-nums">
+        <div className="gh-metric" style={{ ['--metric-accent' as string]: 'var(--danger)' }}>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-soft)]">Offline</p>
+          <p className="font-display mt-2 text-3xl font-bold tabular-nums text-[color:var(--text)]">
             {summary?.offline ?? '—'}
           </p>
         </div>
-        <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 border-l-4 border-l-amber-500">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Manutenção</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-50 mt-2 tabular-nums">
+        <div className="gh-metric" style={{ ['--metric-accent' as string]: 'var(--warn)' }}>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-soft)]">Manutenção</p>
+          <p className="font-display mt-2 text-3xl font-bold tabular-nums text-[color:var(--text)]">
             {summary?.maintenance ?? '—'}
           </p>
         </div>
@@ -155,8 +150,8 @@ export default function MachinesPage() {
                 aria-pressed={active}
                 className={
                   active
-                    ? 'rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white'
-                    : 'rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:border-blue-500'
+                    ? 'rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white shadow-brand'
+                    : 'gh-btn-ghost'
                 }
               >
                 {f.label}
@@ -174,7 +169,7 @@ export default function MachinesPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar por nome ou patrimônio"
-          className="w-full sm:w-72 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-xl border border-[color:var(--line)] bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--text)] placeholder:text-[color:var(--text-soft)] focus:outline-none focus:ring-2 focus:ring-brand sm:w-72"
         />
       </div>
 
@@ -188,7 +183,7 @@ export default function MachinesPage() {
           <p className="text-sm text-slate-400 mt-1">Cadastre a primeira máquina para monitorar a frota.</p>
           <Link
             href="/dashboard/machines/new"
-            className="inline-flex mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+            className="gh-btn-primary mt-4"
           >
             Nova máquina
           </Link>

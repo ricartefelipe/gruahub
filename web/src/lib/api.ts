@@ -1,40 +1,32 @@
-/**
- * GruaHub — cliente Axios centralizado
- *
- * Garantias:
- * - Bearer token injetado automaticamente via interceptor
- * - correlationId em toda requisição
- * - Timeout padrão de 15s
- * - RFC 7807 Problem Details parseado em ApiError
- * - 401 global → signOut() sem loop infinito
- * - Nunca silencia erros — lança ApiError tipado
- */
-
 import axios, { AxiosError } from 'axios';
 import { getSession, signOut } from 'next-auth/react';
 
-// ─── Configuração base ────────────────────────────────────────────────────────
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+function resolveApiBase(): string {
+  const configured = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').trim();
+  if (configured === '/api/gh' || configured.startsWith('/api/gh/')) {
+    return '/api/gh';
+  }
+  if (configured.startsWith('/')) {
+    return configured.replace(/\/$/, '');
+  }
+  return `${configured.replace(/\/$/, '')}/api/v1`;
+}
 
 export const apiClient = axios.create({
-  baseURL: `${API_URL}/api/v1`,
+  baseURL: resolveApiBase(),
   timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ─── Request: Bearer + correlationId ─────────────────────────────────────────
-
 apiClient.interceptors.request.use(async (config) => {
   const session = await getSession();
-  if ((session as any)?.accessToken) {
-    config.headers.Authorization = `Bearer ${(session as any).accessToken}`;
+  const accessToken = (session as { accessToken?: string } | null)?.accessToken;
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
   config.headers['X-Correlation-Id'] = crypto.randomUUID();
   return config;
 });
-
-// ─── Response: Problem Details + 401→logout ───────────────────────────────────
 
 let _signingOut = false;
 

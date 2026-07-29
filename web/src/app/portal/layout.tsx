@@ -5,24 +5,18 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
 
-/**
- * Layout do portal do parceiro (ESTABLISHMENT_VIEWER).
- * Separado do dashboard admin — rota /portal.
- * Apenas usuários com role ESTABLISHMENT_VIEWER podem acessar.
- */
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/auth/signin');
+      router.replace('/login');
     }
-    // Se autenticado mas sem role de parceiro, redireciona para o dashboard admin
     if (status === 'authenticated') {
-      const roles: string[] = (session as any)?.roles ?? [];
+      const roles: string[] = (session as { roles?: string[] } | null)?.roles ?? [];
       const allowedRoles = ['ESTABLISHMENT_VIEWER', 'PLATFORM_ADMIN', 'TENANT_ADMIN'];
-      if (!roles.some(r => allowedRoles.includes(r))) {
+      if (!roles.some((r) => allowedRoles.includes(r))) {
         router.replace('/dashboard');
       }
     }
@@ -30,33 +24,34 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+      <div className="flex min-h-screen items-center justify-center gh-atmosphere-ink">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top bar */}
-      <header className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-[color:var(--mist)]">
+      <header className="border-b border-[color:var(--line)] bg-[color:var(--surface)]">
+        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xs font-bold">GH</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-teal-700">
+              <span className="text-xs font-bold text-white">GH</span>
             </div>
             <div>
-              <span className="font-semibold text-gray-900">GruaHub</span>
-              <span className="ml-2 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+              <span className="font-display font-semibold text-[color:var(--text)]">GruaHub</span>
+              <span className="ml-2 rounded-full bg-[color:var(--surface-muted)] px-2 py-0.5 text-xs text-[color:var(--text-soft)]">
                 Portal do Parceiro
               </span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{(session?.user as any)?.email}</span>
+            <span className="text-sm text-[color:var(--text-muted)]">
+              {(session?.user as { email?: string } | undefined)?.email}
+            </span>
             <Link
               href="/api/auth/signout"
-              className="text-sm text-gray-500 hover:text-gray-700 transition"
+              className="text-sm text-[color:var(--text-muted)] transition hover:text-[color:var(--text)]"
             >
               Sair
             </Link>
@@ -64,21 +59,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </div>
       </header>
 
-      {/* Content */}
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        {children}
-      </main>
+      <main className="mx-auto max-w-4xl px-6 py-8">{children}</main>
 
-      {/* Footer */}
-      <footer className="border-t mt-auto">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="text-xs text-gray-400">
+      <footer className="mt-auto border-t border-[color:var(--line)]">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
+          <span className="text-xs text-[color:var(--text-soft)]">
             © {new Date().getFullYear()} GruaHub — Acesso restrito ao parceiro
           </span>
-          <a
-            href="mailto:suporte@gruahub.com.br"
-            className="text-xs text-blue-600 hover:underline"
-          >
+          <a href="mailto:suporte@gruahub.com.br" className="text-xs text-brand hover:underline">
             Suporte
           </a>
         </div>

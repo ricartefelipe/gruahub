@@ -1,12 +1,18 @@
 import type { Metadata } from 'next';
-import localFont from 'next/font/local';
+import { Figtree, Syne } from 'next/font/google';
 import { Providers } from './providers';
 import { themeBootstrapScript } from '@/lib/theme-script';
 import './globals.css';
 
-const inter = localFont({
-  src: '../fonts/InterVariable.woff2',
-  weight: '100 900',
+const syne = Syne({
+  subsets: ['latin'],
+  variable: '--font-syne',
+  display: 'swap',
+});
+
+const figtree = Figtree({
+  subsets: ['latin'],
+  variable: '--font-figtree',
   display: 'swap',
 });
 
@@ -17,11 +23,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning className={`${syne.variable} ${figtree.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
-      <body className={inter.className}>
+      <body className="font-body antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

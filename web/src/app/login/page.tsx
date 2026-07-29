@@ -3,6 +3,11 @@
 import { signIn, useSession } from 'next-auth/react';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { BrandMark } from '@/components/BrandMark';
+import { LoadingScreen } from '@/components/LoadingScreen';
+
+const showDemoCreds =
+  process.env.NEXT_PUBLIC_SANDBOX_ENABLED === 'true' || process.env.NODE_ENV !== 'production';
 
 function LoginErrorBanner() {
   const searchParams = useSearchParams();
@@ -11,7 +16,7 @@ function LoginErrorBanner() {
 
   return (
     <div
-      className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800"
+      className="mb-5 rounded-xl border border-rose-300/60 bg-rose-50 px-4 py-3 text-sm text-rose-800"
       role="alert"
     >
       Não foi possível iniciar o login SSO ({error}). Tente novamente.
@@ -31,58 +36,101 @@ export default function LoginPage() {
   }, [session, router]);
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500">Carregando...</div>
-      </div>
-    );
+    return <LoadingScreen label="Preparando acesso…" />;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">GruaHub</h1>
-          <p className="text-gray-500 mt-2">Plataforma de Gestão de Máquinas</p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden gh-atmosphere-ink text-white">
+      <div className="absolute inset-0 gh-grid opacity-70" aria-hidden="true" />
+      <div
+        className="pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-cyan-400/25 blur-3xl gh-glow"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 right-0 h-96 w-96 translate-x-1/4 translate-y-1/4 rounded-full bg-emerald-400/15 blur-3xl"
+        aria-hidden="true"
+      />
 
-        <Suspense fallback={null}>
-          <LoginErrorBanner />
-        </Suspense>
+      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-between px-6 py-8 md:px-10 lg:px-14">
+        <header className="gh-fade-up flex items-center justify-between gap-4">
+          <BrandMark size="sm" light />
+          <p className="hidden text-xs font-medium uppercase tracking-[0.2em] text-slate-400 sm:block">
+            Operação de frota · IoT
+          </p>
+        </header>
 
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => {
-            setPending(true);
-            void signIn('keycloak', { callbackUrl: '/dashboard' }).finally(() => {
-              setPending(false);
-            });
-          }}
-          className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700
-                     disabled:opacity-60 disabled:cursor-not-allowed
-                     text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          aria-label="Entrar com Keycloak SSO"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          {pending ? 'Redirecionando…' : 'Entrar com SSO'}
-        </button>
+        <main className="grid flex-1 items-center gap-12 py-12 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="gh-fade-up max-w-xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300/90">
+              B2B arcade fleet
+            </p>
+            <h1 className="font-display mt-4 text-5xl font-bold leading-[0.95] tracking-tight text-white md:text-6xl lg:text-7xl">
+              GruaHub
+            </h1>
+            <p className="mt-5 max-w-md text-base leading-relaxed text-slate-300 md:text-lg">
+              Telemetria, pagamentos e visitas de campo numa única operação — pronta para demo e
+              escala piloto.
+            </p>
+            <ul className="mt-8 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <li className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">MQTT live</li>
+              <li className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Multi-tenant</li>
+              <li className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Sandbox Pix</li>
+            </ul>
+          </section>
 
-        {process.env.NODE_ENV !== 'production' && (
-          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-            <p className="font-medium mb-2">⚠ Ambiente de demonstração</p>
-            <div className="space-y-1 text-amber-700">
-              <p><strong>Admin:</strong> admin@gruahub.local</p>
-              <p><strong>Operador:</strong> operador@diversao.demo</p>
-              <p><strong>Parceiro:</strong> parceiro@shoppingbv.demo</p>
-              <p className="mt-1 text-amber-600">Senha: gruahub@2025</p>
+          <section className="gh-fade-up relative">
+            <div className="absolute -inset-px rounded-[1.75rem] bg-gradient-to-br from-cyan-400/40 via-transparent to-emerald-400/30 opacity-80 blur-[1px]" aria-hidden="true" />
+            <div className="relative rounded-[1.7rem] border border-white/10 bg-[#0c1828]/90 p-7 shadow-soft backdrop-blur-md md:p-8">
+              <p className="font-display text-xl font-semibold text-white">Entrar na operação</p>
+              <p className="mt-2 text-sm text-slate-400">
+                Autenticação SSO via Keycloak — mesmo fluxo da demo e do piloto.
+              </p>
+
+              <Suspense fallback={null}>
+                <div className="mt-5">
+                  <LoginErrorBanner />
+                </div>
+              </Suspense>
+
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  setPending(true);
+                  void signIn('keycloak', { callbackUrl: '/dashboard' }).finally(() => {
+                    setPending(false);
+                  });
+                }}
+                className="gh-btn-primary mt-2 w-full py-3.5 text-base"
+                aria-label="Entrar com Keycloak SSO"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                {pending ? 'Redirecionando…' : 'Entrar com SSO'}
+              </button>
+
+              {showDemoCreds ? (
+                <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-4 py-3 text-sm text-slate-300">
+                  <p className="font-semibold text-cyan-200">Demo portfólio</p>
+                  <p className="mt-1 font-mono text-xs text-slate-300">
+                    gestor@diversao.demo · gruahub@2025
+                  </p>
+                </div>
+              ) : null}
             </div>
-          </div>
-        )}
+          </section>
+        </main>
+
+        <footer className="gh-fade-up flex items-center justify-between gap-4 border-t border-white/10 pt-6 text-xs text-slate-500">
+          <span>Frota · pagamentos · campo</span>
+          <span className="tabular-nums">v1 portfolio</span>
+        </footer>
       </div>
     </div>
   );

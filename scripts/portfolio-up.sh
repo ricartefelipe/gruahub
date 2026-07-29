@@ -12,9 +12,18 @@ if [[ ! -f .env ]]; then
 fi
 
 export NEXTAUTH_URL="${NEXTAUTH_URL:-http://${PUBLIC_IP}:9083}"
-export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://${PUBLIC_IP}:8084}"
+export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api/gh}"
 export KEYCLOAK_ISSUER="${KEYCLOAK_ISSUER:-http://${PUBLIC_IP}:8182/realms/gruahub}"
-export GRUAHUB_CORS_ORIGINS="${GRUAHUB_CORS_ORIGINS:-http://${PUBLIC_IP}:9083,http://localhost:9083,http://localhost:3000}"
+export GRUAHUB_CORS_ORIGINS="http://${PUBLIC_IP}:9083,http://localhost:9083,http://localhost:3000"
+export API_INTERNAL_URL="${API_INTERNAL_URL:-http://backend:8080}"
+
+if [[ -f .env ]]; then
+  if grep -q '^GRUAHUB_CORS_ORIGINS=' .env; then
+    sed -i.bak "s|^GRUAHUB_CORS_ORIGINS=.*|GRUAHUB_CORS_ORIGINS=${GRUAHUB_CORS_ORIGINS}|" .env
+  else
+    printf '\nGRUAHUB_CORS_ORIGINS=%s\n' "$GRUAHUB_CORS_ORIGINS" >> .env
+  fi
+fi
 
 echo "==> GruaHub portfolio (web :9083 · API :8084 · Keycloak :8182)"
 docker compose -f docker-compose.yml -f docker-compose.portfolio.yml up -d --build
