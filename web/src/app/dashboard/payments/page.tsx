@@ -113,23 +113,25 @@ export default function PaymentsPage() {
     .reduce((sum, p) => sum + p.amountCents, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-6 gh-fade-up">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pagamentos</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">Financeiro</p>
+          <h1 className="font-display mt-1 text-3xl font-bold tracking-tight text-[color:var(--text)]">
+            Pagamentos
+          </h1>
+          <p className="mt-1 text-sm text-[color:var(--text-muted)]">
             Transações Pix/cartão via provider configurado
           </p>
         </div>
         <div className="flex items-end gap-4">
           <div className="text-right">
-            <div className="text-xs text-gray-500">Total confirmado</div>
-            <div className="text-xl font-bold text-green-600">{fmtMoney(totalConfirmed)}</div>
+            <div className="text-xs text-[color:var(--text-soft)]">Total confirmado</div>
+            <div className="font-display text-xl font-bold text-emerald-600">
+              {fmtMoney(totalConfirmed)}
+            </div>
           </div>
-          <button
-            onClick={() => setShowInitiate(v => !v)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-          >
+          <button type="button" onClick={() => setShowInitiate((v) => !v)} className="gh-btn-primary">
             Iniciar pagamento
           </button>
         </div>

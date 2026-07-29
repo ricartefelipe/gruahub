@@ -38,6 +38,8 @@ cd infra && cp -n .env.example .env
 
 Login demo: `gestor@diversao.demo` / `gruahub@2025`.
 
+A UI do portfólio chama a API via proxy same-origin (`/api/gh`) para evitar CORS no browser; o Swagger continua em `:8084`.
+
 ## Início rápido
 
 ### Pré-requisitos
