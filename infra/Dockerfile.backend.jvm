@@ -1,0 +1,20 @@
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+WORKDIR /build
+COPY pom.xml .
+COPY src ./src
+RUN mvn -B -DskipTests package --no-transfer-progress \
+ && test -f target/quarkus-app/quarkus-run.jar
+
+FROM eclipse-temurin:21-jre-alpine
+RUN addgroup -S gruahub && adduser -S gruahub -G gruahub
+USER gruahub
+WORKDIR /app
+COPY --from=build --chown=gruahub:gruahub /build/target/quarkus-app/ ./
+EXPOSE 8080
+STOPSIGNAL SIGTERM
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+ENTRYPOINT ["sh", "-c", \
+    "if [ -f /scripts/load-secret-files.sh ]; then . /scripts/load-secret-files.sh; fi; \
+     exec java $JAVA_OPTS \
+     -Djava.util.logging.manager=org.jboss.logmanager.LogManager \
+     -jar quarkus-run.jar"]

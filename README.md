@@ -20,6 +20,24 @@ Diagnóstico para sócios (PDF): [docs/diagnostico/GruaHub-Diagnostico-Executivo
 | **EMQX** | v5.7 (MQTT) | 1883 / 8083 |
 | **MinIO** | S3-compatible | 9000 |
 
+## Demo no portfólio (AWS)
+
+No host `portfolio-apps` (ou local com as mesmas portas):
+
+```bash
+cd infra && cp -n .env.example .env
+../scripts/portfolio-up.sh
+```
+
+| Recurso | URL |
+|---|---|
+| Web | http://54.94.163.136:9083 |
+| Swagger | http://54.94.163.136:8084/q/swagger-ui |
+| Health | http://54.94.163.136:8084/q/health |
+| Keycloak | http://54.94.163.136:8182 |
+
+Login demo: `gestor@diversao.demo` / `gruahub@2025`.
+
 ## Início rápido
 
 ### Pré-requisitos
