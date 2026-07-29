@@ -1,0 +1,65 @@
+# Overlay para demo no host portfolio-apps (EC2).
+# Uso: docker compose -f docker-compose.yml -f docker-compose.portfolio.yml up -d --build
+#
+# Portas públicas:
+#   Web UI     :9083
+#   API/Swagger:8084
+#   Keycloak   :8182
+
+services:
+  postgres:
+    ports: !override []
+    mem_limit: 384m
+
+  keycloak:
+    ports: !override
+      - "8182:8080"
+    environment:
+      JAVA_OPTS_KC: "-Xms128m -Xmx512m -XX:MaxMetaspaceSize=192m"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    mem_limit: 768m
+
+  emqx:
+    ports: !override []
+    mem_limit: 384m
+
+  minio:
+    ports: !override []
+    mem_limit: 256m
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../infra/Dockerfile.backend.jvm
+    ports: !override
+      - "8084:8080"
+    environment:
+      QUARKUS_OIDC_TOKEN_ISSUER: any
+      QUARKUS_SWAGGER_UI_ALWAYS_INCLUDE: "true"
+      QUARKUS_SWAGGER_UI_ENABLE: "true"
+      QUARKUS_LIQUIBASE_CONTEXTS: demo
+      GRUAHUB_SANDBOX_ENABLED: "true"
+      GRUAHUB_PROD_ALLOW_SANDBOX: "true"
+      GRUAHUB_PROD_ENFORCE_SAFETY: "false"
+      GRUAHUB_PLAYER_PUBLIC_ENABLED: "true"
+      GRUAHUB_PAYMENT_PROVIDER: sandbox
+      GRUAHUB_CORS_ORIGINS: ${GRUAHUB_CORS_ORIGINS:-http://54.94.163.136:9083,http://localhost:9083,http://localhost:3000}
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC -Dquarkus.swagger-ui.enable=true"
+    mem_limit: 768m
+
+  web:
+    build:
+      context: ../web
+      dockerfile: ../infra/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://54.94.163.136:8084}
+        NEXT_PUBLIC_SANDBOX_ENABLED: "true"
+    ports: !override
+      - "9083:3000"
+    environment:
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://54.94.163.136:9083}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://54.94.163.136:8084}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://54.94.163.136:8182/realms/gruahub}
+      KEYCLOAK_INTERNAL_ISSUER: http://keycloak:8080/realms/gruahub
+    mem_limit: 384m
