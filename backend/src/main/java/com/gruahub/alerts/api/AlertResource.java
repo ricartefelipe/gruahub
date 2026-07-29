@@ -35,7 +35,6 @@ public class AlertResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record AlertResponse(
         UUID id,
@@ -54,7 +53,6 @@ public class AlertResource {
 
     public record ResolveRequest(String note) {}
 
-    // ── Queries ─────────────────────────────────────────────────────────────────
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "TECHNICIAN", "FINANCE"})
@@ -212,7 +210,6 @@ public class AlertResource {
         return Map.of("total", total, "bySeverity", bySeverity);
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────────
 
     private AlertResponse mapRow(Object[] r) {
         return new AlertResponse(

@@ -12,9 +12,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * Upload de objetos para MinIO/S3 com fallback local (testes / MinIO indisponível).
- */
 @ApplicationScoped
 public class ObjectStorageService {
 

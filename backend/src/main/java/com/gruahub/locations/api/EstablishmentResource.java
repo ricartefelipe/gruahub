@@ -24,11 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * REST resource para gerenciamento de Estabelecimentos (locations).
- * <p>
- * Invariante de tenant: todos os queries incluem tenantId extraído do JWT.
- */
+/** TenantId sempre do JWT — nunca do body. */
 @Path("/api/v1/establishments")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -43,7 +39,6 @@ public class EstablishmentResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record EstablishmentRequest(
         @NotBlank @Size(max = 120) String name,
@@ -58,7 +53,6 @@ public class EstablishmentResource {
         Instant createdAt
     ) {}
 
-    // ── Queries ─────────────────────────────────────────────────────────────────
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE", "TECHNICIAN"})

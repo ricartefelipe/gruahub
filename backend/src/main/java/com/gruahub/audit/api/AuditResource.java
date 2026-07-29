@@ -13,10 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * REST resource para consulta do log de auditoria.
- * O log é append-only — não há mutações via esta API.
- */
+/** Append-only — sem mutações nesta API. */
 @Path("/api/v1/audit")
 @Produces(MediaType.APPLICATION_JSON)
 @RequestScoped

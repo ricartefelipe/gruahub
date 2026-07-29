@@ -14,10 +14,7 @@ public final class PlayGrantCalculator {
         return amountCents > 0 ? 1 : 0;
     }
 
-    /**
-     * Calcula jogadas a creditar após pagamento confirmado.
-     * Bônus de máquina e de campanha só se aplicam quando há jogada paga.
-     */
+    /** Bônus de máquina/campanha só com jogada paga. */
     public static int playsForPayment(long amountCents, long playPriceCents, int machineBonusPlays) {
         return playsForPayment(amountCents, playPriceCents, machineBonusPlays, 0);
     }

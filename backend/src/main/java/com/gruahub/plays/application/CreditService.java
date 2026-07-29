@@ -13,19 +13,7 @@ import org.jboss.logging.Logger;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Serviço de crédito de jogadas.
- * <p>
- * Garantias de exactly-once credit:
- * <ol>
- *   <li>Unique constraint {@code uq_credit_grant_payment} em
- *       {@code credit_grant(payment_transaction_id)} — banco rejeita segundo INSERT.</li>
- *   <li>INSERT ON CONFLICT DO NOTHING — a aplicação trata silenciosamente.</li>
- *   <li>MQTT publish via outbox (tabela {@code outbox_event}) — nunca dentro da
- *       transação de negócio. Se MQTT estiver indisponível, o scheduler
- *       publica quando o broker se reconectar.</li>
- * </ol>
- */
+/** Exactly-once: ON CONFLICT (payment_transaction_id); MQTT só via outbox. */
 @ApplicationScoped
 public class CreditService {
 
@@ -43,18 +31,7 @@ public class CreditService {
     @Inject
     ControllerAdapterRegistry controllerAdapterRegistry;
 
-    /**
-     * Cria um crédito para a máquina após confirmação de pagamento.
-     * <p>
-     * O MQTT command é enfileirado no outbox — não publicado diretamente.
-     * Isso garante que o crédito não é perdido se o broker estiver fora.
-     * <p>
-     * Exactly-once: INSERT ON CONFLICT DO NOTHING + unique constraint.
-     * Se duas chamadas concorrentes chegarem para o mesmo paymentTransactionId,
-     * apenas uma insere. A outra recebe rows=0 e retorna null.
-     *
-     * @return UUID do credit_grant criado, ou null se já existia (idempotente)
-     */
+    /** @return credit_grant id, ou null se já existia (idempotente). */
     @Transactional
     public UUID grantCreditForPayment(UUID tenantId, UUID machineId,
                                       UUID paymentTransactionId, long amountCents,
@@ -62,7 +39,6 @@ public class CreditService {
         UUID creditId  = UUID.randomUUID();
         String commandId = UUID.randomUUID().toString();
 
-        // INSERT ON CONFLICT DO NOTHING — unique constraint garante exactly-once
         int rows = em.createNativeQuery(
                 "INSERT INTO credit_grant " +
                 "(id, tenant_id, machine_id, payment_transaction_id, " +
@@ -80,14 +56,11 @@ public class CreditService {
                 .executeUpdate();
 
         if (rows == 0) {
-            // Crédito já existia para este pagamento — retorno idempotente
             LOG.debugf("Credit already exists for payment %s (exactly-once guarantee) — no-op",
                     paymentTransactionId);
             return null;
         }
 
-        // Enfileirar no outbox (mesma transação — atômica com o INSERT acima)
-        // O OutboxPublisher scheduler publicará via MQTT quando o broker estiver disponível.
         String cmdPayload = buildGrantCreditPayload(commandId, creditId, playsGranted, amountCents, tenantId, machineId);
         outboxPublisher.enqueue(tenantId, "credit_grant", creditId, "GRANT_CREDIT", cmdPayload);
         insertDeviceCommand(tenantId, machineId, commandId, cmdPayload);
@@ -130,10 +103,7 @@ public class CreditService {
         return creditId;
     }
 
-    /**
-     * Registra ACK de crédito da máquina.
-     * Idempotente: WHERE status IN ('PENDING','SENT') evita dupla transição.
-     */
+    /** Idempotente: WHERE status IN ('PENDING','SENT'). */
     @Transactional
     public void acknowledgeCredit(UUID creditGrantId, UUID tenantId) {
         int rows = em.createNativeQuery(
@@ -151,10 +121,7 @@ public class CreditService {
         }
     }
 
-    /**
-     * Consome o crédito após PLAY_COMPLETED.
-     * Idempotente: WHERE status IN ('ACKNOWLEDGED','SENT') evita dupla transição.
-     */
+    /** Idempotente: WHERE status IN ('ACKNOWLEDGED','SENT','PENDING'). */
     @Transactional
     public void consumeCredit(UUID creditGrantId, UUID tenantId) {
         int rows = em.createNativeQuery(

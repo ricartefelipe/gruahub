@@ -28,12 +28,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Geração de relatórios PDF via Flying Saucer (XHTML → PDF) + Qute templates.
- * <p>
- * Em sandbox: devolve o PDF diretamente como resposta (Content-Type: application/pdf).
- * Em produção: armazena no MinIO e devolve uma pre-signed URL.
- */
 @Path("/api/v1/reports")
 @Produces(MediaType.APPLICATION_JSON)
 @RequestScoped
@@ -47,14 +41,12 @@ public class ReportResource {
     @Inject
     AuditService audit;
 
-    // Qute templates — injetados por nome de arquivo em src/main/resources/templates/
     @Inject
     Template fleetStatusReport;
 
     @Inject
     Template visitReceiptReport;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public enum ReportType {
         FLEET_STATUS, VISIT_RECEIPT, CASH_COLLECTION, SETTLEMENT
@@ -65,7 +57,6 @@ public class ReportResource {
         Map<String, String> parameters
     ) {}
 
-    // ── Generate ─────────────────────────────────────────────────────────────────
 
     @POST
     @Path("/generate")
@@ -106,7 +97,6 @@ public class ReportResource {
         }
     }
 
-    // ── Template rendering ────────────────────────────────────────────────────────
 
     private String renderHtml(ReportType type, UUID tenantId, Map<String, String> params) {
         return switch (type) {
@@ -163,7 +153,6 @@ public class ReportResource {
     }
 
     private String renderCashCollection(UUID tenantId, Map<String, String> params) {
-        // Template inline simples — em produção extrair para .html Qute
         String startDate = params.getOrDefault("startDate", "");
         String endDate = params.getOrDefault("endDate", "");
 
@@ -242,13 +231,8 @@ public class ReportResource {
         );
     }
 
-    // ── PDF conversion ────────────────────────────────────────────────────────────
 
-    /**
-     * Converte HTML (XHTML bem-formado) para PDF usando Flying Saucer + OpenPDF.
-     */
     private byte[] htmlToPdf(String html) throws Exception {
-        // Garante XHTML válido via JTidy
         String xhtml = tidyToXhtml(html);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -274,7 +258,6 @@ public class ReportResource {
         return out.toString(StandardCharsets.UTF_8);
     }
 
-    // ── Simple HTML builder (fallback quando não há template Qute) ────────────────
 
     private String buildSimpleHtmlTable(
         String title,

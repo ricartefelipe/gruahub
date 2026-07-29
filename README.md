@@ -1,4 +1,4 @@
-# GruaHub MVP
+# GruaHub
 
 Plataforma B2B multi-tenant para gestão de máquinas de pelúcia e gruas: telemetria IoT, pagamentos, jogadas, estoque, visitas de campo e portal de parceiros.
 

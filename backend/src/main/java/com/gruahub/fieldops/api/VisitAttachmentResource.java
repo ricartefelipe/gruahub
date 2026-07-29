@@ -22,10 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Anexos de visita (fotos de evidência) — armazenados no MinIO/S3.
- * Idempotente via client_operation_id.
- */
+/** Idempotente via client_operation_id. */
 @Path("/api/v1/visits/{visitId}/attachments")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

@@ -1,16 +1,3 @@
-/**
- * Hook de sincronização da fila offline.
- *
- * Tratamento de respostas HTTP:
- *   2xx         → markSynced
- *   409         → markSynced (idempotência — operação já processada pelo servidor)
- *   400 / 422   → markFailedPermanent (payload inválido, não vai melhorar)
- *   401         → tenta refresh de token; se falhar → clearAuth (re-login necessário)
- *   403         → markFailedPermanent (sem permissão)
- *   5xx / rede  → markFailedRetryable (transitório — backoff + jitter)
- *   timeout     → markFailedRetryable
- */
-
 import { useEffect, useRef, useCallback } from 'react';
 import * as Network from 'expo-network';
 import {
@@ -29,8 +16,6 @@ import { OPERATION_TYPES } from '../db/schema';
 
 const POLL_INTERVAL_MS = 60_000;
 
-// ── Mapa operationType → endpoint ────────────────────────────────────────────
-
 function getEndpoint(operationType: string): string {
   const map: Record<string, string> = {
     START_VISIT:        '/api/v1/visits',
@@ -43,8 +28,6 @@ function getEndpoint(operationType: string): string {
   return map[operationType] ?? '/api/v1/operations';
 }
 
-// ── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useSyncQueue() {
   const { accessToken, tenantId, needsRefresh, refreshAccessToken, clearAuth } = useAuthStore();
   const isSyncingRef = useRef(false);
@@ -52,7 +35,6 @@ export function useSyncQueue() {
   const sync = useCallback(async () => {
     if (isSyncingRef.current) return;
 
-    // Verifica conectividade antes de tentar
     try {
       const netState = await Network.getNetworkStateAsync();
       if (!netState.isConnected) return;
@@ -60,11 +42,9 @@ export function useSyncQueue() {
       // expo-network indisponível em ambiente de teste — continua
     }
 
-    // Lê token atualizado do store
     const storeState = useAuthStore.getState();
     if (!storeState.accessToken) return;
 
-    // Renova proativamente se perto do vencimento
     if (needsRefresh()) {
       const ok = await refreshAccessToken();
       if (!ok) {
@@ -86,7 +66,6 @@ export function useSyncQueue() {
 
       for (const op of operations) {
         if (isDeferredSyncOperation(op.operationType)) {
-          // Sem endpoint ainda (ex.: foto local) — não POST JSON nem queima retries
           continue;
         }
 
@@ -127,27 +106,24 @@ export function useSyncQueue() {
             });
           }
 
-          // apiFetch lança em não-2xx — se chegou aqui, é sucesso
           await markSynced(op.id);
           console.log(`[SyncQueue] ✓ ${op.clientOperationId} (${op.operationType})`);
 
         } catch (err: unknown) {
           if (err instanceof ApiError) {
             if (err.status === 409) {
-              // Idempotência: servidor já processou → sucesso
+              // 409 = idempotência: já processado no servidor.
               await markSynced(op.id);
               console.log(`[SyncQueue] 409→synced ${op.clientOperationId}`);
 
             } else if (err.status === 401) {
-              // Token expirado durante sync — tenta refresh
               const refreshed = await refreshAccessToken();
               if (refreshed) {
-                // Volta para PENDING: será re-tentado no próximo ciclo
                 await markFailedRetryable(op.id, '401 token renovado — re-tentando');
               } else {
                 console.warn('[SyncQueue] Refresh falhou — forçando re-login');
                 await clearAuth();
-                return; // Para de processar sem token válido
+                return;
               }
 
             } else if (
@@ -165,7 +141,6 @@ export function useSyncQueue() {
               );
 
             } else {
-              // 5xx ou timeout (status 0)
               await markFailedRetryable(op.id, err.message);
               console.warn(
                 `[SyncQueue] ✗ retryable ${op.clientOperationId}: ${err.message}`
@@ -187,7 +162,6 @@ export function useSyncQueue() {
     }
   }, [accessToken, tenantId, needsRefresh, refreshAccessToken, clearAuth]);
 
-  // Sync imediato ao montar (quando autenticado) + polling
   useEffect(() => {
     if (accessToken) {
       sync();

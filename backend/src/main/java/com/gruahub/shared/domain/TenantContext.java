@@ -2,11 +2,7 @@ package com.gruahub.shared.domain;
 
 import java.util.UUID;
 
-/**
- * Holder de tenant_id para o request corrente.
- * Populado pelo SecurityFilter a partir do JWT.
- * Nunca aceitar tenant_id do cliente HTTP como fonte de autorização.
- */
+/** Tenant do JWT — nunca do cliente HTTP como autorização. */
 public final class TenantContext {
 
     private TenantContext() {}

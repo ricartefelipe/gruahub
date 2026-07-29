@@ -4,7 +4,6 @@ O contrato completo em JSON Schema está em `contracts/mqtt/schema-v1.json`.
 A política de tópicos e ACL está em `contracts/mqtt/broker-policy-v1.json`.
 Exemplos validados pelo CI: `contracts/mqtt/examples/`.
 Comportamento de referência do device: `simulators/machine-simulator/`.
-Hardware fino: `docs/HARDWARE_ADAPTER.md` e `docs/superpowers/specs/2026-07-27-adaptador-fino-v0-design.md`.
 
 ## Broker
 

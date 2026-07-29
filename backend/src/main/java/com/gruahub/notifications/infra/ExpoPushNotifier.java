@@ -19,9 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Entrega push via Expo Push API usando tokens registrados em device_token.
- */
 @ApplicationScoped
 @IfBuildProperty(name = "gruahub.push.provider", stringValue = "expo")
 public class ExpoPushNotifier implements PushNotifier {

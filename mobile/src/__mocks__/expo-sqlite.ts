@@ -1,36 +1,19 @@
-/**
- * Mock de expo-sqlite para testes unitários.
- *
- * Implementa o subconjunto da API expo-sqlite v14 usada por offlineQueue.ts:
- *   execAsync, runAsync, getAllAsync, getFirstAsync
- *
- * Armazena dados em Maps em memória — sem bindings nativos, sem sql.js.
- * Trata os padrões SQL específicos do offlineQueue com um mini-interpretador.
- */
-
-// ── Tipos internos ────────────────────────────────────────────────────────────
-
 type Row = Record<string, unknown>;
 
 interface Table {
   rows: Row[];
-  /** Colunas com restrição UNIQUE ou PRIMARY KEY (para INSERT OR IGNORE) */
   uniqueCols: string[];
-  /** Valores padrão por coluna (do DEFAULT na DDL) */
   defaults: Record<string, unknown>;
 }
 
-// ── Banco de dados em memória ────────────────────────────────────────────────
 
 export class MockSQLiteDatabase {
   private tables: Map<string, Table> = new Map();
 
-  // ── DDL ─────────────────────────────────────────────────────────────────────
 
   async execAsync(sql: string): Promise<void> {
     const s = sql.trim().replace(/\s+/g, ' ');
 
-    // CREATE TABLE IF NOT EXISTS <name> (...)
     const ctMatch = s.match(/CREATE TABLE IF NOT EXISTS (\w+)\s*\((.+)\)/is);
     if (ctMatch) {
       const tableName = ctMatch[1].toLowerCase();
@@ -45,12 +28,10 @@ export class MockSQLiteDatabase {
           const colName = nameMatch[1].toLowerCase();
           const rest = nameMatch[2];
 
-          // Detecta UNIQUE ou PRIMARY KEY (torna coluna unique)
           if (/\bUNIQUE\b/i.test(rest) || /\bPRIMARY KEY\b/i.test(rest)) {
             uniqueCols.push(colName);
           }
 
-          // Detecta DEFAULT <valor>
           const defMatch = rest.match(/\bDEFAULT\s+(.+?)(?:\s*,|\s*$)/i);
           if (defMatch) {
             const rawDef = defMatch[1].trim().replace(/,\s*$/, '');
@@ -71,7 +52,6 @@ export class MockSQLiteDatabase {
     if (/CREATE INDEX IF NOT EXISTS/i.test(s)) return;
   }
 
-  // ── DML ─────────────────────────────────────────────────────────────────────
 
   async runAsync(
     sql: string,
@@ -242,7 +222,6 @@ export class MockSQLiteDatabase {
     return rows[0] ?? null;
   }
 
-  // ── Helpers privados ─────────────────────────────────────────────────────────
 
   private getTable(name: string): Table {
     const lname = name.toLowerCase();
@@ -400,7 +379,6 @@ export class MockSQLiteDatabase {
   }
 }
 
-/** Abre um banco em memória (API expo-sqlite v14). */
 export async function openDatabaseAsync(_name: string): Promise<MockSQLiteDatabase> {
   return new MockSQLiteDatabase();
 }

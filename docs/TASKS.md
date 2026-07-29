@@ -43,7 +43,6 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 - [ ] FCM Google nativo (service account próprio); hoje a entrega é via Expo Push Service
 - [ ] Vault / AWS Secrets Manager com rotação (hoje: `.env` + `*_FILE`)
 - [ ] Pagamento real (1 adquirente Pix em tenant piloto)
-- [ ] Hardware físico — Adaptador Fino v0 (pulse); ver `docs/HARDWARE_ADAPTER.md` e plano `docs/superpowers/plans/2026-07-27-adaptador-fino-v0.md`
 - [x] Firmware `firmware/adaptador-fino/` (heartbeat + GRANT_CREDIT idempotente + ACK) — build `esp32dev` OK
 - [x] Provisionamento NVS de lab (`scripts/provision-adaptador-nvs.sh` + Serial)
 - [ ] E2E bancada com hardware físico (checklist em `docs/PILOT_CHECKLIST.md`)
@@ -56,8 +55,6 @@ Itens abertos = gaps reais; “comercial longo” está em `COMMERCIAL_READINESS
 
 ### P0
 
-- [x] Spec Adaptador Fino v0 (`docs/superpowers/specs/2026-07-27-adaptador-fino-v0-design.md`)
-- [x] Plano/backlog (`docs/superpowers/plans/2026-07-27-adaptador-fino-v0.md`)
 - [x] Guia operacional (`docs/HARDWARE_ADAPTER.md`) + contrato MQTT alinhado a `v1/...`
 - [x] Scaffold firmware Pulse + GRANT_CREDIT idempotente
 - [x] Provisionamento NVS lab

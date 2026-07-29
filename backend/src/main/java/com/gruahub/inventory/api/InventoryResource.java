@@ -21,10 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para estoque de pelúcias.
- * Movimentações são idempotentes via client_operation_id.
- */
+/** Movimentações idempotentes via client_operation_id. */
 @Path("/api/v1/inventory")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -39,7 +36,6 @@ public class InventoryResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record StockMovementRequest(
         @NotNull UUID clientOperationId,
@@ -96,7 +92,6 @@ public class InventoryResource {
         Instant createdAt
     ) {}
 
-    // ── Queries ─────────────────────────────────────────────────────────────────
 
     @GET
     @Path("/balances")
@@ -189,7 +184,6 @@ public class InventoryResource {
         return PageResponse.of(rows.stream().map(this::mapMovRow).toList(), page, lim, total);
     }
 
-    // ── Mutations ────────────────────────────────────────────────────────────────
 
     @POST
     @Path("/movements")
@@ -237,9 +231,7 @@ public class InventoryResource {
             .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
 
         int after  = newQty != null ? newQty.intValue() : Math.max(0, delta);
-        // before é a aproximação: after - delta, clamped a 0 para não ser negativo.
-        // Pode divergir em ±1 somente quando há clamping simultâneo, o que é aceitável
-        // para fins de auditoria (o saldo real está correto).
+        // before ≈ after - delta (clamp 0); ±1 aceitável sob clamping concorrente.
         int before = Math.max(0, after - delta);
 
         UUID movId = UUID.randomUUID();

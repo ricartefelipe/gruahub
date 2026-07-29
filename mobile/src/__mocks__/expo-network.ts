@@ -1,7 +1,3 @@
-/**
- * Mock de expo-network para testes unitários.
- */
-
 let _isConnected = true;
 
 export function __setConnected(v: boolean): void {

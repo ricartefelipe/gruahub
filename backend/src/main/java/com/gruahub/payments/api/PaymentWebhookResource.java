@@ -33,14 +33,7 @@ public class PaymentWebhookResource {
     @Inject
     EntityManager em;
 
-    /**
-     * Webhook de pagamento (Sandbox e provedores reais).
-     * <p>
-     * Contrato de segurança:
-     * - HMAC-SHA256 verificado antes de qualquer parsing
-     * - tenant_id vem do header X-Tenant-Id, nunca do body
-     * - Idempotência via header Idempotency-Key ou hash do body
-     */
+    /** HMAC antes do parse; tenant do header X-Tenant-Id, nunca do body. */
     @POST
     @Path("/webhook/{provider}")
     @Operation(summary = "Receber webhook de pagamento")
@@ -94,11 +87,7 @@ public class PaymentWebhookResource {
         }
     }
 
-    /**
-     * [SANDBOX] Criar uma payment_transaction e retornar o transactionId.
-     * Permite que o payment simulator crie transações antes de confirmá-las.
-     * NUNCA expor em produção sem autenticação forte.
-     */
+    /** [SANDBOX] Nunca expor em produção sem autenticação forte. */
     @POST
     @Path("/sandbox/initiate")
     @SandboxEndpoint
@@ -120,7 +109,6 @@ public class PaymentWebhookResource {
         String transactionId = "SANDBOX-" + UUID.randomUUID().toString().replace("-", "").toUpperCase().substring(0, 12);
         sandboxProvider.sandboxCreate(transactionId);
 
-        // Inserir no banco para que o webhook de confirmação encontre a transação
         em.createNativeQuery(
                 "INSERT INTO payment_transaction " +
                 "(id, tenant_id, machine_id, provider_transaction_id, provider, " +
@@ -141,9 +129,6 @@ public class PaymentWebhookResource {
         )).build();
     }
 
-    /**
-     * [SANDBOX] Confirmar pagamento fictício e disparar webhook internamente.
-     */
     @POST
     @Path("/sandbox/confirm/{transactionId}")
     @SandboxEndpoint
@@ -171,9 +156,6 @@ public class PaymentWebhookResource {
         return Response.ok(Map.of("confirmed", true, "transactionId", transactionId)).build();
     }
 
-    /**
-     * [SANDBOX] Falhar pagamento fictício.
-     */
     @POST
     @Path("/sandbox/fail/{transactionId}")
     @SandboxEndpoint
