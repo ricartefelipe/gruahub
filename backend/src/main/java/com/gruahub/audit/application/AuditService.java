@@ -23,11 +23,7 @@ public class AuditService {
     @Inject
     JsonWebToken jwt;
 
-    /**
-     * Overload de conveniência: obtém tenantId de TenantContext.
-     * Callers em recursos REST usam esta assinatura de 4 args.
-     * Não propaga falha de auditoria para o caller — apenas loga.
-     */
+    /** Falha de auditoria não propaga ao caller — só loga. */
     public void record(String action, String resourceType,
                        String resourceId, String metadataJson) {
         try {

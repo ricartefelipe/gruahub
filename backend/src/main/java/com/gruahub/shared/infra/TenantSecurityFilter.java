@@ -18,11 +18,7 @@ import org.jboss.logging.Logger;
 import java.io.IOException;
 import java.util.UUID;
 
-/**
- * Inicializa TenantContext a partir do JWT.
- * O tenant_id vem do claim "tenant_id" no JWT (configurado no Keycloak como client claim).
- * Fallback para PLATFORM_ADMIN: usa tenant do path param ou header, verificado no backend.
- */
+/** TenantContext do claim JWT tenant_id; PLATFORM_ADMIN pode override verificado. */
 @Provider
 @ApplicationScoped
 @Priority(Priorities.AUTHORIZATION + 1)

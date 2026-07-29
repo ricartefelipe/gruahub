@@ -21,11 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para chamados de manutenção (maintenance_ticket).
- * Tickets são criados pelo app mobile (offline-first) ou pela web.
- * Idempotentes via client_operation_id.
- */
+/** Idempotente via client_operation_id. */
 @Path("/api/v1/maintenance")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -40,7 +36,6 @@ public class MaintenanceResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record CreateTicketRequest(
         @NotNull UUID clientOperationId,
@@ -73,7 +68,6 @@ public class MaintenanceResource {
         Instant resolvedAt
     ) {}
 
-    // ── Queries ─────────────────────────────────────────────────────────────────
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "TECHNICIAN", "FIELD_OPERATOR"})
@@ -141,7 +135,6 @@ public class MaintenanceResource {
         return mapRow(row);
     }
 
-    // ── Mutations ────────────────────────────────────────────────────────────────
 
     @POST
     @Transactional
@@ -243,7 +236,6 @@ public class MaintenanceResource {
         return getTicket(id);
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────────
 
     private TicketResponse mapRow(Object[] r) {
         return new TicketResponse(

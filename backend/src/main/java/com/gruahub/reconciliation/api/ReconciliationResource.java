@@ -22,13 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para consulta e resolução de casos de conciliação.
- * <p>
- * A criação de casos é feita pelo ReconciliationScheduler (job automático).
- * Esta resource expõe consulta e resolução manual para casos que não se resolvem
- * automaticamente.
- */
 @Path("/api/v1/reconciliation")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -43,7 +36,6 @@ public class ReconciliationResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record ReconciliationCaseResponse(
         UUID id,
@@ -63,7 +55,6 @@ public class ReconciliationResource {
         String note
     ) {}
 
-    // ── Queries ─────────────────────────────────────────────────────────────────
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FINANCE"})
@@ -181,7 +172,6 @@ public class ReconciliationResource {
         return Map.of("byStatus", byStatus, "totalPending", totalPending);
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────────
 
     private ReconciliationCaseResponse mapRow(Object[] r) {
         return new ReconciliationCaseResponse(

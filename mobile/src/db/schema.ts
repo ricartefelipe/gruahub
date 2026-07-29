@@ -1,13 +1,6 @@
-/**
- * Schema SQLite local para funcionalidade offline-first.
- *
- * Migrações são versionadas via tabela schema_version.
- * Nunca remova ou reordene entradas existentes — apenas acrescente novas.
- */
-
-/** Cada entrada é aplicada exatamente uma vez, em ordem, pelo initDb. */
+/** Migrações versionadas — nunca remova ou reordene entradas existentes. */
 export const MIGRATIONS: string[] = [
-  // v1 — tabela de operações offline
+  // v1
   `CREATE TABLE IF NOT EXISTS offline_operation (
     id TEXT PRIMARY KEY,
     client_operation_id TEXT NOT NULL UNIQUE,
@@ -21,7 +14,7 @@ export const MIGRATIONS: string[] = [
     next_retry_at TEXT
   )`,
 
-  // v2 — cache de rotas
+  // v2
   `CREATE TABLE IF NOT EXISTS cached_route (
     id TEXT PRIMARY KEY,
     data TEXT NOT NULL,
@@ -29,7 +22,7 @@ export const MIGRATIONS: string[] = [
     expires_at TEXT NOT NULL
   )`,
 
-  // v3 — cache de máquinas
+  // v3
   `CREATE TABLE IF NOT EXISTS cached_machine (
     id TEXT PRIMARY KEY,
     tenant_id TEXT NOT NULL,
@@ -42,7 +35,7 @@ export const MIGRATIONS: string[] = [
     cached_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
 
-  // v4 — tokens de autenticação
+  // v4
   `CREATE TABLE IF NOT EXISTS auth_token (
     id INTEGER PRIMARY KEY DEFAULT 1,
     access_token TEXT,
@@ -53,12 +46,12 @@ export const MIGRATIONS: string[] = [
     user_email TEXT
   )`,
 
-  // v5 — controle de versão do schema
+  // v5
   `CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY
   )`,
 
-  // v6 — índice para busca eficiente de operações pendentes
+  // v6
   `CREATE INDEX IF NOT EXISTS idx_op_status_retry
    ON offline_operation(status, next_retry_at)`,
 ];
@@ -75,14 +68,6 @@ export const OPERATION_TYPES = {
 
 export type OperationType = typeof OPERATION_TYPES[keyof typeof OPERATION_TYPES];
 
-/**
- * Estados da fila offline:
- *   PENDING            → aguardando envio
- *   SYNCING            → envio em andamento (reset para PENDING no startup — crash recovery)
- *   SYNCED             → enviado com sucesso (ou 409 idempotente)
- *   FAILED_RETRYABLE   → falha transitória (5xx, rede) — será re-tentado com backoff + jitter
- *   FAILED_PERMANENT   → falha permanente (400, 403) ou máximo de tentativas esgotado
- */
 export type OfflineOperationStatus =
   | 'PENDING'
   | 'SYNCING'
@@ -90,11 +75,8 @@ export type OfflineOperationStatus =
   | 'FAILED_RETRYABLE'
   | 'FAILED_PERMANENT';
 
-/** Máximo de tentativas antes de FAILED_PERMANENT. */
 export const MAX_RETRIES = 10;
 
-/** Backoff base em ms (dobra a cada retry com jitter ±25%). */
 export const BACKOFF_BASE_MS = 5_000;
 
-/** Teto do backoff em ms (1 hora). */
 export const BACKOFF_MAX_MS = 3_600_000;

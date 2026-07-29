@@ -11,9 +11,6 @@ export type UploadAttachmentPayload = {
   machineId?: string;
 };
 
-/**
- * Lê a foto local e envia JSON base64 para POST /api/v1/visits/{visitId}/attachments.
- */
 export async function uploadVisitAttachment(
   payload: UploadAttachmentPayload,
   opts: { accessToken: string; tenantId?: string },

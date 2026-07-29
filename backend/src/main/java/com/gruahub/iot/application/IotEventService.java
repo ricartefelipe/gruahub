@@ -16,15 +16,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Serviço de domínio IoT.
- * <p>
- * Garantias:
- * - Tenant efetivo vem do tópico MQTT, nunca do JSON payload
- * - Ownership verificada: machineId deve pertencer ao tenantId no banco
- * - Inbox idempotente: INSERT ON CONFLICT DO NOTHING + verificação de rows afetadas
- * - Sequence tracking com detecção de gaps
- * - Duplicidade idêntica → ignorada silenciosamente
- * - PLAY_STARTED idempotente via unique constraint em play_session(credit_grant_id)
+ * Tenant efetivo vem do tópico MQTT, nunca do JSON payload.
+ * Ownership: machineId deve pertencer ao tenantId. Inbox idempotente (ON CONFLICT DO NOTHING).
  */
 @ApplicationScoped
 public class IotEventService {
@@ -43,17 +36,6 @@ public class IotEventService {
     @Inject
     ControllerAdapterRegistry controllerAdapterRegistry;
 
-    /**
-     * Ponto de entrada para toda mensagem MQTT recebida.
-     *
-     * @param tenantIdStr   UUID do tenant extraído do tópico (autoritativo)
-     * @param machineIdStr  UUID da máquina extraído do tópico (autoritativo)
-     * @param messageId     ID único da mensagem (campo do envelope)
-     * @param messageType   Tipo da mensagem (HEARTBEAT, COMMAND_ACK, etc.)
-     * @param schemaVersion Versão do schema já validada pelo processor
-     * @param rawPayload    JSON completo da mensagem
-     * @param payload       JSON parseado
-     */
     @Transactional
     public void handleIncomingMessage(String tenantIdStr, String machineIdStr,
                                       String messageId, String messageType,
@@ -69,10 +51,7 @@ public class IotEventService {
             return;
         }
 
-        // ── 1. Verificar ownership: machineId deve pertencer ao tenantId ────────
-        // Isto é a defesa em profundidade caso a ACL do EMQX não cubra o caso.
-        // Um dispositivo autenticado como tenant A não pode interferir no tenant B
-        // mesmo que consiga publicar no tópico errado.
+        // Defesa em profundidade: ownership machine↔tenant além da ACL EMQX.
         if (!machineExistsForTenant(machineId, tenantId)) {
             LOG.warnf(
                 "MQTT ownership violation: machine %s does not belong to tenant %s "
@@ -123,7 +102,6 @@ public class IotEventService {
             default -> LOG.debugf("Unhandled MQTT message type: %s [messageId=%s]", canonicalType, messageId);
         }
 
-        // ── 5. Marcar como processado ───────────────────────────────────────────
         em.createNativeQuery(
                 "UPDATE device_message_inbox SET status = 'PROCESSED', processed_at = :now " +
                 "WHERE message_id = :mid AND tenant_id = :tid")
@@ -132,8 +110,6 @@ public class IotEventService {
                 .setParameter("tid", tenantId)
                 .executeUpdate();
     }
-
-    // ── Verificação de ownership ─────────────────────────────────────────────────
 
     private boolean machineExistsForTenant(UUID machineId, UUID tenantId) {
         Long count = (Long) em.createNativeQuery(
@@ -144,14 +120,7 @@ public class IotEventService {
         return count != null && count > 0;
     }
 
-    // ── Sequence tracking ────────────────────────────────────────────────────────
-
-    /**
-     * Verifica e atualiza a sequência da máquina.
-     * Detecta gaps (out-of-order severo) e gera alerta.
-     * Política: aceitar mensagens fora de ordem — não descartar.
-     * Gap detectado → alerta, mas mensagem ainda processada.
-     */
+    /** Gaps geram alerta; out-of-order é processado sem avançar last_sequence. */
     private void checkAndUpdateSequence(UUID machineId, UUID tenantId,
                                         long newSeq, String messageId, String messageType) {
         @SuppressWarnings("unchecked")
@@ -166,7 +135,6 @@ public class IotEventService {
             long gap = newSeq - lastSeq - 1;
 
             if (gap > 0) {
-                // Gap detectado: sequências puladas
                 LOG.warnf("Sequence gap detected on machine %s: lastSeq=%d newSeq=%d gap=%d "
                         + "[messageId=%s type=%s] — processing anyway",
                         machineId, lastSeq, newSeq, gap, messageId, messageType);
@@ -190,16 +158,13 @@ public class IotEventService {
                         .executeUpdate();
 
             } else if (newSeq < lastSeq) {
-                // Out-of-order: mensagem com sequência inferior à última vista
-                // Política: processar mas logar
                 LOG.infof("Out-of-order message on machine %s: lastSeq=%d newSeq=%d "
                         + "[messageId=%s type=%s] — processing (late delivery)",
                         machineId, lastSeq, newSeq, messageId, messageType);
-                return; // Não atualizar last_sequence para mensagens atrasadas
+                return;
             }
         }
 
-        // Atualizar last_sequence apenas se for maior que o atual
         em.createNativeQuery(
                 "UPDATE machine_reported_state SET last_sequence = :seq, last_message_id = :mid, " +
                 "last_message_at = :now " +
@@ -211,8 +176,6 @@ public class IotEventService {
                 .setParameter("tid",   tenantId)
                 .executeUpdate();
     }
-
-    // ── Handlers de eventos ──────────────────────────────────────────────────────
 
     private void handleHeartbeat(UUID tenantId, UUID machineId, JsonNode payload, String messageId) {
         Instant now = Instant.now();
@@ -232,7 +195,6 @@ public class IotEventService {
                 .setParameter("msgId", messageId)
                 .executeUpdate();
 
-        // Transição OFFLINE → ACTIVE
         machineRepository.findByIdAndTenant(machineId, tenantId).ifPresent(m -> {
             if (m.getStatus() == MachineStatus.OFFLINE) {
                 m.markOnline();
@@ -253,7 +215,6 @@ public class IotEventService {
             return;
         }
 
-        // Atualizar estado do comando no device_command (idempotente via WHERE status = PENDING)
         int updated = em.createNativeQuery(
                 "UPDATE device_command SET status = :status, acked_at = :now " +
                 "WHERE command_id = :cid AND tenant_id = :tid AND machine_id = :mid " +
@@ -270,7 +231,6 @@ public class IotEventService {
                     + "— ignored (idempotent)", commandId, machineId);
         }
 
-        // Se foi ACK de crédito, atualizar o credit_grant
         String creditGrantId = payload.path("payload").path("creditGrantId").asText(null);
         if (creditGrantId != null && !creditGrantId.isBlank()) {
             try {
@@ -284,8 +244,6 @@ public class IotEventService {
     }
 
     private void handleCreditReceived(UUID tenantId, UUID machineId, JsonNode payload) {
-        // CREDIT_RECEIVED é uma confirmação alternativa de recebimento de crédito.
-        // Tratado da mesma forma que COMMAND_ACK para o creditGrantId.
         String commandId    = payload.path("payload").path("commandId").asText(null);
         String creditGrantId = payload.path("payload").path("creditGrantId").asText(null);
 
@@ -317,8 +275,7 @@ public class IotEventService {
             return;
         }
 
-        // Unique constraint uq_play_session_credit_grant (migration 018) garante
-        // que ON CONFLICT DO NOTHING evita sessões duplicadas para o mesmo crédito.
+        // ON CONFLICT (credit_grant_id) evita sessões duplicadas (uq migration 018).
         int rows = em.createNativeQuery(
                 "INSERT INTO play_session " +
                 "(id, tenant_id, machine_id, credit_grant_id, status, started_at, created_at) " +
@@ -347,7 +304,7 @@ public class IotEventService {
             return;
         }
 
-        // WHERE status = 'STARTED' garante idempotência
+        // WHERE status = 'STARTED' garante idempotência.
         int rows = em.createNativeQuery(
                 "UPDATE play_session SET status = 'COMPLETED', prize_delivered = :prize, " +
                 "completed_at = :now " +
@@ -364,7 +321,6 @@ public class IotEventService {
             return;
         }
 
-        // Consumir o crédito (idempotente no CreditService)
         try {
             creditService.consumeCredit(UUID.fromString(creditGrantId), tenantId);
         } catch (IllegalArgumentException e) {
@@ -391,7 +347,6 @@ public class IotEventService {
                 .setParameter("tid",   tenantId)
                 .executeUpdate();
 
-        // Gerar alerta para erros críticos
         if (motorFault || doorOpen) {
             String alertType = motorFault ? "MOTOR_FAULT" : "DOOR_OPEN";
             String title     = motorFault ? "Falha de Motor" : "Porta Aberta";

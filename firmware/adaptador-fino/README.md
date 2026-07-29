@@ -3,7 +3,6 @@
 ESP32 + MQTT + pulso de crédito. Stack: **PlatformIO + Arduino framework**.
 
 Versão: `0.1.0-pulse`  
-Spec: `docs/superpowers/specs/2026-07-27-adaptador-fino-v0-design.md`  
 Contrato: `docs/MQTT_CONTRACT.md`
 
 ## O que faz

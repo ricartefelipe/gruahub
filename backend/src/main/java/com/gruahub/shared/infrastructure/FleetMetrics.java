@@ -12,22 +12,6 @@ import org.jboss.logging.Logger;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Bean de métricas customizadas do domínio GruaHub.
- *
- * Métricas exportadas (Prometheus):
- *  - gruahub_fleet_online_total        Gauge  — máquinas com status ACTIVE
- *  - gruahub_fleet_total               Gauge  — total de máquinas não RETIRED
- *  - gruahub_fleet_online_ratio        Gauge  — razão online/total [0.0, 1.0]
- *  - gruahub_payment_success_total     Counter — pagamentos confirmados
- *  - gruahub_payment_failure_total     Counter — pagamentos rejeitados/expirados
- *  - gruahub_alert_open_total          Gauge  — alertas com status OPEN
- *  - gruahub_ticket_open_total         Gauge  — chamados de manutenção abertos
- *  - gruahub_visit_duration_seconds    Timer  (incrementado pelo FieldVisitResource)
- *
- * Os Gauges são atualizados a cada 30 s pelo scheduler.
- * Os Counters são incrementados pelas chamadas de negócio via métodos públicos.
- */
 @ApplicationScoped
 public class FleetMetrics {
 
@@ -39,25 +23,21 @@ public class FleetMetrics {
     @Inject
     EntityManager em;
 
-    // ── Estado interno dos Gauges ────────────────────────────────────────────────
 
     private final AtomicLong fleetOnline  = new AtomicLong(0);
     private final AtomicLong fleetTotal   = new AtomicLong(0);
     private final AtomicLong alertOpen    = new AtomicLong(0);
     private final AtomicLong ticketOpen   = new AtomicLong(0);
 
-    // ── Counters (incrementados por eventos de negócio) ──────────────────────────
 
     private volatile Counter paymentSuccessCounter;
     private volatile Counter paymentFailureCounter;
     private volatile Counter playStartedCounter;
     private volatile Counter playCompletedWinCounter;
 
-    // ── Timer ────────────────────────────────────────────────────────────────────
 
     private volatile Timer visitDurationTimer;
 
-    // ── Inicialização ────────────────────────────────────────────────────────────
 
     void onStart(@jakarta.enterprise.event.Observes io.quarkus.runtime.StartupEvent ev) {
         LOG.info("Registrando métricas customizadas GruaHub");
@@ -104,7 +84,6 @@ public class FleetMetrics {
             .register(registry);
     }
 
-    // ── Scheduler: atualiza Gauges a cada 30 s ───────────────────────────────────
 
     @Scheduled(every = "30s", delayed = "5s")
     void refreshGauges() {
@@ -134,47 +113,29 @@ public class FleetMetrics {
         }
     }
 
-    // ── API pública para eventos de negócio ──────────────────────────────────────
 
-    /**
-     * Chame quando um pagamento for confirmado (PaymentWebhookService).
-     */
     public void recordPaymentSuccess() {
         if (paymentSuccessCounter != null) paymentSuccessCounter.increment();
     }
 
-    /**
-     * Chame quando um pagamento falhar/expirar (PaymentWebhookService).
-     */
     public void recordPaymentFailure() {
         if (paymentFailureCounter != null) paymentFailureCounter.increment();
     }
 
-    /**
-     * Chame quando uma jogada for iniciada (IoT event processor).
-     */
     public void recordPlayStarted() {
         if (playStartedCounter != null) playStartedCounter.increment();
     }
 
-    /**
-     * Chame quando o resultado da jogada for WIN.
-     */
     public void recordPlayWin() {
         if (playCompletedWinCounter != null) playCompletedWinCounter.increment();
     }
 
-    /**
-     * Registra a duração de uma visita.
-     * @param durationSeconds duração total em segundos (checkout - checkin)
-     */
     public void recordVisitDuration(long durationSeconds) {
         if (visitDurationTimer != null) {
             visitDurationTimer.record(durationSeconds, java.util.concurrent.TimeUnit.SECONDS);
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────────
 
     private double computeRatio() {
         long total = fleetTotal.get();

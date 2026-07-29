@@ -1,16 +1,3 @@
-/**
- * Fila de operações offline — máquina de estados completa.
- *
- * Estados: PENDING → SYNCING → SYNCED | FAILED_RETRYABLE | FAILED_PERMANENT
- *
- * Garantias:
- *   - Exatamente uma entrada por client_operation_id (INSERT OR IGNORE)
- *   - Backoff exponencial com jitter ±25% (clock injetável para testes)
- *   - Crash recovery: SYNCING → PENDING no startup
- *   - Max retries → FAILED_PERMANENT automaticamente
- *   - Ordenação por created_at garante START_VISIT antes de COMPLETE_VISIT
- */
-
 import * as SQLite from 'expo-sqlite';
 import {
   MIGRATIONS,
@@ -21,15 +8,11 @@ import {
   BACKOFF_MAX_MS,
 } from './schema';
 
-// ── Clock injetável ──────────────────────────────────────────────────────────
-
 export interface Clock {
-  now(): number; // Unix timestamp em ms
+  now(): number;
 }
 
 export const SystemClock: Clock = { now: () => Date.now() };
-
-// ── Banco de dados ───────────────────────────────────────────────────────────
 
 let db: SQLite.SQLiteDatabase | null = null;
 let initialized = false;
@@ -45,31 +28,28 @@ export async function getDb(): Promise<SQLite.SQLiteDatabase> {
   return db;
 }
 
-/** Expõe para testes — injeta banco in-memory e marca como não-inicializado. */
+/** Testes: injeta banco in-memory e força re-init. */
 export function __setDb(database: SQLite.SQLiteDatabase): void {
   db = database;
-  initialized = false; // força initDb na próxima chamada a getDb()
+  initialized = false;
 }
 
-/** Reseta o singleton (apenas para testes). */
+/** Testes: reseta o singleton. */
 export function __resetDb(): void {
   db = null;
   initialized = false;
 }
 
 async function initDb(database: SQLite.SQLiteDatabase): Promise<void> {
-  // Primeiro aplica as 4 migrações base + schema_version (idempotentes) sem verificar versão
   for (let i = 0; i < 5; i++) {
     await database.execAsync(MIGRATIONS[i]);
   }
 
-  // Descobre a última versão aplicada
   const lastRow = await database.getFirstAsync<{ version: number | null }>(
     `SELECT MAX(version) as version FROM schema_version`
   );
   const lastVersion = lastRow?.version ?? 0;
 
-  // Aplica migrações pendentes (índice 0-based → versão 1-based)
   for (let i = lastVersion; i < MIGRATIONS.length; i++) {
     await database.execAsync(MIGRATIONS[i]);
     await database.runAsync(
@@ -78,7 +58,7 @@ async function initDb(database: SQLite.SQLiteDatabase): Promise<void> {
     );
   }
 
-  // Crash recovery: ops travadas em SYNCING → PENDING
+  // Crash recovery: SYNCING → PENDING
   const recovered = await database.runAsync(
     `UPDATE offline_operation
      SET status = 'PENDING', error_message = 'crash_recovery'
@@ -90,8 +70,6 @@ async function initDb(database: SQLite.SQLiteDatabase): Promise<void> {
     );
   }
 }
-
-// ── Tipos ────────────────────────────────────────────────────────────────────
 
 export interface OfflineOperation {
   id: string;
@@ -114,13 +92,7 @@ export interface QueueStats {
   failedPermanent: number;
 }
 
-// ── Operações CRUD ───────────────────────────────────────────────────────────
-
-/**
- * Enfileira uma operação.
- * INSERT OR IGNORE garante idempotência no cliente:
- * chamar duas vezes com o mesmo clientOperationId não duplica.
- */
+/** INSERT OR IGNORE: uma entrada por clientOperationId. */
 export async function enqueue(
   clientOperationId: string,
   operationType: OperationType,
@@ -135,10 +107,6 @@ export async function enqueue(
   );
 }
 
-/**
- * Retorna operações prontas para envio.
- * Inclui PENDING e FAILED_RETRYABLE cujo next_retry_at já chegou.
- */
 export async function getPendingOperations(): Promise<OfflineOperation[]> {
   const database = await getDb();
   const rows = await database.getAllAsync<any>(
@@ -169,12 +137,7 @@ export async function markSynced(id: string): Promise<void> {
   );
 }
 
-/**
- * Falha transitória — agenda retry com backoff exponencial + jitter ±25%.
- * Se retryCount >= MAX_RETRIES, promove para FAILED_PERMANENT.
- *
- * @param clock  Injetável para testes — substitua SystemClock por um clock controlado.
- */
+/** Backoff exponencial + jitter ±25%; max retries → FAILED_PERMANENT. */
 export async function markFailedRetryable(
   id: string,
   errorMessage: string,
@@ -199,7 +162,6 @@ export async function markFailedRetryable(
     return;
   }
 
-  // Backoff: base * 3^(n-1)  com jitter ±25%
   const baseMs = Math.min(BACKOFF_BASE_MS * Math.pow(3, retryCount - 1), BACKOFF_MAX_MS);
   const jitter = baseMs * (0.75 + Math.random() * 0.5);
   const nextRetryMs = clock.now() + Math.round(jitter);
@@ -216,7 +178,6 @@ export async function markFailedRetryable(
   );
 }
 
-/** Falha permanente — não será mais tentada automaticamente. */
 export async function markFailedPermanent(id: string, errorMessage: string): Promise<void> {
   const database = await getDb();
   const row = await database.getFirstAsync<{ retry_count: number }>(
@@ -233,7 +194,6 @@ export async function markFailedPermanent(id: string, errorMessage: string): Pro
   );
 }
 
-/** Recoloca manualmente uma FAILED_PERMANENT em PENDING (ação do operador). */
 export async function retryManual(id: string): Promise<void> {
   const database = await getDb();
   await database.runAsync(
@@ -263,8 +223,6 @@ export async function getQueueStats(): Promise<QueueStats> {
   }
   return result;
 }
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function msToSqlite(ms: number): string {
   return new Date(ms).toISOString().replace('T', ' ').slice(0, 19);

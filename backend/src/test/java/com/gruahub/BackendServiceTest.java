@@ -37,12 +37,10 @@ import static org.assertj.core.api.Assertions.*;
 @QuarkusTest
 class BackendServiceTest {
 
-    // ── Constantes de tenant ─────────────────────────────────────────────────────
 
     private static final UUID TENANT_A = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
     private static final UUID TENANT_B = UUID.fromString("bbbbbbbb-0000-0000-0000-000000000002");
 
-    // ── Injeções ─────────────────────────────────────────────────────────────────
 
     @Inject
     MachineService machineService;
@@ -53,7 +51,6 @@ class BackendServiceTest {
     @Inject
     EntityManager em;
 
-    // ── Setup ────────────────────────────────────────────────────────────────────
 
     @BeforeEach
     void setTenantA() {

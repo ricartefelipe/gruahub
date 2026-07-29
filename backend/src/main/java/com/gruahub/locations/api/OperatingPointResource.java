@@ -19,11 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para Pontos de Operação (operating_point).
- * Um ponto é a localização física dentro de um estabelecimento onde
- * uma ou mais máquinas são instaladas.
- */
 @Path("/api/v1/operating-points")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -36,7 +31,6 @@ public class OperatingPointResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record OperatingPointRequest(
         @NotNull UUID establishmentId,
@@ -67,7 +61,6 @@ public class OperatingPointResource {
         Integer priorityScore
     ) {}
 
-    // ── List ─────────────────────────────────────────────────────────────────────
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE",
@@ -216,7 +209,6 @@ public class OperatingPointResource {
         return getPoint(id);
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────────
 
     private OperatingPointResponse mapRow(Object[] r) {
         return new OperatingPointResponse(

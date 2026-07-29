@@ -38,7 +38,6 @@ public class MachineService {
     public MachineResponse create(CreateMachineRequest req) {
         UUID tenantId = TenantContext.getTenantId();
 
-        // Verificar unicidade do asset_number dentro do tenant
         machineRepository.findByAssetNumberAndTenant(req.assetNumber(), tenantId)
                 .ifPresent(m -> {
                     throw new WebApplicationException(
@@ -148,7 +147,6 @@ public class MachineService {
 
     public record MachineStatusSummary(long online, long offline, long maintenance) {}
 
-    // ── Cross-tenant FK validation ────────────────────────────────────────────────
 
     private void validateOperatingPointBelongsToTenant(UUID operatingPointId, UUID tenantId) {
         Long count = (Long) em.createNativeQuery(

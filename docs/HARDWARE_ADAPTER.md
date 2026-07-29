@@ -1,6 +1,5 @@
 # GruaHub — Adaptador Fino (Hardware)
 
-Guia operacional do hardware mínimo. Spec completa: `docs/superpowers/specs/2026-07-27-adaptador-fino-v0-design.md`. Plano/backlog: `docs/superpowers/plans/2026-07-27-adaptador-fino-v0.md`. Contrato MQTT: `docs/MQTT_CONTRACT.md`.
 
 ## Tese
 
