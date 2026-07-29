@@ -92,23 +92,20 @@ export default function AlertsPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 gh-fade-up">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
             Monitoramento
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="font-display mt-1 text-3xl font-bold tracking-tight text-[color:var(--text)] md:text-4xl">
             Alertas
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="mt-1 text-sm text-[color:var(--text-muted)]">
             Abertos em tempo real · atualização a cada 30s
           </p>
         </div>
-        <Link
-          href="/dashboard/machines"
-          className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 transition-colors"
-        >
+        <Link href="/dashboard/machines" className="gh-btn-ghost">
           Ir para frota
         </Link>
       </header>
@@ -192,7 +189,7 @@ export default function AlertsPage() {
                         }
                       }}
                       disabled={acknowledge.isPending}
-                      className="text-xs px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-500 disabled:opacity-50"
+                      className="gh-btn-primary text-xs disabled:opacity-50"
                       aria-label={`Reconhecer alerta ${typeLabel}`}
                     >
                       Reconhecer

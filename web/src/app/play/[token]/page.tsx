@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+function publicApiBase(): string {
+  const configured = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').trim();
+  if (configured === '/api/gh' || configured.startsWith('/api/gh/')) {
+    return '/api/gh';
+  }
+  if (configured.startsWith('/')) {
+    return configured.replace(/\/$/, '');
+  }
+  return `${configured.replace(/\/$/, '')}/api/v1`;
+}
 
 interface PublicMachine {
   machineId: string;
@@ -34,7 +43,7 @@ function fmtMoney(cents: number, currency = 'BRL') {
 }
 
 async function publicFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
+  const res = await fetch(`${publicApiBase()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
