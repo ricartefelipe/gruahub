@@ -45,7 +45,7 @@ services:
       GRUAHUB_PLAYER_PUBLIC_ENABLED: "true"
       GRUAHUB_PAYMENT_PROVIDER: sandbox
       GRUAHUB_CORS_ORIGINS: ${GRUAHUB_CORS_ORIGINS:-http://54.94.163.136:9083,http://localhost:9083,http://localhost:3000}
-      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC -Dquarkus.swagger-ui.enable=true"
     mem_limit: 768m
 
   web:
