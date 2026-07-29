@@ -18,10 +18,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * REST resource para consulta de transações de pagamento.
- * As mutações (webhook, confirm sandbox) ficam em PaymentWebhookResource.
- */
 @Path("/api/v1/payments")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

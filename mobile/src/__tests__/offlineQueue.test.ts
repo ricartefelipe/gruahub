@@ -1,24 +1,4 @@
-/**
- * Testes unitários da fila offline.
- *
- * Coberturas obrigatórias (PROMPT 5):
- *   ✓ Enqueue + deduplicação (INSERT OR IGNORE)
- *   ✓ Ordenação por created_at (START_VISIT antes de COMPLETE_VISIT)
- *   ✓ Backoff com clock injetável (sem espera real)
- *   ✓ MAX_RETRIES → FAILED_PERMANENT automático
- *   ✓ Crash recovery (SYNCING → PENDING no startup)
- *   ✓ Ciclo completo: PENDING → SYNCING → SYNCED
- *   ✓ Ciclo com falha retryable: PENDING → SYNCING → FAILED_RETRYABLE
- *   ✓ Ciclo com falha permanente: PENDING → SYNCING → FAILED_PERMANENT
- *   ✓ retryManual (FAILED_PERMANENT → PENDING)
- *   ✓ getQueueStats conta todos os 5 estados
- *   ✓ getPendingOperations filtra next_retry_at no futuro
- *   ✓ Migration versioning (schema_version não repete migrações)
- *
- * NOTA: NÃO usar jest.mock() aqui — o moduleNameMapper já substitui
- *       expo-sqlite / expo-secure-store / expo-network pelos mocks in-memory.
- *       jest.mock() sobre um moduleNameMapper cria um automock vazio, não o nosso.
- */
+/** Não usar jest.mock() aqui — moduleNameMapper já aponta para os mocks in-memory. */
 
 import { MockSQLiteDatabase } from '../__mocks__/expo-sqlite';
 import {
@@ -36,14 +16,11 @@ import {
 } from '../db/offlineQueue';
 import { OPERATION_TYPES, MAX_RETRIES, BACKOFF_BASE_MS } from '../db/schema';
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
 
 let db: MockSQLiteDatabase;
 
 beforeEach(async () => {
   __resetDb();
-  // getDb() chama openDatabaseAsync (mapeado para nosso mock pelo moduleNameMapper)
-  // e em seguida initDb() — sem jest.mock() o módulo real é usado.
   db = await getDb() as unknown as MockSQLiteDatabase;
 });
 
@@ -55,18 +32,14 @@ function makeId(n: number) {
   return `00000000-0000-0000-0000-${String(n).padStart(12, '0')}`;
 }
 
-// ── Clock de teste ───────────────────────────────────────────────────────────
 
 class FakeClock implements Clock {
   private _now: number;
-  // Inicia em 1 dia no futuro para garantir que next_retry_at calculado
-  // não seja confundido com passado (a menos que o clock seja avançado propositalmente)
   constructor(initial = Date.now() + 86_400_000) { this._now = initial; }
   now() { return this._now; }
   advance(ms: number) { this._now += ms; }
 }
 
-// ── Testes ───────────────────────────────────────────────────────────────────
 
 describe('enqueue', () => {
   test('adiciona uma operação PENDING', async () => {

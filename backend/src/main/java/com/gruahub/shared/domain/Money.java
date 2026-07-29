@@ -4,10 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
 
-/**
- * Value object imutável para valores monetários.
- * Internamente armazenado em centavos (long) para evitar problemas de ponto flutuante.
- */
 public final class Money {
 
     private final long amountCents;

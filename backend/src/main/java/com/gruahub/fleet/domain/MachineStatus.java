@@ -2,9 +2,6 @@ package com.gruahub.fleet.domain;
 
 import java.util.Set;
 
-/**
- * State machine do status operacional da máquina.
- */
 public enum MachineStatus {
     DRAFT,
     ACTIVE,

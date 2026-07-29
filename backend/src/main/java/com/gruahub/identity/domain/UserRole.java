@@ -1,9 +1,5 @@
 package com.gruahub.identity.domain;
 
-/**
- * Papéis de usuário do sistema.
- * Sincronizados como realm roles no Keycloak.
- */
 public enum UserRole {
     PLATFORM_ADMIN,
     TENANT_ADMIN,

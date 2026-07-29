@@ -33,7 +33,6 @@ public class RoutingResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record RoutePlanResponse(
         UUID id,
@@ -59,7 +58,6 @@ public class RoutingResource {
         Double longitude
     ) {}
 
-    // ── Plans ─────────────────────────────────────────────────────────────────────
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
@@ -154,10 +152,6 @@ public class RoutingResource {
         return PageResponse.of(content, 0, Math.max(content.size(), 1), content.size());
     }
 
-    /**
-     * Gera rota para hoje com base nos priority_scores dos pontos ativos.
-     * MVP: ordena por priority_score DESC, limita aos top-N pontos do tenant.
-     */
     @POST
     @Path("/generate")
     @Transactional
@@ -171,7 +165,6 @@ public class RoutingResource {
         LocalDate today = LocalDate.now();
         UUID planId = UUID.randomUUID();
 
-        // Obtém UUID do operador a partir do subject OIDC; gera aleatório se ausente
         UUID operatorId;
         try {
             String sub = secCtx.getUserPrincipal() != null
@@ -181,8 +174,6 @@ public class RoutingResource {
             operatorId = UUID.randomUUID();
         }
 
-        // Insere nas duas colunas de data: scheduled_date (NOT NULL, 012) e
-        // planned_date (nullable alias, 017)
         em.createNativeQuery(
             "INSERT INTO route_plan " +
             "(id, tenant_id, operator_user_id, scheduled_date, planned_date, status) " +
@@ -194,7 +185,6 @@ public class RoutingResource {
             .setParameter("date", today.toString())
             .executeUpdate();
 
-        // Busca pontos ordenados por priority_score
         @SuppressWarnings("unchecked")
         List<Object[]> points = em.createNativeQuery(
             "SELECT id, priority_score, " +
@@ -211,7 +201,6 @@ public class RoutingResource {
         for (int i = 0; i < points.size(); i++) {
             Object[] p = points.get(i);
             int order = i + 1;
-            // Insere em sequence_order (NOT NULL, 012) e stop_order (alias, 017)
             em.createNativeQuery(
                 "INSERT INTO route_stop " +
                 "(id, route_plan_id, tenant_id, operating_point_id, " +

@@ -1,8 +1,5 @@
 import { Linking, Platform } from 'react-native';
 
-/**
- * Abre o app de mapas nativo com o endereço ou coordenadas do ponto.
- */
 export async function openMapsForStop(opts: {
   address?: string;
   pointName?: string;

@@ -14,15 +14,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Outbox transacional: publica eventos pendentes via MQTT.
- * <p>
- * Padrão outbox garante que o comando MQTT nunca é enviado dentro
- * da transação de negócio — eliminando o risco de mensagem enviada
- * sem commit ou commit sem mensagem.
- * <p>
- * O scheduler usa FOR UPDATE SKIP LOCKED para concorrência segura.
- */
+/** Outbox: MQTT nunca dentro da transação de negócio. */
 @ApplicationScoped
 public class OutboxPublisher {
 
@@ -82,11 +74,6 @@ public class OutboxPublisher {
         }
     }
 
-    /**
-     * Despacha um evento do outbox para o canal correto.
-     * Atualmente: GRANT_CREDIT → MQTT publishCommand.
-     * Extensão: adicionar outros tipos conforme necessidade.
-     */
     private void dispatchEvent(String aggregateType, String eventType,
                                 String payloadStr, String tenantIdStr, String aggregateId) throws Exception {
 
@@ -148,10 +135,7 @@ public class OutboxPublisher {
                 .executeUpdate();
     }
 
-    /**
-     * Enfileira um evento no outbox dentro da transação corrente.
-     * Atômico com a operação de negócio que o chama.
-     */
+    /** Enfileira na transação corrente (atômico com o caller). */
     @Transactional
     public void enqueue(UUID tenantId, String aggregateType, UUID aggregateId,
                         String eventType, String payloadJson) {

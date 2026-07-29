@@ -36,7 +36,6 @@ public class FinanceResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record SettlementResponse(
         UUID id,
@@ -81,7 +80,6 @@ public class FinanceResource {
         int versionNumber
     ) {}
 
-    // ── Settlements ───────────────────────────────────────────────────────────────
 
     @GET
     @Path("/settlements")
@@ -266,7 +264,6 @@ public class FinanceResource {
         return Response.created(location).entity(getPolicy(id, tenantId)).build();
     }
 
-    // ── Cash Collections (sangrias) ────────────────────────────────────────────────
 
     @POST
     @Path("/cash-collections")
@@ -316,7 +313,6 @@ public class FinanceResource {
         return Response.created(location).entity(Map.of("id", id)).build();
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────────
 
     private SettlementResponse getSettlement(UUID id, UUID tenantId) {
         Object[] r = (Object[]) em.createNativeQuery(

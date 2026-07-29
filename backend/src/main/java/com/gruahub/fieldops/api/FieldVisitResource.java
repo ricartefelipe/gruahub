@@ -22,13 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * REST resource para Visitas de Campo (field_visit).
- * <p>
- * Operações são idempotentes: o campo `client_operation_id` (UUID gerado
- * no mobile) é usado como chave de idempotência no banco (unique constraint).
- * Retorna 409 Conflict quando a operação já foi processada.
- */
+/** Idempotente via client_operation_id (409 se já processado). */
 @Path("/api/v1/visits")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -43,7 +37,6 @@ public class FieldVisitResource {
     @Inject
     AuditService audit;
 
-    // ── DTOs ────────────────────────────────────────────────────────────────────
 
     public record StartVisitRequest(
         @NotNull UUID visitId,
@@ -84,7 +77,6 @@ public class FieldVisitResource {
         Instant createdAt
     ) {}
 
-    // ── Queries ─────────────────────────────────────────────────────────────────
 
     @GET
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR", "FINANCE"})
@@ -146,12 +138,7 @@ public class FieldVisitResource {
         return mapVisitRow(row);
     }
 
-    // ── Mutations ────────────────────────────────────────────────────────────────
 
-    /**
-     * POST /api/v1/visits — início de visita.
-     * Idempotente via client_operation_id.
-     */
     @POST
     @Transactional
     @RolesAllowed({"PLATFORM_ADMIN", "TENANT_ADMIN", "FIELD_OPERATOR"})
@@ -204,9 +191,6 @@ public class FieldVisitResource {
         return Response.created(location).entity(Map.of("id", visitId)).build();
     }
 
-    /**
-     * POST /api/v1/visits/complete — conclusão de visita.
-     */
     @POST
     @Path("/complete")
     @Transactional
@@ -215,7 +199,6 @@ public class FieldVisitResource {
         UUID tenantId = TenantContext.getTenantId();
         UUID clientOpId = req.clientOperationId();
 
-        // Idempotência
         Object[] existing = (Object[]) em.createNativeQuery(
             "SELECT id, status FROM field_visit WHERE id = :id AND tenant_id = :tid"
         )
@@ -249,9 +232,6 @@ public class FieldVisitResource {
         return Response.ok(Map.of("id", req.visitId(), "status", "COMPLETED")).build();
     }
 
-    /**
-     * POST /api/v1/visits/checklist — salvar resultado do checklist.
-     */
     @POST
     @Path("/checklist")
     @Transactional
@@ -294,7 +274,6 @@ public class FieldVisitResource {
         return Response.ok(Map.of("id", resultId)).build();
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────────
 
     private VisitResponse mapVisitRow(Object[] r) {
         return new VisitResponse(

@@ -11,31 +11,17 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Roteia mensagens MQTT para o serviço de domínio correto.
- * <p>
- * Responsabilidades:
- * - Extrair tenantId e machineId do tópico (fonte autoritativa de identidade)
- * - Validar envelope canônico (schemaVersion, messageId, type, occurredAt)
- * - Rejeitar versões desconhecidas
- * - Limitar tamanho de payload
- * - Auditar erros sem logar payload completo
- * <p>
- * O tenant efetivo NUNCA vem do JSON — sempre do tópico, que é validado pela
- * ACL do EMQX com base nas credenciais do dispositivo.
- */
+/** Tenant efetivo vem do tópico MQTT (ACL EMQX), nunca do JSON payload. */
 @ApplicationScoped
 public class MqttMessageProcessor {
 
     private static final Logger LOG = Logger.getLogger(MqttMessageProcessor.class);
 
-    /** Versões de schema aceitas. Novas versões devem ser adicionadas aqui explicitamente. */
+    /** Schema versions aceitas — adicionar novas explicitamente. */
     private static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1);
 
-    /** Tamanho máximo de payload em bytes (64 KB). */
     private static final int MAX_PAYLOAD_BYTES = 64 * 1024;
 
-    /** Padrão canônico de tópico: v1/{tenantId}/machines/{machineId}/{type} */
     private static final Pattern TOPIC_PATTERN =
             Pattern.compile("^v1/([\\w-]+)/machines/([\\w-]+)/(\\w[\\w-]*)$");
 
@@ -45,22 +31,14 @@ public class MqttMessageProcessor {
     @Inject
     ObjectMapper objectMapper;
 
-    /**
-     * Processa uma mensagem MQTT recebida.
-     *
-     * @param topic      tópico MQTT completo
-     * @param payloadJson payload como string (tamanho já verificado pelo broker)
-     */
     public void process(String topic, String payloadJson) {
 
-        // ── 1. Limite de tamanho ────────────────────────────────────────────────
         if (payloadJson != null && payloadJson.length() > MAX_PAYLOAD_BYTES) {
             LOG.warnf("MQTT payload too large on topic %s: %d bytes (max %d) — rejected",
                     topic, payloadJson.length(), MAX_PAYLOAD_BYTES);
             return;
         }
 
-        // ── 2. Parsear tópico ───────────────────────────────────────────────────
         Matcher m = TOPIC_PATTERN.matcher(topic);
         if (!m.matches()) {
             LOG.warnf("Unknown MQTT topic format rejected: %s", topic);
@@ -71,7 +49,6 @@ public class MqttMessageProcessor {
         String machineIdStr = m.group(2);
         String topicType    = m.group(3);
 
-        // ── 3. Parsear JSON sem logar payload ──────────────────────────────────
         JsonNode payload;
         try {
             payload = objectMapper.readTree(payloadJson);
@@ -81,7 +58,6 @@ public class MqttMessageProcessor {
             return;
         }
 
-        // ── 4. Validar campos obrigatórios do envelope ─────────────────────────
         if (!payload.has("messageId") || payload.get("messageId").isNull()
                 || payload.get("messageId").asText().isBlank()) {
             LOG.warnf("MQTT envelope missing messageId on topic %s — rejected", topic);
@@ -96,7 +72,6 @@ public class MqttMessageProcessor {
             return;
         }
 
-        // ── 5. Validar schemaVersion — não aceitar versão desconhecida ─────────
         int schemaVersion = payload.has("schemaVersion")
                 ? payload.get("schemaVersion").asInt(0) : 0;
 
@@ -113,7 +88,6 @@ public class MqttMessageProcessor {
         String messageId   = payload.get("messageId").asText();
         String messageType = payload.get("type").asText();
 
-        // ── 6. Verificar coerência entre tipo do tópico e tipo da mensagem ─────
         // Não é obrigatório que coincidam exatamente, mas logamos divergências.
         if (!topicType.equalsIgnoreCase(messageType)
                 && !isExpectedTopicForType(topicType, messageType)) {
@@ -121,16 +95,11 @@ public class MqttMessageProcessor {
                     topicType, messageType, topic, messageId);
         }
 
-        // ── 7. Despachar para o serviço de domínio ─────────────────────────────
         iotEventService.handleIncomingMessage(
                 tenantIdStr, machineIdStr, messageId, messageType,
                 schemaVersion, payloadJson, payload);
     }
 
-    /**
-     * Relação esperada entre sufixo do tópico e tipo de mensagem.
-     * Permite que telemetria publique heartbeats, events publique play events, etc.
-     */
     private boolean isExpectedTopicForType(String topicSuffix, String messageType) {
         return switch (topicSuffix) {
             case "telemetry" -> messageType.equals("HEARTBEAT") || messageType.equals("STATUS_REPORT");
