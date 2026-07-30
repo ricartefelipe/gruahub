@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import KeycloakProvider from 'next-auth/providers/keycloak';
 import type { JWT } from 'next-auth/jwt';
-import type { Account, Session } from 'next-auth';
+import type { Session } from 'next-auth';
 import { loginTotalRecall } from '@/lib/totalrecall';
 
 const publicIssuer = process.env.KEYCLOAK_ISSUER!;
@@ -127,25 +127,21 @@ const handler = NextAuth({
   ],
 
   callbacks: {
-    async jwt({
-      token,
-      account,
-      user,
-    }: {
-      token: JWT;
-      account: Account | null;
-      user?: {
-        accessToken?: string;
-        refreshToken?: string;
-        expiresAt?: number;
-        roles?: string[];
-      };
-    }) {
-      if (user?.accessToken) {
-        token.accessToken = user.accessToken;
-        token.refreshToken = user.refreshToken;
-        token.expiresAt = user.expiresAt;
-        token.roles = user.roles ?? [];
+    async jwt({ token, account, user }) {
+      const credentialsUser = user as
+        | {
+            accessToken?: string;
+            refreshToken?: string;
+            expiresAt?: number;
+            roles?: string[];
+          }
+        | undefined;
+
+      if (credentialsUser?.accessToken) {
+        token.accessToken = credentialsUser.accessToken;
+        token.refreshToken = credentialsUser.refreshToken;
+        token.expiresAt = credentialsUser.expiresAt;
+        token.roles = credentialsUser.roles ?? [];
         return token;
       }
 
@@ -166,7 +162,7 @@ const handler = NextAuth({
       return refreshAccessToken(token);
     },
 
-    async session({ session, token }: { session: Session; token: JWT }) {
+    async session({ session, token }) {
       (session as Session & { accessToken?: unknown; roles?: string[]; error?: unknown }).accessToken =
         token.accessToken;
       (session as Session & { roles?: string[] }).roles = (token.roles as string[]) ?? [];
