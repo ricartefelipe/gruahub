@@ -6,9 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { BrandMark } from '@/components/BrandMark';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
-const showDemoCreds =
-  process.env.NEXT_PUBLIC_SANDBOX_ENABLED === 'true' || process.env.NODE_ENV !== 'production';
-
 function LoginErrorBanner() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
@@ -114,15 +111,6 @@ export default function LoginPage() {
                 </svg>
                 {pending ? 'Redirecionando…' : 'Entrar com SSO'}
               </button>
-
-              {showDemoCreds ? (
-                <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-4 py-3 text-sm text-slate-300">
-                  <p className="font-semibold text-cyan-200">Demo portfólio</p>
-                  <p className="mt-1 font-mono text-xs text-slate-300">
-                    gestor@diversao.demo · gruahub@2025
-                  </p>
-                </div>
-              ) : null}
             </div>
           </section>
         </main>
