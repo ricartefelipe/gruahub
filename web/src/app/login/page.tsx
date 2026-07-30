@@ -1,7 +1,7 @@
 'use client';
 
 import { signIn, useSession } from 'next-auth/react';
-import { Suspense, useEffect, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BrandMark } from '@/components/BrandMark';
 import { LoadingScreen } from '@/components/LoadingScreen';
@@ -25,6 +25,9 @@ export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (session) {
@@ -35,6 +38,27 @@ export default function LoginPage() {
   if (status === 'loading') {
     return <LoadingScreen label="Preparando acesso…" />;
   }
+
+  const handlePasswordLogin = async (event: FormEvent) => {
+    event.preventDefault();
+    setPending(true);
+    setFormError('');
+    try {
+      const result = await signIn('totalrecall', {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: '/dashboard',
+      });
+      if (result?.error) {
+        setFormError('Credenciais inválidas ou acesso expirado.');
+        return;
+      }
+      router.replace('/dashboard');
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden gh-atmosphere-ink text-white">
@@ -80,7 +104,7 @@ export default function LoginPage() {
             <div className="relative rounded-[1.7rem] border border-white/10 bg-[#0c1828]/90 p-7 shadow-soft backdrop-blur-md md:p-8">
               <p className="font-display text-xl font-semibold text-white">Entrar na operação</p>
               <p className="mt-2 text-sm text-slate-400">
-                Autenticação SSO via Keycloak — mesmo fluxo da demo e do piloto.
+                Use o e-mail e a senha do perfil TotalRecall, ou o SSO Keycloak da demo.
               </p>
 
               <Suspense fallback={null}>
@@ -88,6 +112,43 @@ export default function LoginPage() {
                   <LoginErrorBanner />
                 </div>
               </Suspense>
+
+              <form onSubmit={handlePasswordLogin} className="mt-4 space-y-3">
+                <label className="block text-sm text-slate-300">
+                  E-mail
+                  <input
+                    type="email"
+                    required
+                    autoComplete="username"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-white outline-none ring-cyan-400/40 focus:ring"
+                  />
+                </label>
+                <label className="block text-sm text-slate-300">
+                  Senha
+                  <input
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-white outline-none ring-cyan-400/40 focus:ring"
+                  />
+                </label>
+                {formError ? (
+                  <p className="text-sm text-rose-300" role="alert">
+                    {formError}
+                  </p>
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="gh-btn-primary w-full py-3.5 text-base"
+                >
+                  {pending ? 'Validando…' : 'Entrar com TotalRecall'}
+                </button>
+              </form>
 
               <button
                 type="button"
@@ -98,17 +159,9 @@ export default function LoginPage() {
                     setPending(false);
                   });
                 }}
-                className="gh-btn-primary mt-2 w-full py-3.5 text-base"
+                className="mt-3 w-full rounded-xl border border-white/15 bg-transparent py-3 text-sm font-medium text-slate-200 hover:bg-white/5"
                 aria-label="Entrar com Keycloak SSO"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
                 {pending ? 'Redirecionando…' : 'Entrar com SSO'}
               </button>
             </div>
