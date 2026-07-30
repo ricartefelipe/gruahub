@@ -1,7 +1,9 @@
 import NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import KeycloakProvider from 'next-auth/providers/keycloak';
 import type { JWT } from 'next-auth/jwt';
-import type { Account, Session } from 'next-auth';
+import type { Session } from 'next-auth';
+import { loginTotalRecall } from '@/lib/totalrecall';
 
 const publicIssuer = process.env.KEYCLOAK_ISSUER!;
 const internalIssuer =
@@ -20,6 +22,27 @@ function decodeKeycloakRoles(accessToken: string): string[] {
   } catch {
     return [];
   }
+}
+
+async function keycloakPasswordGrant(
+  username: string,
+  password: string
+): Promise<{ access_token: string; refresh_token?: string; expires_in: number } | null> {
+  const tokenUrl = `${internalIssuer}/protocol/openid-connect/token`;
+  const res = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.KEYCLOAK_CLIENT_ID!,
+      client_secret: process.env.KEYCLOAK_CLIENT_SECRET!,
+      grant_type: 'password',
+      username,
+      password,
+      scope: 'openid email profile roles',
+    }),
+  });
+  if (!res.ok) return null;
+  return res.json();
 }
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
@@ -42,11 +65,11 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
     return {
       ...token,
-      accessToken:   data.access_token,
-      refreshToken:  data.refresh_token ?? token.refreshToken,
-      expiresAt:     Math.floor(Date.now() / 1000) + (data.expires_in as number),
-      roles:         decodeKeycloakRoles(data.access_token),
-      error:         undefined,
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token ?? token.refreshToken,
+      expiresAt: Math.floor(Date.now() / 1000) + (data.expires_in as number),
+      roles: decodeKeycloakRoles(data.access_token),
+      error: undefined,
     };
   } catch {
     return { ...token, error: 'RefreshAccessTokenError' };
@@ -55,6 +78,39 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
 const handler = NextAuth({
   providers: [
+    CredentialsProvider({
+      id: 'totalrecall',
+      name: 'TotalRecall',
+      credentials: {
+        email: { label: 'E-mail', type: 'email' },
+        password: { label: 'Senha', type: 'password' },
+      },
+      async authorize(credentials) {
+        const email = String(credentials?.email ?? '');
+        const password = String(credentials?.password ?? '');
+        if (!email || !password) return null;
+
+        const tr = await loginTotalRecall(email, password, 'gruahub');
+        if (!tr?.valid) return null;
+
+        const demoUser =
+          process.env.TOTALRECALL_DEMO_KC_USER?.trim() || 'gestor@diversao.demo';
+        const demoPass =
+          process.env.TOTALRECALL_DEMO_KC_PASSWORD?.trim() || 'gruahub@2025';
+        const tokens = await keycloakPasswordGrant(demoUser, demoPass);
+        if (!tokens?.access_token) return null;
+
+        return {
+          id: tr.profile.id,
+          name: tr.profile.name,
+          email: tr.profile.email,
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          expiresAt: Math.floor(Date.now() / 1000) + tokens.expires_in,
+          roles: decodeKeycloakRoles(tokens.access_token),
+        };
+      },
+    }),
     KeycloakProvider({
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
@@ -71,13 +127,30 @@ const handler = NextAuth({
   ],
 
   callbacks: {
-    async jwt({ token, account }: { token: JWT; account: Account | null }) {
+    async jwt({ token, account, user }) {
+      const credentialsUser = user as
+        | {
+            accessToken?: string;
+            refreshToken?: string;
+            expiresAt?: number;
+            roles?: string[];
+          }
+        | undefined;
+
+      if (credentialsUser?.accessToken) {
+        token.accessToken = credentialsUser.accessToken;
+        token.refreshToken = credentialsUser.refreshToken;
+        token.expiresAt = credentialsUser.expiresAt;
+        token.roles = credentialsUser.roles ?? [];
+        return token;
+      }
+
       if (account) {
-        token.accessToken  = account.access_token;
-        token.idToken      = account.id_token;
+        token.accessToken = account.access_token;
+        token.idToken = account.id_token;
         token.refreshToken = account.refresh_token;
-        token.expiresAt    = account.expires_at;
-        token.roles        = decodeKeycloakRoles(account.access_token ?? '');
+        token.expiresAt = account.expires_at;
+        token.roles = decodeKeycloakRoles(account.access_token ?? '');
         return token;
       }
 
@@ -89,10 +162,11 @@ const handler = NextAuth({
       return refreshAccessToken(token);
     },
 
-    async session({ session, token }: { session: Session; token: JWT }) {
-      (session as any).accessToken = token.accessToken;
-      (session as any).roles       = (token.roles as string[]) ?? [];
-      (session as any).error       = token.error;
+    async session({ session, token }) {
+      (session as Session & { accessToken?: unknown; roles?: string[]; error?: unknown }).accessToken =
+        token.accessToken;
+      (session as Session & { roles?: string[] }).roles = (token.roles as string[]) ?? [];
+      (session as Session & { error?: unknown }).error = token.error;
       return session;
     },
   },
@@ -104,7 +178,7 @@ const handler = NextAuth({
 
   pages: {
     signIn: '/login',
-    error:  '/login',
+    error: '/login',
   },
 
   secret: process.env.NEXTAUTH_SECRET,
