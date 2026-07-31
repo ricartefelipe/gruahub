@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { PageHeader } from '@/components/PageHeader';
 import toast from 'react-hot-toast';
 
 interface FiscalDocument {
@@ -21,7 +22,7 @@ interface FiscalDocument {
 }
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
-  DRAFT:       { label: 'Rascunho',  className: 'bg-gray-100 text-gray-700' },
+  DRAFT:       { label: 'Rascunho',  className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]' },
   ISSUED_STUB: { label: 'Emitido*',  className: 'bg-teal-100 text-teal-800' },
   CANCELLED:   { label: 'Cancelado', className: 'bg-red-100 text-red-700' },
 };
@@ -82,19 +83,19 @@ export default function FiscalPage() {
 
   let body;
   if (isLoading) {
-    body = <p className="p-6 text-gray-400 text-sm">Carregando...</p>;
+    body = <p className="p-6 text-[color:var(--text-soft)] text-sm">Carregando...</p>;
   } else if (isError) {
     body = <p className="p-6 text-red-500 text-sm">Falha ao carregar documentos.</p>;
   } else if (documents.length === 0) {
     body = (
-      <p className="p-6 text-gray-400 text-sm text-center">
+      <p className="p-6 text-[color:var(--text-soft)] text-sm text-center">
         Nenhum documento. Confirme um pagamento para gerar rascunho automático.
       </p>
     );
   } else {
     body = (
       <table className="w-full text-sm">
-        <thead className="text-xs text-gray-500 uppercase border-b bg-gray-50">
+        <thead className="text-xs text-[color:var(--text-muted)] uppercase border-b bg-[color:var(--surface-muted)]">
           <tr>
             <th className="px-4 py-3 text-left">Tipo</th>
             <th className="px-4 py-3 text-left">Valor</th>
@@ -110,14 +111,14 @@ export default function FiscalPage() {
             return (
               <tr key={doc.id} className="border-b last:border-0">
                 <td className="px-4 py-3">
-                  <div className="font-medium text-gray-900">{doc.documentType}</div>
-                  <div className="text-xs text-gray-400 font-mono">{doc.id.slice(0, 8)}…</div>
+                  <div className="font-medium text-[color:var(--text)]">{doc.documentType}</div>
+                  <div className="text-xs text-[color:var(--text-soft)] font-mono">{doc.id.slice(0, 8)}…</div>
                 </td>
                 <td className="px-4 py-3">{fmtMoney(doc.amountCents, doc.currency)}</td>
-                <td className="px-4 py-3 text-gray-700">
+                <td className="px-4 py-3 text-[color:var(--text-muted)]">
                   {doc.issuerName || '—'}
                   {doc.issuerDocument ? (
-                    <div className="text-xs text-gray-400">{doc.issuerDocument}</div>
+                    <div className="text-xs text-[color:var(--text-soft)]">{doc.issuerDocument}</div>
                   ) : null}
                 </td>
                 <td className="px-4 py-3">
@@ -125,7 +126,7 @@ export default function FiscalPage() {
                     {meta.label}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-600">{fmtDate(doc.createdAt)}</td>
+                <td className="px-4 py-3 text-[color:var(--text-muted)]">{fmtDate(doc.createdAt)}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-2">
                     {doc.status === 'DRAFT' && (
@@ -148,7 +149,7 @@ export default function FiscalPage() {
                     )}
                     <button
                       type="button"
-                      className="text-xs text-blue-700 hover:underline"
+                      className="text-xs text-[color:var(--brand-strong)] hover:underline"
                       onClick={() => downloadPdf(doc.id)}
                     >
                       PDF
@@ -165,15 +166,20 @@ export default function FiscalPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Fiscal</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Documentos stub (não fiscais). Sem transmissão SEFAZ.
+      <PageHeader title="Fiscal" description="Documentos internos e rascunhos fiscais." />
+
+      <div
+        className="rounded-xl border border-[color:var(--warn)]/40 bg-[color:var(--warn)]/10 p-4"
+        role="status"
+      >
+        <p className="font-semibold text-[color:var(--text)]">Integração SEFAZ em demonstração</p>
+        <p className="mt-1 text-sm text-[color:var(--text-muted)]">
+          Esta área usa documentos de teste e não transmite, autoriza ou cancela documentos na SEFAZ.
         </p>
       </div>
 
       <div className="flex gap-2 items-center">
-        <label htmlFor="fiscal-status-filter" className="text-sm text-gray-600">Status</label>
+        <label htmlFor="fiscal-status-filter" className="text-sm text-[color:var(--text-muted)]">Status</label>
         <select
           id="fiscal-status-filter"
           className="border rounded-lg px-3 py-1.5 text-sm"
@@ -187,7 +193,7 @@ export default function FiscalPage() {
         </select>
       </div>
 
-      <div className="bg-white border rounded-xl overflow-hidden">
+      <div className="bg-[color:var(--surface)] border rounded-xl overflow-hidden">
         {body}
       </div>
     </div>

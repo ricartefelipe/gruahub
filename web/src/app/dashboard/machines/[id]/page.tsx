@@ -19,11 +19,11 @@ function fmtCents(cents: number) {
 
 const STATUS_META: Record<Machine['status'], { label: string; bg: string; dot: string }> = {
   ACTIVE:      { label: 'Online',       bg: 'bg-green-100 text-green-700',  dot: 'bg-green-500' },
-  OFFLINE:     { label: 'Offline',      bg: 'bg-gray-100 text-gray-600',    dot: 'bg-gray-400'  },
+  OFFLINE:     { label: 'Offline',      bg: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]',    dot: 'bg-[color:var(--text-soft)]'  },
   MAINTENANCE: { label: 'Manutenção',   bg: 'bg-yellow-100 text-yellow-700',dot: 'bg-yellow-500'},
-  DRAFT:       { label: 'Rascunho',     bg: 'bg-blue-100 text-blue-600',    dot: 'bg-blue-400'  },
+  DRAFT:       { label: 'Rascunho',     bg: 'bg-brand/10 text-brand',    dot: 'bg-brand'  },
   DISABLED:    { label: 'Desabilitada', bg: 'bg-red-100 text-red-600',      dot: 'bg-red-400'   },
-  RETIRED:     { label: 'Aposentada',   bg: 'bg-slate-100 text-slate-500',  dot: 'bg-slate-400' },
+  RETIRED:     { label: 'Aposentada',   bg: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]',  dot: 'bg-[color:var(--text-soft)]' },
 };
 
 interface Ticket  { id: string; title: string; priority: string; status: string; createdAt: string }
@@ -126,7 +126,7 @@ export default function MachineDetailPage() {
 
   // ── Loading / Error ──────────────────────────────────────────────────────────
   if (isLoading) return (
-    <div className="flex items-center justify-center h-64 text-gray-400">
+    <div className="flex items-center justify-center h-64 text-[color:var(--text-soft)]">
       <svg className="animate-spin h-8 w-8 mr-3" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -153,20 +153,20 @@ export default function MachineDetailPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            className="p-2 rounded-lg text-[color:var(--text-soft)] hover:text-[color:var(--text-muted)] hover:bg-[color:var(--surface-muted)] transition"
             aria-label="Voltar"
           >
             ←
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{machine.assetNumber}</h1>
+              <h1 className="text-2xl font-bold text-[color:var(--text)]">{machine.assetNumber}</h1>
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${meta.bg}`}>
                 <span className={`h-2 w-2 rounded-full ${meta.dot} ${isOnline ? 'animate-pulse' : ''}`} />
                 {meta.label}
               </span>
             </div>
-            {machine.name && <p className="text-gray-500 mt-0.5">{machine.name}</p>}
+            {machine.name && <p className="text-[color:var(--text-muted)] mt-0.5">{machine.name}</p>}
             <div className="mt-2 space-y-1">
               <a
                 href={`/play/${encodeURIComponent(machine.qrCode || machine.assetNumber || machine.id)}`}
@@ -176,7 +176,7 @@ export default function MachineDetailPage() {
               >
                 Abrir página do jogador →
               </a>
-              <p className="text-xs text-gray-500 break-all">
+              <p className="text-xs text-[color:var(--text-muted)] break-all">
                 QR do adesivo (copie a URL):{' '}
                 <button
                   type="button"
@@ -212,7 +212,7 @@ export default function MachineDetailPage() {
               }
             }}
             disabled={remoteCommand.isPending}
-            className="px-4 py-2 text-sm font-medium bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium bg-[color:var(--ink-soft)] text-white rounded-lg hover:bg-[color:var(--text-muted)] disabled:opacity-50"
           >
             Reiniciar
           </button>
@@ -258,7 +258,7 @@ export default function MachineDetailPage() {
               value={creditPlays}
               onChange={e => setCreditPlays(e.target.value)}
               placeholder="Jogadas"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
               aria-label="Quantidade de jogadas"
             />
             <input
@@ -266,7 +266,7 @@ export default function MachineDetailPage() {
               value={creditJustification}
               onChange={e => setCreditJustification(e.target.value)}
               placeholder="Justificativa"
-              className="md:col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="md:col-span-2 border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
               aria-label="Justificativa do crédito"
             />
           </div>
@@ -280,7 +280,7 @@ export default function MachineDetailPage() {
             </button>
             <button
               onClick={() => setShowCreditForm(false)}
-              className="px-3 py-2 text-gray-500 hover:text-gray-700"
+              className="px-3 py-2 text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]"
             >
               Cancelar
             </button>
@@ -290,23 +290,23 @@ export default function MachineDetailPage() {
 
       {/* Status cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Preço da jogada</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{fmtCents(machine.playPriceCents)}</p>
+        <div className="bg-[color:var(--surface)] rounded-xl border p-4">
+          <p className="text-xs text-[color:var(--text-muted)] uppercase tracking-wide">Preço da jogada</p>
+          <p className="text-xl font-bold text-[color:var(--text)] mt-1">{fmtCents(machine.playPriceCents)}</p>
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Cap. prêmios</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{machine.prizeCapacity}</p>
+        <div className="bg-[color:var(--surface)] rounded-xl border p-4">
+          <p className="text-xs text-[color:var(--text-muted)] uppercase tracking-wide">Cap. prêmios</p>
+          <p className="text-xl font-bold text-[color:var(--text)] mt-1">{machine.prizeCapacity}</p>
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Jogadas bônus</p>
+        <div className="bg-[color:var(--surface)] rounded-xl border p-4">
+          <p className="text-xs text-[color:var(--text-muted)] uppercase tracking-wide">Jogadas bônus</p>
           {bonusDraft === null ? (
             <div className="mt-1 flex items-baseline justify-between gap-2">
-              <p className="text-xl font-bold text-gray-900">{machine.bonusPlays}</p>
+              <p className="text-xl font-bold text-[color:var(--text)]">{machine.bonusPlays}</p>
               <button
                 type="button"
                 onClick={() => setBonusDraft(String(machine.bonusPlays))}
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-brand hover:underline"
               >
                 Editar
               </button>
@@ -321,7 +321,7 @@ export default function MachineDetailPage() {
                 className="w-full border rounded-lg px-2 py-1.5 text-sm"
                 aria-label="Jogadas bônus"
               />
-              <p className="text-xs text-gray-400">Extras somadas a cada crédito pago</p>
+              <p className="text-xs text-[color:var(--text-soft)]">Extras somadas a cada crédito pago</p>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -337,7 +337,7 @@ export default function MachineDetailPage() {
                 <button
                   type="button"
                   onClick={() => setBonusDraft(null)}
-                  className="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700"
+                  className="px-2.5 py-1 text-xs text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]"
                 >
                   Cancelar
                 </button>
@@ -345,14 +345,14 @@ export default function MachineDetailPage() {
             </div>
           )}
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Último sinal</p>
-          <p className="text-sm font-semibold text-gray-900 mt-1">{fmt(machine.lastSeenAt)}</p>
+        <div className="bg-[color:var(--surface)] rounded-xl border p-4">
+          <p className="text-xs text-[color:var(--text-muted)] uppercase tracking-wide">Último sinal</p>
+          <p className="text-sm font-semibold text-[color:var(--text)] mt-1">{fmt(machine.lastSeenAt)}</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="bg-[color:var(--surface)] rounded-xl border overflow-hidden">
         <div className="border-b">
           <nav className="flex gap-0" aria-label="Abas da máquina">
             {([
@@ -367,8 +367,8 @@ export default function MachineDetailPage() {
                 onClick={() => setTab(key)}
                 className={`px-5 py-3 text-sm font-medium border-b-2 transition ${
                   tab === key
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]'
                 }`}
               >
                 {label}
@@ -396,14 +396,14 @@ export default function MachineDetailPage() {
                 ['Versão (ETag)',    String(machine.version)],
               ].map(([label, val]) => (
                 <div key={label}>
-                  <dt className="text-xs text-gray-500 uppercase tracking-wide">{label}</dt>
-                  <dd className="mt-0.5 text-sm font-medium text-gray-900 break-all">{val}</dd>
+                  <dt className="text-xs text-[color:var(--text-muted)] uppercase tracking-wide">{label}</dt>
+                  <dd className="mt-0.5 text-sm font-medium text-[color:var(--text)] break-all">{val}</dd>
                 </div>
               ))}
               {machine.notes && (
                 <div className="sm:col-span-2">
-                  <dt className="text-xs text-gray-500 uppercase tracking-wide">Notas</dt>
-                  <dd className="mt-0.5 text-sm text-gray-700">{machine.notes}</dd>
+                  <dt className="text-xs text-[color:var(--text-muted)] uppercase tracking-wide">Notas</dt>
+                  <dd className="mt-0.5 text-sm text-[color:var(--text-muted)]">{machine.notes}</dd>
                 </div>
               )}
             </dl>
@@ -413,19 +413,19 @@ export default function MachineDetailPage() {
           {tab === 'tickets' && (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-gray-800">Chamados de manutenção</h3>
+                <h3 className="font-semibold text-[color:var(--text)]">Chamados de manutenção</h3>
                 <Link
                   href="/dashboard/maintenance"
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-brand hover:underline"
                 >
                   Ver todos →
                 </Link>
               </div>
               {tickets.length === 0 ? (
-                <p className="text-gray-400 text-sm py-8 text-center">Sem chamados abertos.</p>
+                <p className="text-[color:var(--text-soft)] text-sm py-8 text-center">Sem chamados abertos.</p>
               ) : (
                 <table className="w-full text-sm">
-                  <thead className="text-xs text-gray-500 uppercase border-b">
+                  <thead className="text-xs text-[color:var(--text-muted)] uppercase border-b">
                     <tr>
                       <th className="pb-2 text-left">Título</th>
                       <th className="pb-2 text-left">Prioridade</th>
@@ -433,20 +433,20 @@ export default function MachineDetailPage() {
                       <th className="pb-2 text-left">Criado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-[color:var(--line)]">
                     {tickets.map((t) => (
-                      <tr key={t.id} className="hover:bg-gray-50">
+                      <tr key={t.id} className="hover:bg-[color:var(--surface-muted)]">
                         <td className="py-2 font-medium">{t.title}</td>
                         <td className="py-2">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                             t.priority === 'CRITICAL' ? 'bg-red-100 text-red-700' :
                             t.priority === 'HIGH'     ? 'bg-orange-100 text-orange-700' :
                             t.priority === 'MEDIUM'   ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-blue-100 text-blue-700'
+                                                        'bg-brand/10 text-[color:var(--brand-strong)]'
                           }`}>{t.priority}</span>
                         </td>
-                        <td className="py-2 text-gray-600">{t.status}</td>
-                        <td className="py-2 text-gray-500">{fmt(t.createdAt)}</td>
+                        <td className="py-2 text-[color:var(--text-muted)]">{t.status}</td>
+                        <td className="py-2 text-[color:var(--text-muted)]">{fmt(t.createdAt)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -458,26 +458,26 @@ export default function MachineDetailPage() {
           {/* ── Alerts ── */}
           {tab === 'alerts' && (
             <div className="space-y-3">
-              <h3 className="font-semibold text-gray-800">Alertas da máquina</h3>
+              <h3 className="font-semibold text-[color:var(--text)]">Alertas da máquina</h3>
               {alerts.length === 0 ? (
-                <p className="text-gray-400 text-sm py-8 text-center">Nenhum alerta registrado.</p>
+                <p className="text-[color:var(--text-soft)] text-sm py-8 text-center">Nenhum alerta registrado.</p>
               ) : (
                 <ul className="space-y-2">
                   {alerts.map((a) => (
                     <li key={a.id} className="flex items-start gap-3 p-3 rounded-lg border">
                       <span className={`mt-0.5 h-2.5 w-2.5 rounded-full flex-shrink-0 ${
                         a.severity === 'CRITICAL' ? 'bg-red-500' :
-                        a.severity === 'WARNING'  ? 'bg-yellow-400' : 'bg-blue-400'
+                        a.severity === 'WARNING'  ? 'bg-[color:var(--warn)]' : 'bg-brand'
                       }`} />
                       <div className="min-w-0">
                         <div className="flex gap-2 items-center">
-                          <span className="text-xs font-mono text-gray-400">{a.alertType}</span>
+                          <span className="text-xs font-mono text-[color:var(--text-soft)]">{a.alertType}</span>
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            a.status === 'OPEN' ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-500'
+                            a.status === 'OPEN' ? 'bg-red-50 text-red-600' : 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]'
                           }`}>{a.status}</span>
                         </div>
-                        <p className="text-sm text-gray-700 mt-0.5">{a.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">{fmt(a.occurredAt)}</p>
+                        <p className="text-sm text-[color:var(--text-muted)] mt-0.5">{a.message}</p>
+                        <p className="text-xs text-[color:var(--text-soft)] mt-1">{fmt(a.occurredAt)}</p>
                       </div>
                     </li>
                   ))}
@@ -489,12 +489,12 @@ export default function MachineDetailPage() {
           {/* ── Stock ── */}
           {tab === 'stock' && (
             <div className="space-y-3">
-              <h3 className="font-semibold text-gray-800">Estoque de prêmios</h3>
+              <h3 className="font-semibold text-[color:var(--text)]">Estoque de prêmios</h3>
               {stock.length === 0 ? (
-                <p className="text-gray-400 text-sm py-8 text-center">Sem dados de estoque para esta máquina.</p>
+                <p className="text-[color:var(--text-soft)] text-sm py-8 text-center">Sem dados de estoque para esta máquina.</p>
               ) : (
                 <table className="w-full text-sm">
-                  <thead className="text-xs text-gray-500 uppercase border-b">
+                  <thead className="text-xs text-[color:var(--text-muted)] uppercase border-b">
                     <tr>
                       <th className="pb-2 text-left">Prêmio</th>
                       <th className="pb-2 text-right">Atual</th>
@@ -502,22 +502,22 @@ export default function MachineDetailPage() {
                       <th className="pb-2 text-left">Nível</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-[color:var(--line)]">
                     {stock.map((s) => {
                       const pct = s.minimumQuantity > 0
                         ? Math.round(s.currentQuantity / s.minimumQuantity * 100)
                         : 100;
                       return (
-                        <tr key={s.prizeId} className="hover:bg-gray-50">
+                        <tr key={s.prizeId} className="hover:bg-[color:var(--surface-muted)]">
                           <td className="py-2 font-medium">{s.prizeName}</td>
                           <td className="py-2 text-right">{s.currentQuantity}</td>
-                          <td className="py-2 text-right text-gray-500">{s.minimumQuantity}</td>
+                          <td className="py-2 text-right text-[color:var(--text-muted)]">{s.minimumQuantity}</td>
                           <td className="py-2 pl-4 w-32">
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-2 bg-[color:var(--surface-muted)] rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
                                   pct < 33  ? 'bg-red-500' :
-                                  pct < 75  ? 'bg-yellow-400' : 'bg-green-500'
+                                  pct < 75  ? 'bg-[color:var(--warn)]' : 'bg-green-500'
                                 }`}
                                 style={{ width: `${Math.min(pct, 100)}%` }}
                               />
@@ -535,30 +535,30 @@ export default function MachineDetailPage() {
           {/* ── Plays ── */}
           {tab === 'plays' && (
             <div className="space-y-3">
-              <h3 className="font-semibold text-gray-800">Últimas 20 jogadas</h3>
+              <h3 className="font-semibold text-[color:var(--text)]">Últimas 20 jogadas</h3>
               {plays.length === 0 ? (
-                <p className="text-gray-400 text-sm py-8 text-center">Sem jogadas registradas.</p>
+                <p className="text-[color:var(--text-soft)] text-sm py-8 text-center">Sem jogadas registradas.</p>
               ) : (
                 <table className="w-full text-sm">
-                  <thead className="text-xs text-gray-500 uppercase border-b">
+                  <thead className="text-xs text-[color:var(--text-muted)] uppercase border-b">
                     <tr>
                       <th className="pb-2 text-left">Resultado</th>
                       <th className="pb-2 text-right">Valor pago</th>
                       <th className="pb-2 text-left">Data/hora</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-[color:var(--line)]">
                     {plays.map((p) => (
-                      <tr key={p.id} className="hover:bg-gray-50">
+                      <tr key={p.id} className="hover:bg-[color:var(--surface-muted)]">
                         <td className="py-2">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                             p.outcome === 'WIN'  ? 'bg-green-100 text-green-700' :
                             p.outcome === 'LOSE' ? 'bg-red-100 text-red-600' :
-                                                   'bg-gray-100 text-gray-500'
+                                                   'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]'
                           }`}>{p.outcome}</span>
                         </td>
                         <td className="py-2 text-right font-mono">{fmtCents(p.amountPaidCents)}</td>
-                        <td className="py-2 text-gray-500">{fmt(p.occurredAt)}</td>
+                        <td className="py-2 text-[color:var(--text-muted)]">{fmt(p.occurredAt)}</td>
                       </tr>
                     ))}
                   </tbody>

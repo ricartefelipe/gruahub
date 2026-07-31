@@ -40,7 +40,7 @@ const STATUS_META: Record<string, { label: string; className: string }> = {
   CONFIRMED: { label: 'Confirmado', className: 'bg-green-100 text-green-700' },
   FAILED:    { label: 'Falhou',     className: 'bg-red-100 text-red-700' },
   REFUNDED:  { label: 'Estornado',  className: 'bg-purple-100 text-purple-700' },
-  EXPIRED:   { label: 'Expirado',   className: 'bg-gray-100 text-gray-600' },
+  EXPIRED:   { label: 'Expirado',   className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]' },
 };
 
 function fmtMoney(cents: number, currency = 'BRL') {
@@ -59,6 +59,7 @@ export default function PaymentsPage() {
   const [machineId, setMachineId] = useState('');
   const [amountCents, setAmountCents] = useState('');
   const [lastInitiate, setLastInitiate] = useState<InitiateResult | null>(null);
+  const [sandboxConfirmed, setSandboxConfirmed] = useState(false);
 
   const { data: payments = [], isLoading, isError, error } = useQuery<Payment[]>({
     queryKey: ['payments', statusFilter],
@@ -84,6 +85,7 @@ export default function PaymentsPage() {
       }).then(r => r.data),
     onSuccess: (data) => {
       setLastInitiate(data);
+      setSandboxConfirmed(false);
       qc.invalidateQueries({ queryKey: ['payments'] });
       toast.success(`Pagamento iniciado via ${data.provider}`);
     },
@@ -94,6 +96,7 @@ export default function PaymentsPage() {
     mutationFn: (providerTransactionId: string) =>
       api.post(`/payments/sandbox/confirm/${providerTransactionId}`),
     onSuccess: () => {
+      setSandboxConfirmed(true);
       qc.invalidateQueries({ queryKey: ['payments'] });
       toast.success('Pagamento confirmado (sandbox)');
     },
@@ -137,8 +140,31 @@ export default function PaymentsPage() {
         </div>
       </div>
 
+      {isSandbox && (
+        <section className="gh-surface border-brand/25 p-4" aria-label="Fluxo guiado do sandbox">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">Sandbox de pagamentos</p>
+          <h2 className="mt-1 text-base font-semibold text-[color:var(--text)]">Teste o ciclo completo</h2>
+          <ol className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+            <li className="rounded-lg bg-[color:var(--surface-muted)] p-3 text-[color:var(--text-muted)]">
+              <span className="font-semibold text-[color:var(--text)]">1. Iniciar</span>
+              <p className="mt-1">Selecione uma máquina e gere uma cobrança.</p>
+            </li>
+            <li className="rounded-lg bg-[color:var(--surface-muted)] p-3 text-[color:var(--text-muted)]">
+              <span className="font-semibold text-[color:var(--text)]">2. Confirmar sandbox</span>
+              <p className="mt-1">Na transação pendente, use o botão Confirmar.</p>
+            </li>
+            <li className="rounded-lg bg-[color:var(--surface-muted)] p-3 text-[color:var(--text-muted)]">
+              <span className="font-semibold text-[color:var(--text)]">3. Verificar status</span>
+              <p className="mt-1">
+                {sandboxConfirmed ? 'CONFIRMED registrado nesta sessão.' : 'O pagamento deve aparecer como CONFIRMED.'}
+              </p>
+            </li>
+          </ol>
+        </section>
+      )}
+
       {showInitiate && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+        <div className="bg-brand/10 border border-brand/30 rounded-xl p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <select
               value={machineId}
@@ -147,7 +173,7 @@ export default function PaymentsPage() {
                 const m = machines.find(x => x.id === e.target.value);
                 if (m) setAmountCents(String(m.playPriceCents));
               }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
               aria-label="Máquina"
             >
               <option value="">Selecione a máquina</option>
@@ -163,25 +189,25 @@ export default function PaymentsPage() {
               value={amountCents}
               onChange={e => setAmountCents(e.target.value)}
               placeholder="Valor (centavos)"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
             />
             <button
               onClick={() => initiate.mutate()}
               disabled={!machineId || initiate.isPending}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50"
+              className="px-4 py-2 bg-brand text-white text-sm rounded-lg disabled:opacity-50"
             >
               {initiate.isPending ? 'Gerando...' : 'Gerar cobrança'}
             </button>
           </div>
           {lastInitiate && (
-            <div className="bg-white border border-blue-100 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-gray-500">Provider:</span> {lastInitiate.provider}</p>
-              <p><span className="text-gray-500">Tx:</span> <span className="font-mono text-xs">{lastInitiate.providerTransactionId}</span></p>
+            <div className="bg-[color:var(--surface)] border border-blue-100 rounded-lg p-3 text-sm space-y-1">
+              <p><span className="text-[color:var(--text-muted)]">Provider:</span> {lastInitiate.provider}</p>
+              <p><span className="text-[color:var(--text-muted)]">Tx:</span> <span className="font-mono text-xs">{lastInitiate.providerTransactionId}</span></p>
               {lastInitiate.copyPaste && (
-                <p className="break-all"><span className="text-gray-500">Pix Copia e Cola:</span> {lastInitiate.copyPaste}</p>
+                <p className="break-all"><span className="text-[color:var(--text-muted)]">Pix Copia e Cola:</span> {lastInitiate.copyPaste}</p>
               )}
               {lastInitiate.ticketUrl && (
-                <a href={lastInitiate.ticketUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline">
+                <a href={lastInitiate.ticketUrl} target="_blank" rel="noreferrer" className="text-brand underline">
                   Abrir ticket Pix
                 </a>
               )}
@@ -193,7 +219,7 @@ export default function PaymentsPage() {
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setStatusFilter('')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium ${!statusFilter ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium ${!statusFilter ? 'bg-brand text-white' : 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-muted)]'}`}
           aria-pressed={!statusFilter}
         >
           Todos
@@ -202,7 +228,7 @@ export default function PaymentsPage() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${statusFilter === s ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${statusFilter === s ? 'bg-brand text-white' : 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-muted)]'}`}
             aria-pressed={statusFilter === s}
           >
             {m.label}
@@ -217,44 +243,44 @@ export default function PaymentsPage() {
       )}
 
       {isLoading ? (
-        <div className="text-center py-12 text-gray-400">Carregando pagamentos...</div>
+        <div className="text-center py-12 text-[color:var(--text-soft)]">Carregando pagamentos...</div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] overflow-hidden">
           <table className="w-full text-sm" role="table" aria-label="Lista de pagamentos">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-[color:var(--surface-muted)] border-b border-[color:var(--line)]">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Provider</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">ID Transação</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Máquina</th>
-                <th className="px-4 py-3 text-right font-semibold text-gray-600">Valor</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Criado em</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Confirmado em</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Ações</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Status</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Provider</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">ID Transação</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Máquina</th>
+                <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Valor</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Criado em</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Confirmado em</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[color:var(--line)]">
               {payments.map(p => {
-                const meta = STATUS_META[p.status] || { label: p.status, className: 'bg-gray-100 text-gray-600' };
+                const meta = STATUS_META[p.status] || { label: p.status, className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]' };
                 return (
-                  <tr key={p.id} className="hover:bg-gray-50">
+                  <tr key={p.id} className="hover:bg-[color:var(--surface-muted)]">
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-md text-xs font-semibold ${meta.className}`}>
                         {meta.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs font-mono text-gray-600">{p.provider}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                    <td className="px-4 py-3 text-xs font-mono text-[color:var(--text-muted)]">{p.provider}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-[color:var(--text-muted)]">
                       {p.providerTransactionId?.slice(0, 16) || p.id.slice(0, 8)}…
                     </td>
-                    <td className="px-4 py-3 text-gray-700">
+                    <td className="px-4 py-3 text-[color:var(--text-muted)]">
                       {p.machineAssetNumber || '—'}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-900">
+                    <td className="px-4 py-3 text-right font-medium text-[color:var(--text)]">
                       {fmtMoney(p.amountCents, p.currency)}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmtDate(p.createdAt)}</td>
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmtDate(p.confirmedAt)}</td>
+                    <td className="px-4 py-3 text-[color:var(--text-muted)] whitespace-nowrap">{fmtDate(p.createdAt)}</td>
+                    <td className="px-4 py-3 text-[color:var(--text-muted)] whitespace-nowrap">{fmtDate(p.confirmedAt)}</td>
                     <td className="px-4 py-3">
                       {isSandbox && p.provider === 'SANDBOX' && p.status === 'PENDING' && (
                         <div className="flex gap-1">
@@ -280,7 +306,7 @@ export default function PaymentsPage() {
               })}
               {payments.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-[color:var(--text-soft)]">
                     Nenhum pagamento encontrado.
                   </td>
                 </tr>

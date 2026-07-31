@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { EmptyState } from '@/components/EmptyState';
 
 interface Alert {
   id: string;
@@ -20,28 +21,28 @@ interface Alert {
 const SEVERITY_META: Record<string, { label: string; className: string; bar: string }> = {
   CRITICAL: {
     label: 'Crítico',
-    className: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-200',
+    className: 'bg-rose-100 text-rose-700',
     bar: 'border-l-rose-500',
   },
   HIGH: {
     label: 'Alto',
-    className: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200',
+    className: 'bg-orange-100 text-orange-800',
     bar: 'border-l-orange-500',
   },
   MEDIUM: {
     label: 'Médio',
-    className: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+    className: 'bg-amber-100 text-amber-800',
     bar: 'border-l-amber-500',
   },
   LOW: {
     label: 'Baixo',
-    className: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-200',
-    bar: 'border-l-blue-500',
+    className: 'bg-brand/10 text-[color:var(--brand-strong)]',
+    bar: 'border-l-brand',
   },
   INFO: {
     label: 'Info',
-    className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-    bar: 'border-l-slate-400',
+    className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]',
+    bar: 'border-l-[color:var(--text-soft)]',
   },
 };
 
@@ -112,7 +113,7 @@ export default function AlertsPage() {
 
       {summary && (
         <section className="flex flex-wrap gap-2" aria-label="Resumo por severidade">
-          <span className="rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-3 py-1 text-xs font-semibold">
+          <span className="rounded-full bg-[color:var(--ink-soft)] text-white px-3 py-1 text-xs font-semibold">
             Abertos: {summary.total}
           </span>
           {Object.entries(summary.bySeverity).map(([sev, count]) => {
@@ -132,7 +133,7 @@ export default function AlertsPage() {
 
       {isError && (
         <div
-          className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-900 p-4 text-rose-700 dark:text-rose-200 text-sm"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700 text-sm"
           role="alert"
         >
           Erro ao carregar alertas: {(error as Error)?.message ?? 'falha de comunicação'}
@@ -140,16 +141,15 @@ export default function AlertsPage() {
       )}
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center text-slate-400">
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center text-[color:var(--text-soft)]">
           Carregando alertas…
         </div>
       ) : alerts.length === 0 ? (
-        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 p-10 text-center">
-          <p className="text-emerald-800 dark:text-emerald-200 font-semibold">Nenhum alerta aberto</p>
-          <p className="text-emerald-700/80 dark:text-emerald-300/80 text-sm mt-1">
-            Frota estável no momento.
-          </p>
-        </div>
+        <EmptyState
+          title="Nenhum alerta aberto"
+          description="Frota estável no momento."
+          className="border-emerald-300/60 bg-emerald-50/50"
+        />
       ) : (
         <ul className="space-y-3" aria-label="Alertas abertos">
           {alerts.map((alert) => {
@@ -158,7 +158,7 @@ export default function AlertsPage() {
             return (
               <li
                 key={alert.id}
-                className={`rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 p-4 border-l-4 ${meta.bar}`}
+                className={`rounded-2xl bg-[color:var(--surface)] shadow-sm border border-[color:var(--line)]/80 p-4 border-l-4 ${meta.bar}`}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 space-y-1">
@@ -166,15 +166,15 @@ export default function AlertsPage() {
                       <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${meta.className}`}>
                         {meta.label}
                       </span>
-                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <span className="text-sm font-semibold text-[color:var(--text)]">
                         {typeLabel}
                       </span>
-                      <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">
+                      <span className="font-mono text-xs bg-[color:var(--surface-muted)] text-[color:var(--text-muted)] px-2 py-0.5 rounded">
                         {alert.machineAssetNumber || '—'}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">{alert.message}</p>
-                    <p className="text-xs text-slate-400 tabular-nums">{fmt(alert.occurredAt)}</p>
+                    <p className="text-sm text-[color:var(--text-muted)]">{alert.message}</p>
+                    <p className="text-xs text-[color:var(--text-soft)] tabular-nums">{fmt(alert.occurredAt)}</p>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <button

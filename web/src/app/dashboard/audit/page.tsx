@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { PageHeader } from '@/components/PageHeader';
 
 interface AuditEvent {
   id: string;
@@ -39,12 +40,7 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Auditoria</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Log de eventos imutável — todas as ações sensíveis são registradas
-        </p>
-      </div>
+      <PageHeader title="Auditoria" description="Log de eventos imutável — todas as ações sensíveis são registradas" />
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
@@ -53,7 +49,7 @@ export default function AuditPage() {
           value={actionFilter}
           onChange={e => setActionFilter(e.target.value)}
           placeholder="Filtrar por ação (ex: MACHINE_ACTIVATED)"
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-brand"
           aria-label="Filtrar por ação"
         />
         <input
@@ -61,18 +57,18 @@ export default function AuditPage() {
           value={resourceFilter}
           onChange={e => setResourceFilter(e.target.value)}
           placeholder="Filtrar por recurso (ex: machine)"
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-brand"
           aria-label="Filtrar por tipo de recurso"
         />
         {(actionFilter || resourceFilter) && (
           <button
             onClick={() => { setActionFilter(''); setResourceFilter(''); }}
-            className="text-sm text-blue-600 hover:text-blue-800 px-2"
+            className="text-sm text-brand hover:text-[color:var(--brand-strong)] px-2"
           >
             Limpar filtros
           </button>
         )}
-        <span className="ml-auto self-center text-sm text-gray-500">{events.length} evento(s)</span>
+        <span className="ml-auto self-center text-sm text-[color:var(--text-muted)]">{events.length} evento(s)</span>
       </div>
 
       {isError && (
@@ -82,25 +78,25 @@ export default function AuditPage() {
       )}
 
       {isLoading ? (
-        <div className="text-center py-12 text-gray-400">Carregando eventos de auditoria...</div>
+        <div className="text-center py-12 text-[color:var(--text-soft)]">Carregando eventos de auditoria...</div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] overflow-hidden">
           <table className="w-full text-xs" role="table" aria-label="Eventos de auditoria">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-[color:var(--surface-muted)] border-b border-[color:var(--line)]">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Data/Hora</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Ação</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Recurso</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">ID Recurso</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Ator</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Detalhes</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">Correlation</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Data/Hora</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Ação</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Recurso</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">ID Recurso</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Ator</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Detalhes</th>
+                <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Correlation</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 font-mono">
+            <tbody className="divide-y divide-[color:var(--line)] font-mono">
               {events.map(e => (
-                <tr key={e.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
+                <tr key={e.id} className="hover:bg-[color:var(--surface-muted)]">
+                  <td className="px-4 py-2.5 text-[color:var(--text-muted)] whitespace-nowrap">
                     {fmtDate(e.occurredAt)}
                   </td>
                   <td className="px-4 py-2.5">
@@ -108,24 +104,24 @@ export default function AuditPage() {
                       {e.action}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600">{e.resourceType}</td>
-                  <td className="px-4 py-2.5 text-gray-400">
+                  <td className="px-4 py-2.5 text-[color:var(--text-muted)]">{e.resourceType}</td>
+                  <td className="px-4 py-2.5 text-[color:var(--text-soft)]">
                     {e.resourceId ? e.resourceId.slice(0, 8) + '…' : '—'}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-600 max-w-[120px] truncate">
+                  <td className="px-4 py-2.5 text-[color:var(--text-muted)] max-w-[120px] truncate">
                     {e.actorEmail || e.actorId?.slice(0, 8) || 'system'}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-400 max-w-[160px] truncate" title={e.details || ''}>
+                  <td className="px-4 py-2.5 text-[color:var(--text-soft)] max-w-[160px] truncate" title={e.details || ''}>
                     {e.details || '—'}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-300">
+                  <td className="px-4 py-2.5 text-[color:var(--text-soft)]">
                     {e.correlationId ? e.correlationId.slice(0, 8) + '…' : '—'}
                   </td>
                 </tr>
               ))}
               {events.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400 font-sans">
+                  <td colSpan={7} className="px-4 py-8 text-center text-[color:var(--text-soft)] font-sans">
                     Nenhum evento de auditoria encontrado.
                   </td>
                 </tr>

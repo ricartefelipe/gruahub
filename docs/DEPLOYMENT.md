@@ -73,12 +73,12 @@ npm run simulate
 
 | Email                     | Senha        | Role               |
 |---------------------------|--------------|--------------------|
-| admin@gruahub.com         | admin123     | PLATFORM_ADMIN     |
-| operator@tenant1.com      | op123        | TENANT_ADMIN       |
-| field@tenant1.com         | field123     | FIELD_OPERATOR     |
-| tech@tenant1.com          | tech123      | TECHNICIAN         |
-| finance@tenant1.com       | fin123       | FINANCE            |
-| parceiro@estabelec1.com   | parceiro123  | ESTABLISHMENT_VIEWER|
+| admin@gruahub.local       | gruahub@2025 | PLATFORM_ADMIN     |
+| gestor@diversao.demo      | gruahub@2025 | TENANT_ADMIN       |
+| operador@diversao.demo    | gruahub@2025 | FIELD_OPERATOR     |
+| tecnico@diversao.demo     | gruahub@2025 | TECHNICIAN         |
+| financeiro@diversao.demo  | gruahub@2025 | FINANCE            |
+| parceiro@shoppingbv.demo  | gruahub@2025 | ESTABLISHMENT_VIEWER|
 
 ## Build de Produção
 

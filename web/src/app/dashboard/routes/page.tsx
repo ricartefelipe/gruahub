@@ -53,22 +53,22 @@ function stopStatusMeta(status: string): { label: string; className: string } {
     case 'COMPLETED':
       return {
         label: 'Concluída',
-        className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200',
+        className: 'bg-emerald-100 text-emerald-800',
       };
     case 'IN_PROGRESS':
       return {
         label: 'Em andamento',
-        className: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
+        className: 'bg-brand/10 text-blue-800',
       };
     case 'SKIPPED':
       return {
         label: 'Pulado',
-        className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+        className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]',
       };
     default:
       return {
         label: 'Pendente',
-        className: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+        className: 'bg-amber-100 text-amber-800',
       };
   }
 }
@@ -115,7 +115,7 @@ export default function RoutesPage() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center text-slate-400">
+      <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center text-[color:var(--text-soft)]">
         Carregando rotas…
       </div>
     );
@@ -125,20 +125,20 @@ export default function RoutesPage() {
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand">
             Operação
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-[color:var(--text)] mt-1">
             Rotas
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-[color:var(--text-muted)] mt-1">
             Planos ordenados por prioridade dos pontos de operação
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             href="/dashboard/visits"
-            className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 transition-colors"
+            className="inline-flex items-center rounded-full border border-[color:var(--line)] bg-[color:var(--surface)] px-3 py-1.5 text-xs font-semibold text-[color:var(--text-muted)] hover:border-brand hover:text-brand transition-colors"
           >
             Ver visitas
           </Link>
@@ -146,7 +146,7 @@ export default function RoutesPage() {
             type="button"
             onClick={() => generate.mutate()}
             disabled={generate.isPending}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-[color:var(--brand-strong)] disabled:opacity-50"
           >
             {generate.isPending ? 'Gerando…' : 'Gerar rota de hoje'}
           </button>
@@ -155,7 +155,7 @@ export default function RoutesPage() {
 
       {generate.isError && (
         <div
-          className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-900 p-4 text-rose-700 dark:text-rose-200 text-sm"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700 text-sm"
           role="alert"
         >
           Erro ao gerar rota: {(generate.error as Error)?.message ?? 'falha de comunicação'}
@@ -164,7 +164,7 @@ export default function RoutesPage() {
 
       {plansError && (
         <div
-          className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-900 p-4 text-rose-700 dark:text-rose-200 text-sm"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700 text-sm"
           role="alert"
         >
           Erro ao carregar planos: {(plansErrorObj as Error)?.message ?? 'falha de comunicação'}
@@ -173,7 +173,7 @@ export default function RoutesPage() {
 
       {stopsError && (
         <div
-          className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-900 p-4 text-rose-700 dark:text-rose-200 text-sm"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700 text-sm"
           role="alert"
         >
           Erro ao carregar paradas: {(stopsErrorObj as Error)?.message ?? 'falha de comunicação'}
@@ -181,17 +181,17 @@ export default function RoutesPage() {
       )}
 
       {plans.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
-          <p className="text-slate-700 dark:text-slate-200 font-medium">Nenhum plano de rota</p>
-          <p className="text-sm text-slate-400 mt-1">
+        <div className="rounded-2xl border border-dashed border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center">
+          <p className="text-[color:var(--text-muted)] font-medium">Nenhum plano de rota</p>
+          <p className="text-sm text-[color:var(--text-soft)] mt-1">
             Use &quot;Gerar rota de hoje&quot; para criar um plano com os pontos ativos por prioridade.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[calc(100vh-240px)]">
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col">
-            <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] overflow-hidden shadow-sm flex flex-col">
+            <div className="p-3 border-b border-[color:var(--line)] bg-[color:var(--surface-muted)]">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-muted)]">
                 Planos ({plans.length})
               </h2>
             </div>
@@ -203,17 +203,17 @@ export default function RoutesPage() {
                     <button
                       type="button"
                       onClick={() => setSelected(plan.id)}
-                      className={`w-full text-left px-4 py-3 border-b border-slate-100 dark:border-slate-800 transition-colors ${
+                      className={`w-full text-left px-4 py-3 border-b border-[color:var(--line)] transition-colors ${
                         active
-                          ? 'bg-blue-50 dark:bg-blue-950/40 border-l-2 border-l-blue-500'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                          ? 'bg-brand/10 border-l-2 border-l-blue-500'
+                          : 'hover:bg-[color:var(--surface-muted)]'
                       }`}
                       aria-pressed={active}
                     >
-                      <div className="text-sm font-medium text-slate-800 dark:text-slate-100 capitalize">
+                      <div className="text-sm font-medium text-[color:var(--text)] capitalize">
                         {fmtDate(plan.plannedDate)}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
+                      <div className="text-xs text-[color:var(--text-muted)] mt-0.5">
                         {plan.completedStops}/{plan.totalStops} paradas
                         {' · '}
                         <span
@@ -221,8 +221,8 @@ export default function RoutesPage() {
                             plan.status === 'COMPLETED'
                               ? 'font-medium text-emerald-600'
                               : plan.status === 'IN_PROGRESS'
-                                ? 'font-medium text-blue-600'
-                                : 'font-medium text-slate-500'
+                                ? 'font-medium text-brand'
+                                : 'font-medium text-[color:var(--text-muted)]'
                           }
                         >
                           {planStatusLabel(plan.status)}
@@ -235,34 +235,34 @@ export default function RoutesPage() {
             </ul>
           </div>
 
-          <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col">
+          <div className="lg:col-span-2 rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] overflow-hidden shadow-sm flex flex-col">
             {selected ? (
               <>
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <div className="p-4 border-b border-[color:var(--line)] bg-[color:var(--surface-muted)] flex items-center justify-between">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-muted)]">
                     Paradas da rota
                   </h2>
-                  <span className="text-xs text-slate-400 tabular-nums">{stops.length} pontos</span>
+                  <span className="text-xs text-[color:var(--text-soft)] tabular-nums">{stops.length} pontos</span>
                 </div>
                 {stopsLoading ? (
-                  <div className="p-8 text-center text-slate-400">Carregando paradas…</div>
+                  <div className="p-8 text-center text-[color:var(--text-soft)]">Carregando paradas…</div>
                 ) : stops.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400">Nenhuma parada neste plano.</div>
+                  <div className="p-8 text-center text-[color:var(--text-soft)]">Nenhuma parada neste plano.</div>
                 ) : (
-                  <ol className="divide-y divide-slate-100 dark:divide-slate-800 overflow-y-auto flex-1">
+                  <ol className="divide-y divide-[color:var(--line)] overflow-y-auto flex-1">
                     {stops.map((stop) => {
                       const st = stopStatusMeta(stop.status);
                       return (
                         <li
                           key={stop.id}
-                          className="px-4 py-4 flex items-start gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                          className="px-4 py-4 flex items-start gap-4 hover:bg-[color:var(--surface-muted)]/80"
                         >
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-200 flex items-center justify-center font-bold text-sm tabular-nums">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand/10 text-[color:var(--brand-strong)] flex items-center justify-center font-bold text-sm tabular-nums">
                             {stop.stopOrder}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-4">
-                              <p className="font-medium text-slate-900 dark:text-slate-100">
+                              <p className="font-medium text-[color:var(--text)]">
                                 {stop.operatingPointName}
                               </p>
                               <span
@@ -271,16 +271,16 @@ export default function RoutesPage() {
                                     ? 'text-emerald-600'
                                     : stop.priorityScore >= 50
                                       ? 'text-amber-600'
-                                      : 'text-slate-400'
+                                      : 'text-[color:var(--text-soft)]'
                                 }`}
                                 aria-label={`Score de prioridade: ${stop.priorityScore}`}
                               >
                                 {stop.priorityScore}
                               </span>
                             </div>
-                            <p className="text-sm text-slate-500 mt-0.5">{stop.address}</p>
+                            <p className="text-sm text-[color:var(--text-muted)] mt-0.5">{stop.address}</p>
                             {stop.priorityExplanation ? (
-                              <p className="text-xs text-slate-400 mt-1">{stop.priorityExplanation}</p>
+                              <p className="text-xs text-[color:var(--text-soft)] mt-1">{stop.priorityExplanation}</p>
                             ) : null}
                           </div>
                           <span
@@ -295,7 +295,7 @@ export default function RoutesPage() {
                 )}
               </>
             ) : (
-              <div className="p-8 text-center text-slate-400">Selecione um plano de rota</div>
+              <div className="p-8 text-center text-[color:var(--text-soft)]">Selecione um plano de rota</div>
             )}
           </div>
         </div>
