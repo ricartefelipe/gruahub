@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { PageHeader } from '@/components/PageHeader';
 import toast from 'react-hot-toast';
 
 interface Establishment {
@@ -94,12 +95,9 @@ export default function LocationsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Locais</h1>
-        <p className="text-sm text-gray-500 mt-1">Estabelecimentos e pontos de operação</p>
-      </div>
+      <PageHeader title="Locais" description="Estabelecimentos e pontos de operação" />
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-[color:var(--line)]">
         <nav className="flex gap-4" aria-label="Abas de locais">
           {(['establishments', 'points'] as const).map(tab => (
             <button
@@ -107,8 +105,8 @@ export default function LocationsPage() {
               onClick={() => setActiveTab(tab)}
               className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-brand text-brand'
+                  : 'border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]'
               }`}
               aria-selected={activeTab === tab}
               role="tab"
@@ -136,7 +134,7 @@ export default function LocationsPage() {
           <div className="flex justify-end">
             <button
               onClick={() => setShowNewEst(true)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-[color:var(--brand-strong)] transition-colors"
               aria-label="Novo estabelecimento"
             >
               + Novo Estabelecimento
@@ -144,13 +142,13 @@ export default function LocationsPage() {
           </div>
 
           {showNewEst && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+            <div className="bg-brand/10 border border-brand/30 rounded-xl p-4 flex gap-3">
               <input
                 type="text"
                 value={newEstName}
                 onChange={e => setNewEstName(e.target.value)}
                 placeholder="Nome do estabelecimento"
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
                 onKeyDown={e => e.key === 'Enter' && newEstName.trim() && createEst.mutate(newEstName.trim())}
                 aria-label="Nome do novo estabelecimento"
                 autoFocus
@@ -158,13 +156,13 @@ export default function LocationsPage() {
               <button
                 onClick={() => newEstName.trim() && createEst.mutate(newEstName.trim())}
                 disabled={!newEstName.trim() || createEst.isPending}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 hover:bg-blue-700"
+                className="px-4 py-2 bg-brand text-white text-sm rounded-lg disabled:opacity-50 hover:bg-[color:var(--brand-strong)]"
               >
                 {createEst.isPending ? 'Criando...' : 'Criar'}
               </button>
               <button
                 onClick={() => { setShowNewEst(false); setNewEstName(''); }}
-                className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                className="px-3 py-2 text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]"
                 aria-label="Cancelar"
               >
                 ✕
@@ -173,27 +171,27 @@ export default function LocationsPage() {
           )}
 
           {estLoading ? (
-            <div className="text-center py-8 text-gray-400">Carregando...</div>
+            <div className="text-center py-8 text-[color:var(--text-soft)]">Carregando...</div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {establishments.map(est => (
                 <div
                   key={est.id}
-                  className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-shadow"
+                  className="bg-[color:var(--surface)] border border-[color:var(--line)] rounded-xl p-4 hover:shadow-sm transition-shadow"
                   role="article"
                   aria-label={`Estabelecimento: ${est.name}`}
                 >
-                  <div className="font-semibold text-gray-900">{est.name}</div>
+                  <div className="font-semibold text-[color:var(--text)]">{est.name}</div>
                   {est.externalCode && (
-                    <div className="text-xs text-gray-400 font-mono mt-1">{est.externalCode}</div>
+                    <div className="text-xs text-[color:var(--text-soft)] font-mono mt-1">{est.externalCode}</div>
                   )}
                   <div className="mt-2 flex items-center justify-between">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      est.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      est.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]'
                     }`}>
                       {est.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-[color:var(--text-soft)]">
                       {points.filter(p => p.establishmentId === est.id).length} pontos
                     </span>
                   </div>
@@ -209,19 +207,19 @@ export default function LocationsPage() {
           <div className="flex justify-end">
             <button
               onClick={() => setShowNewPoint(true)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-[color:var(--brand-strong)]"
             >
               + Novo ponto
             </button>
           </div>
 
           {showNewPoint && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+            <div className="bg-brand/10 border border-brand/30 rounded-xl p-4 space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <select
                   value={pointForm.establishmentId}
                   onChange={e => setPointForm(f => ({ ...f, establishmentId: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                   aria-label="Estabelecimento"
                 >
                   <option value="">Estabelecimento</option>
@@ -234,14 +232,14 @@ export default function LocationsPage() {
                   value={pointForm.name}
                   onChange={e => setPointForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Nome do ponto"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
                 <input
                   type="text"
                   value={pointForm.addressCity}
                   onChange={e => setPointForm(f => ({ ...f, addressCity: e.target.value }))}
                   placeholder="Cidade"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
                 <input
                   type="text"
@@ -249,7 +247,7 @@ export default function LocationsPage() {
                   onChange={e => setPointForm(f => ({ ...f, addressState: e.target.value.toUpperCase().slice(0, 2) }))}
                   placeholder="UF"
                   maxLength={2}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
                 <input
                   type="number"
@@ -259,27 +257,27 @@ export default function LocationsPage() {
                   value={pointForm.commissionPct}
                   onChange={e => setPointForm(f => ({ ...f, commissionPct: e.target.value }))}
                   placeholder="Comissão %"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
                 <input
                   type="text"
                   value={pointForm.contractType}
                   onChange={e => setPointForm(f => ({ ...f, contractType: e.target.value }))}
                   placeholder="Tipo de contrato"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => createPoint.mutate()}
                   disabled={!pointForm.establishmentId || !pointForm.name.trim() || createPoint.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50"
+                  className="px-4 py-2 bg-brand text-white text-sm rounded-lg disabled:opacity-50"
                 >
                   {createPoint.isPending ? 'Criando...' : 'Criar'}
                 </button>
                 <button
                   onClick={() => setShowNewPoint(false)}
-                  className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                  className="px-3 py-2 text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]"
                 >
                   Cancelar
                 </button>
@@ -288,36 +286,36 @@ export default function LocationsPage() {
           )}
 
           {ptLoading ? (
-            <div className="text-center py-8 text-gray-400">Carregando pontos...</div>
+            <div className="text-center py-8 text-[color:var(--text-soft)]">Carregando pontos...</div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] overflow-hidden">
               <table className="w-full text-sm" role="table" aria-label="Pontos de operação">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-[color:var(--surface-muted)] border-b border-[color:var(--line)]">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Ponto</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Estabelecimento</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Cidade</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Comissão</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600">Score</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Ponto</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Estabelecimento</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Cidade</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Comissão</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Score</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-[color:var(--line)]">
                   {points.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.establishmentName}</td>
-                      <td className="px-4 py-3 text-gray-500">
+                    <tr key={p.id} className="hover:bg-[color:var(--surface-muted)]">
+                      <td className="px-4 py-3 font-medium text-[color:var(--text)]">{p.name}</td>
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">{p.establishmentName}</td>
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">
                         {[p.addressCity, p.addressState].filter(Boolean).join(', ') || '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">
                         {p.commissionPct != null ? `${p.commissionPct}%` : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {p.priorityScore != null ? (
                           <span className={`font-bold ${
                             p.priorityScore >= 80 ? 'text-green-600' :
-                            p.priorityScore >= 50 ? 'text-amber-600' : 'text-gray-400'
+                            p.priorityScore >= 50 ? 'text-amber-600' : 'text-[color:var(--text-soft)]'
                           }`}>
                             {p.priorityScore}
                           </span>
@@ -325,7 +323,7 @@ export default function LocationsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          p.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                          p.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]'
                         }`}>
                           {p.status === 'ACTIVE' ? 'Ativo' : p.status}
                         </span>
@@ -334,7 +332,7 @@ export default function LocationsPage() {
                   ))}
                   {points.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                      <td colSpan={6} className="px-4 py-8 text-center text-[color:var(--text-soft)]">
                         Nenhum ponto de operação cadastrado.
                       </td>
                     </tr>

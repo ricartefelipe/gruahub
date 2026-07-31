@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { PageHeader } from '@/components/PageHeader';
 import toast from 'react-hot-toast';
 
 interface StockBalance {
@@ -132,10 +133,7 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Estoque</h1>
-        <p className="text-sm text-gray-500 mt-1">Saldo de pelúcias, movimentações e catálogo</p>
-      </div>
+      <PageHeader title="Estoque" description="Saldo de pelúcias, movimentações e catálogo" />
 
       {lowStock.length > 0 && activeTab === 'balances' && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3"
@@ -152,7 +150,7 @@ export default function InventoryPage() {
         </div>
       )}
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-[color:var(--line)]">
         <nav className="flex gap-4" role="tablist" aria-label="Abas de estoque">
           {([
             ['balances', 'Saldo por Máquina'],
@@ -166,8 +164,8 @@ export default function InventoryPage() {
               aria-selected={activeTab === tab}
               className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-brand text-brand'
+                  : 'border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]'
               }`}
             >
               {label}
@@ -184,38 +182,38 @@ export default function InventoryPage() {
 
       {activeTab === 'balances' && (
         balLoading ? (
-          <div className="text-center py-12 text-gray-400">Carregando saldo...</div>
+          <div className="text-center py-12 text-[color:var(--text-soft)]">Carregando saldo...</div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] overflow-hidden">
             <table className="w-full text-sm" role="table" aria-label="Saldo de estoque por máquina">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[color:var(--surface-muted)] border-b border-[color:var(--line)]">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Máquina</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Prêmio</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">SKU</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-600">Qtd</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-600">Cap.</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Ocupação</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Máquina</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Prêmio</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">SKU</th>
+                  <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Qtd</th>
+                  <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Cap.</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Ocupação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[color:var(--line)]">
                 {balances.map((b, i) => {
                   const pct = Math.min(100, b.occupancyPct);
                   const barColor = pct < 20 ? '#ef4444' : pct < 50 ? '#f59e0b' : '#22c55e';
                   return (
-                    <tr key={i} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-xs font-medium text-gray-800">
+                    <tr key={i} className="hover:bg-[color:var(--surface-muted)]">
+                      <td className="px-4 py-3 font-mono text-xs font-medium text-[color:var(--text)]">
                         {b.machineAssetNumber}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{b.prizeName}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{b.sku}</td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">{b.prizeName}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[color:var(--text-muted)]">{b.sku}</td>
+                      <td className="px-4 py-3 text-right font-medium text-[color:var(--text)]">
                         {b.currentQuantity}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-500">{b.capacity}</td>
+                      <td className="px-4 py-3 text-right text-[color:var(--text-muted)]">{b.capacity}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[80px]">
+                          <div className="flex-1 bg-[color:var(--surface-muted)] rounded-full h-2 max-w-[80px]">
                             <div
                               className="h-2 rounded-full"
                               style={{ width: `${pct}%`, backgroundColor: barColor }}
@@ -226,7 +224,7 @@ export default function InventoryPage() {
                               aria-label={`${pct.toFixed(0)}% de ocupação`}
                             />
                           </div>
-                          <span className="text-xs text-gray-500">{pct.toFixed(0)}%</span>
+                          <span className="text-xs text-[color:var(--text-muted)]">{pct.toFixed(0)}%</span>
                         </div>
                       </td>
                     </tr>
@@ -234,7 +232,7 @@ export default function InventoryPage() {
                 })}
                 {balances.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-[color:var(--text-soft)]">
                       Nenhum dado de estoque disponível.
                     </td>
                   </tr>
@@ -253,46 +251,46 @@ export default function InventoryPage() {
 
       {activeTab === 'movements' && (
         movLoading ? (
-          <div className="text-center py-12 text-gray-400">Carregando movimentações...</div>
+          <div className="text-center py-12 text-[color:var(--text-soft)]">Carregando movimentações...</div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] overflow-hidden">
             <table className="w-full text-sm" role="table" aria-label="Movimentações de estoque">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[color:var(--surface-muted)] border-b border-[color:var(--line)]">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Data</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Tipo</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Máquina</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-600">Prêmio</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-600">Delta</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-600">Antes</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-600">Depois</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Data</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Tipo</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Máquina</th>
+                  <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Prêmio</th>
+                  <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Delta</th>
+                  <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Antes</th>
+                  <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Depois</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-[color:var(--line)]">
                 {movements.map(m => {
                   const meta = MOV_TYPE_META[m.movementType] || { label: m.movementType, delta: '?' };
                   const isPositive = m.quantityDelta > 0;
                   return (
-                    <tr key={m.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmtDate(m.occurredAt)}</td>
+                    <tr key={m.id} className="hover:bg-[color:var(--surface-muted)]">
+                      <td className="px-4 py-3 text-[color:var(--text-muted)] whitespace-nowrap">{fmtDate(m.occurredAt)}</td>
                       <td className="px-4 py-3">
-                        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                        <span className="text-xs bg-[color:var(--surface-muted)] text-[color:var(--text-muted)] px-2 py-0.5 rounded">
                           {meta.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-700">{m.machineAssetNumber}</td>
-                      <td className="px-4 py-3 text-gray-600">{m.prizeName}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[color:var(--text-muted)]">{m.machineAssetNumber}</td>
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">{m.prizeName}</td>
                       <td className={`px-4 py-3 text-right font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                         {isPositive ? '+' : ''}{m.quantityDelta}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-500">{m.quantityBefore}</td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-800">{m.quantityAfter}</td>
+                      <td className="px-4 py-3 text-right text-[color:var(--text-muted)]">{m.quantityBefore}</td>
+                      <td className="px-4 py-3 text-right font-medium text-[color:var(--text)]">{m.quantityAfter}</td>
                     </tr>
                   );
                 })}
                 {movements.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={7} className="px-4 py-8 text-center text-[color:var(--text-soft)]">
                       Nenhuma movimentação registrada.
                     </td>
                   </tr>
@@ -308,35 +306,35 @@ export default function InventoryPage() {
           <div className="flex justify-end">
             <button
               onClick={() => setShowPrizeForm(true)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-[color:var(--brand-strong)]"
             >
               + Novo prêmio
             </button>
           </div>
 
           {showPrizeForm && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+            <div className="bg-brand/10 border border-brand/30 rounded-xl p-4 space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <input
                   type="text"
                   value={prizeForm.sku}
                   onChange={e => setPrizeForm(f => ({ ...f, sku: e.target.value }))}
                   placeholder="SKU"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
                 <input
                   type="text"
                   value={prizeForm.name}
                   onChange={e => setPrizeForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Nome"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
                 <input
                   type="text"
                   value={prizeForm.description}
                   onChange={e => setPrizeForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Descrição"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
                 <input
                   type="number"
@@ -344,12 +342,12 @@ export default function InventoryPage() {
                   value={prizeForm.costCents}
                   onChange={e => setPrizeForm(f => ({ ...f, costCents: e.target.value }))}
                   placeholder="Custo (centavos)"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                 />
                 <select
                   value={prizeForm.sizeCategory}
                   onChange={e => setPrizeForm(f => ({ ...f, sizeCategory: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                   aria-label="Categoria de tamanho"
                 >
                   <option value="P">P</option>
@@ -361,13 +359,13 @@ export default function InventoryPage() {
                 <button
                   onClick={() => createPrize.mutate()}
                   disabled={!prizeForm.sku.trim() || !prizeForm.name.trim() || createPrize.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50"
+                  className="px-4 py-2 bg-brand text-white text-sm rounded-lg disabled:opacity-50"
                 >
                   {createPrize.isPending ? 'Salvando...' : 'Salvar'}
                 </button>
                 <button
                   onClick={() => setShowPrizeForm(false)}
-                  className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                  className="px-3 py-2 text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]"
                 >
                   Cancelar
                 </button>
@@ -376,30 +374,30 @@ export default function InventoryPage() {
           )}
 
           {prizeLoading ? (
-            <div className="text-center py-8 text-gray-400">Carregando catálogo...</div>
+            <div className="text-center py-8 text-[color:var(--text-soft)]">Carregando catálogo...</div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] overflow-hidden">
               <table className="w-full text-sm" role="table" aria-label="Catálogo de prêmios">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-[color:var(--surface-muted)] border-b border-[color:var(--line)]">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">SKU</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Nome</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Tamanho</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600">Custo</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600">Ação</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">SKU</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Nome</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Tamanho</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Custo</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Status</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Ação</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-[color:var(--line)]">
                   {prizes.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-700">{p.sku}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.sizeCategory || '—'}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{fmtMoney(p.costCents)}</td>
+                    <tr key={p.id} className="hover:bg-[color:var(--surface-muted)]">
+                      <td className="px-4 py-3 font-mono text-xs text-[color:var(--text-muted)]">{p.sku}</td>
+                      <td className="px-4 py-3 font-medium text-[color:var(--text)]">{p.name}</td>
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">{p.sizeCategory || '—'}</td>
+                      <td className="px-4 py-3 text-right text-[color:var(--text-muted)]">{fmtMoney(p.costCents)}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          p.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                          p.active ? 'bg-green-100 text-green-700' : 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]'
                         }`}>
                           {p.active ? 'Ativo' : 'Inativo'}
                         </span>
@@ -408,7 +406,7 @@ export default function InventoryPage() {
                         <button
                           onClick={() => togglePrize.mutate(p)}
                           disabled={togglePrize.isPending}
-                          className="text-xs px-3 py-1 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
+                          className="text-xs px-3 py-1 bg-[color:var(--ink-soft)] text-white rounded-md hover:bg-[color:var(--text-muted)] disabled:opacity-50"
                         >
                           {p.active ? 'Desativar' : 'Ativar'}
                         </button>
@@ -417,7 +415,7 @@ export default function InventoryPage() {
                   ))}
                   {prizes.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                      <td colSpan={6} className="px-4 py-8 text-center text-[color:var(--text-soft)]">
                         Nenhum prêmio cadastrado.
                       </td>
                     </tr>

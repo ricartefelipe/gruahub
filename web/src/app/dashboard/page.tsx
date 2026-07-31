@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { machinesApi, alertsApi } from '@/lib/api';
+import { machinesApi, alertsApi, playsApi, reconciliationApi } from '@/lib/api';
+import { EmptyState } from '@/components/EmptyState';
 
 function MetricCard({
   title,
@@ -67,9 +68,25 @@ export default function DashboardPage() {
     refetchInterval: 30_000,
   });
 
+  const { data: reconciliationSummary } = useQuery({
+    queryKey: ['reconciliation-summary'],
+    queryFn: () => reconciliationApi.summary().then((r) => r.data),
+    refetchInterval: 30_000,
+  });
+
+  const { data: plays } = useQuery({
+    queryKey: ['plays-latest'],
+    queryFn: () => playsApi.list(0, 1).then((r) => r.data),
+    refetchInterval: 30_000,
+  });
+
   const total = machines?.totalElements ?? 0;
   const online = summary?.online ?? 0;
   const offline = summary?.offline ?? 0;
+  const latestPlay = plays?.content[0] as
+    | { machineId?: string; occurredAt?: string; status?: string }
+    | undefined;
+  const reconciliationBreakdown = Object.entries(reconciliationSummary?.byStatus ?? {});
 
   return (
     <div className="space-y-8 gh-fade-up">
@@ -113,6 +130,72 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <section aria-label="Operação e conciliação">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[color:var(--text-soft)]">
+            Operação financeira
+          </h2>
+          <div className="flex gap-3">
+            <Link href="/dashboard/reconciliation" className="text-xs font-semibold text-brand hover:underline">
+              Conciliação
+            </Link>
+            <Link href="/dashboard/payments" className="text-xs font-semibold text-brand hover:underline">
+              Pagamentos
+            </Link>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <MetricCard
+            title="Casos pendentes"
+            value={reconciliationSummary?.totalPending ?? '—'}
+            sub="Conciliação requer atenção"
+            accent="var(--warn)"
+          />
+          <div className="gh-surface p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-soft)]">
+              Distribuição da conciliação
+            </p>
+            {reconciliationBreakdown.length ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {reconciliationBreakdown.map(([status, count]) => (
+                  <span
+                    key={status}
+                    className="rounded-md bg-[color:var(--surface-muted)] px-2 py-1 text-xs font-medium text-[color:var(--text-muted)]"
+                  >
+                    {status.replaceAll('_', ' ')}: {count}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-[color:var(--text-soft)]">Nenhum caso registrado.</p>
+            )}
+          </div>
+          <div className="gh-surface p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-soft)]">
+              Última jogada
+            </p>
+            {latestPlay ? (
+              <>
+                <p className="mt-3 text-sm font-semibold text-[color:var(--text)]">
+                  Máquina {latestPlay.machineId ?? 'não identificada'}
+                </p>
+                <p className="mt-1 text-xs text-[color:var(--text-soft)]">
+                  {latestPlay.occurredAt
+                    ? new Intl.DateTimeFormat('pt-BR', {
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      }).format(new Date(latestPlay.occurredAt))
+                    : 'Horário indisponível'}
+                  {latestPlay.status ? ` · ${latestPlay.status}` : ''}
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-[color:var(--text-soft)]">Nenhuma jogada registrada.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section aria-label="Máquinas da frota">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-[color:var(--text-soft)]">
@@ -128,21 +211,21 @@ export default function DashboardPage() {
           </div>
         ) : machinesError ? (
           <div className="gh-surface border-rose-300/50 p-10 text-center">
-            <p className="font-medium text-rose-700 dark:text-rose-300">Falha ao carregar a frota</p>
+            <p className="font-medium text-rose-700">Falha ao carregar a frota</p>
             <p className="mt-1 text-sm text-[color:var(--text-soft)]">
               Verifique a API e tente novamente em instantes.
             </p>
           </div>
         ) : !machines?.content?.length ? (
-          <div className="gh-surface border-dashed p-10 text-center">
-            <p className="font-medium text-[color:var(--text)]">Nenhuma máquina cadastrada</p>
-            <p className="mt-1 text-sm text-[color:var(--text-soft)]">
-              Cadastre a primeira máquina para monitorar a frota.
-            </p>
-            <Link href="/dashboard/machines/new" className="gh-btn-primary mt-4">
-              Nova máquina
-            </Link>
-          </div>
+          <EmptyState
+            title="Nenhuma máquina cadastrada"
+            description="Cadastre a primeira máquina para monitorar a frota."
+            action={
+              <Link href="/dashboard/machines/new" className="gh-btn-primary">
+                Nova máquina
+              </Link>
+            }
+          />
         ) : (
           <div className="gh-surface overflow-hidden">
             <div className="overflow-x-auto">

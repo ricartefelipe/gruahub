@@ -93,6 +93,25 @@ const navItems: NavItem[] = [
   },
 ];
 
+const navSections = [
+  {
+    label: 'Frota',
+    hrefs: ['/dashboard', '/dashboard/machines', '/dashboard/locations'],
+  },
+  {
+    label: 'Operação',
+    hrefs: ['/dashboard/routes', '/dashboard/visits', '/dashboard/inventory', '/dashboard/maintenance', '/dashboard/alerts'],
+  },
+  {
+    label: 'Financeiro',
+    hrefs: ['/dashboard/payments', '/dashboard/promotions', '/dashboard/reconciliation', '/dashboard/finance', '/dashboard/fiscal', '/dashboard/reports'],
+  },
+  {
+    label: 'Sistema',
+    hrefs: ['/dashboard/audit'],
+  },
+] as const;
+
 function isActivePath(pathname: string, href: string): boolean {
   if (href === '/dashboard') return pathname === '/dashboard';
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -108,23 +127,40 @@ function NavList({
   onNavigate?: () => void;
 }) {
   return (
-    <ul className="space-y-1">
-      {items.map((item) => {
-        const active = isActivePath(pathname, item.href);
+    <ul className="space-y-5">
+      {navSections.map((section) => {
+        const sectionItems = section.hrefs
+          .map((href) => items.find((item) => item.href === href))
+          .filter((item): item is NavItem => Boolean(item));
+
+        if (sectionItems.length === 0) return null;
+
         return (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              onClick={onNavigate}
-              className={`gh-nav-link ${active ? 'gh-nav-link-active' : 'gh-nav-link-idle'}`}
-            >
-              {active ? (
-                <span className="h-1.5 w-1.5 rounded-full bg-white gh-pulse" aria-hidden="true" />
-              ) : (
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-600" aria-hidden="true" />
-              )}
-              {item.label}
-            </Link>
+          <li key={section.label}>
+            <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              {section.label}
+            </p>
+            <ul className="space-y-1">
+              {sectionItems.map((item) => {
+                const active = isActivePath(pathname, item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      className={`gh-nav-link ${active ? 'gh-nav-link-active' : 'gh-nav-link-idle'}`}
+                    >
+                      {active ? (
+                        <span className="h-1.5 w-1.5 rounded-full bg-white gh-pulse" aria-hidden="true" />
+                      ) : (
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-600" aria-hidden="true" />
+                      )}
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </li>
         );
       })}
@@ -150,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const visibleNav = useMemo(() => {
     const roles: string[] = (session as { roles?: string[] } | null)?.roles ?? [];
-    if (roles.length === 0) return navItems;
+    if (roles.length === 0) return navItems.filter((item) => item.href === '/dashboard');
     return navItems.filter((item) => item.roles.some((r) => roles.includes(r)));
   }, [session]);
 

@@ -20,9 +20,9 @@ interface Visit {
 type StatusFilter = 'ALL' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
-  IN_PROGRESS: { label: 'Em andamento', className: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200' },
-  COMPLETED: { label: 'Concluída', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' },
-  CANCELLED: { label: 'Cancelada', className: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' },
+  IN_PROGRESS: { label: 'Em andamento', className: 'bg-amber-100 text-amber-800' },
+  COMPLETED: { label: 'Concluída', className: 'bg-emerald-100 text-emerald-800' },
+  CANCELLED: { label: 'Cancelada', className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]' },
 };
 
 function fmtDate(iso: string | null) {
@@ -73,40 +73,40 @@ export default function VisitsPage() {
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand">
             Campo
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-[color:var(--text)] mt-1">
             Visitas
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-[color:var(--text-muted)] mt-1">
             Registros sincronizados do app mobile · atualização a cada minuto
           </p>
         </div>
         <Link
           href="/dashboard/routes"
-          className="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-blue-500 hover:text-blue-600 transition-colors"
+          className="inline-flex items-center rounded-full border border-[color:var(--line)] bg-[color:var(--surface)] px-3 py-1.5 text-xs font-semibold text-[color:var(--text-muted)] hover:border-brand hover:text-brand transition-colors"
         >
           Ver rotas do dia
         </Link>
       </header>
 
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4" aria-label="Resumo de visitas">
-        <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 border-l-4 border-l-blue-500">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-50 mt-2 tabular-nums">
+        <div className="rounded-2xl bg-[color:var(--surface)] shadow-sm border border-[color:var(--line)]/80 p-5 border-l-4 border-l-blue-500">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-muted)]">Total</p>
+          <p className="text-3xl font-bold text-[color:var(--text)] mt-2 tabular-nums">
             {stats.total}
           </p>
         </div>
-        <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 border-l-4 border-l-amber-500">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Em andamento</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-slate-50 mt-2 tabular-nums">
+        <div className="rounded-2xl bg-[color:var(--surface)] shadow-sm border border-[color:var(--line)]/80 p-5 border-l-4 border-l-amber-500">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-muted)]">Em andamento</p>
+          <p className="text-3xl font-bold text-[color:var(--text)] mt-2 tabular-nums">
             {stats.inProgress}
           </p>
         </div>
-        <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 border-l-4 border-l-emerald-500">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Sangria (concluídas)</p>
-          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2 tabular-nums">
+        <div className="rounded-2xl bg-[color:var(--surface)] shadow-sm border border-[color:var(--line)]/80 p-5 border-l-4 border-l-emerald-500">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--text-muted)]">Sangria (concluídas)</p>
+          <p className="text-3xl font-bold text-emerald-600 mt-2 tabular-nums">
             {fmtMoney(stats.totalCash)}
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function VisitsPage() {
 
       {isError && (
         <div
-          className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-900 p-4 text-rose-700 dark:text-rose-200 text-sm"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700 text-sm"
           role="alert"
         >
           Erro ao carregar visitas: {(error as Error)?.message ?? 'falha de comunicação'}
@@ -132,8 +132,8 @@ export default function VisitsPage() {
               aria-pressed={active}
               className={
                 active
-                  ? 'rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white'
-                  : 'rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:border-blue-500'
+                  ? 'rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white'
+                  : 'rounded-full border border-[color:var(--line)] bg-[color:var(--surface)] px-3 py-1.5 text-xs font-semibold text-[color:var(--text-muted)] hover:border-brand'
               }
             >
               {f.label} ({f.count})
@@ -143,58 +143,58 @@ export default function VisitsPage() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center text-slate-400">
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center text-[color:var(--text-soft)]">
           Carregando visitas…
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
-          <p className="text-slate-700 dark:text-slate-200 font-medium">Nenhuma visita neste filtro</p>
-          <p className="text-sm text-slate-400 mt-1">
+        <div className="rounded-2xl border border-dashed border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center">
+          <p className="text-[color:var(--text-muted)] font-medium">Nenhuma visita neste filtro</p>
+          <p className="text-sm text-[color:var(--text-soft)] mt-1">
             As visitas aparecem aqui quando o app mobile sincroniza.
           </p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-          <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800" aria-label="Lista de visitas">
-            <thead className="bg-slate-50 dark:bg-slate-950/60">
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] overflow-hidden shadow-sm">
+          <table className="min-w-full divide-y divide-[color:var(--line)]" aria-label="Lista de visitas">
+            <thead className="bg-[color:var(--surface-muted)]">
               <tr>
                 {['Status', 'Ponto', 'Responsável', 'Check-in', 'Check-out', 'Sangria'].map((h) => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                    className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--text-muted)] uppercase tracking-wider"
                   >
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-[color:var(--line)]">
               {filtered.map((visit) => {
                 const meta =
                   STATUS_META[visit.status] || {
                     label: visit.status,
-                    className: 'bg-slate-100 text-slate-600',
+                    className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]',
                   };
                 return (
-                  <tr key={visit.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                  <tr key={visit.id} className="hover:bg-[color:var(--surface-muted)]/80">
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-md text-xs font-semibold ${meta.className}`}>
                         {meta.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                    <td className="px-4 py-3 font-medium text-[color:var(--text)]">
                       {visit.operatingPointName}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
+                    <td className="px-4 py-3 text-[color:var(--text-muted)]">
                       {visit.responsibleName}
                     </td>
-                    <td className="px-4 py-3 text-slate-500 tabular-nums whitespace-nowrap">
+                    <td className="px-4 py-3 text-[color:var(--text-muted)] tabular-nums whitespace-nowrap">
                       {fmtDate(visit.checkinAt)}
                     </td>
-                    <td className="px-4 py-3 text-slate-500 tabular-nums whitespace-nowrap">
+                    <td className="px-4 py-3 text-[color:var(--text-muted)] tabular-nums whitespace-nowrap">
                       {fmtDate(visit.checkoutAt)}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100 tabular-nums">
+                    <td className="px-4 py-3 text-right font-medium text-[color:var(--text)] tabular-nums">
                       {fmtMoney(visit.cashCollectedCents)}
                     </td>
                   </tr>
