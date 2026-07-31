@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { PageHeader } from '@/components/PageHeader';
 import toast from 'react-hot-toast';
 
 interface Settlement {
@@ -47,8 +48,8 @@ function fmtDate(iso: string) {
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
   PENDING:   { label: 'Pendente',  className: 'bg-yellow-100 text-yellow-700' },
-  DRAFT:     { label: 'Rascunho',  className: 'bg-gray-100 text-gray-600' },
-  APPROVED:  { label: 'Aprovado', className: 'bg-blue-100 text-blue-700' },
+  DRAFT:     { label: 'Rascunho',  className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]' },
+  APPROVED:  { label: 'Aprovado', className: 'bg-brand/10 text-[color:var(--brand-strong)]' },
   PAID:      { label: 'Pago',     className: 'bg-green-100 text-green-700' },
   DISPUTED:  { label: 'Em disputa', className: 'bg-red-100 text-red-700' },
 };
@@ -134,12 +135,9 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
-        <p className="text-sm text-gray-500 mt-1">Liquidações e políticas de comissão</p>
-      </div>
+      <PageHeader title="Financeiro" description="Liquidações e políticas de comissão" />
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-[color:var(--line)]">
         <nav className="flex gap-4" aria-label="Abas financeiras">
           {([
             ['settlements', 'Liquidações'],
@@ -150,8 +148,8 @@ export default function FinancePage() {
               onClick={() => setTab(key)}
               className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
                 tab === key
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-brand text-brand'
+                  : 'border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]'
               }`}
               aria-selected={tab === key}
               role="tab"
@@ -165,16 +163,16 @@ export default function FinancePage() {
       {tab === 'settlements' && (
         <>
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-5" role="region" aria-label="Receita bruta total">
-              <div className="text-xs text-gray-500 uppercase font-semibold">Receita Bruta</div>
-              <div className="text-2xl font-bold text-gray-900 mt-1">{fmtMoney(totals.gross)}</div>
+            <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] p-5" role="region" aria-label="Receita bruta total">
+              <div className="text-xs text-[color:var(--text-muted)] uppercase font-semibold">Receita Bruta</div>
+              <div className="text-2xl font-bold text-[color:var(--text)] mt-1">{fmtMoney(totals.gross)}</div>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-5" role="region" aria-label="Total de comissões">
-              <div className="text-xs text-gray-500 uppercase font-semibold">Comissões</div>
+            <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] p-5" role="region" aria-label="Total de comissões">
+              <div className="text-xs text-[color:var(--text-muted)] uppercase font-semibold">Comissões</div>
               <div className="text-2xl font-bold text-orange-600 mt-1">{fmtMoney(totals.commission)}</div>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-5" role="region" aria-label="Receita líquida total">
-              <div className="text-xs text-gray-500 uppercase font-semibold">Receita Líquida</div>
+            <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] p-5" role="region" aria-label="Receita líquida total">
+              <div className="text-xs text-[color:var(--text-muted)] uppercase font-semibold">Receita Líquida</div>
               <div className="text-2xl font-bold text-green-600 mt-1">{fmtMoney(totals.net)}</div>
             </div>
           </div>
@@ -186,40 +184,40 @@ export default function FinancePage() {
           )}
 
           {isLoading ? (
-            <div className="text-center py-12 text-gray-400">Carregando liquidações...</div>
+            <div className="text-center py-12 text-[color:var(--text-soft)]">Carregando liquidações...</div>
           ) : settlements.length === 0 ? (
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
-              <p className="text-gray-500">Nenhuma liquidação registrada ainda.</p>
+            <div className="bg-[color:var(--surface-muted)] border border-[color:var(--line)] rounded-xl p-8 text-center">
+              <p className="text-[color:var(--text-muted)]">Nenhuma liquidação registrada ainda.</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] overflow-hidden">
               <table className="w-full text-sm" role="table" aria-label="Liquidações financeiras">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-[color:var(--surface-muted)] border-b border-[color:var(--line)]">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Ponto</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Período</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600">Receita Bruta</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600">Comissão</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600">Receita Líquida</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600">Ações</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Ponto</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Período</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Receita Bruta</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Comissão</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Receita Líquida</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Status</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-[color:var(--line)]">
                   {settlements.map(s => {
-                    const meta = STATUS_META[s.status] || { label: s.status, className: 'bg-gray-100 text-gray-600' };
+                    const meta = STATUS_META[s.status] || { label: s.status, className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]' };
                     const canApprove = s.status === 'PENDING' || s.status === 'DRAFT';
                     const canPay = s.status === 'APPROVED';
                     return (
-                      <tr key={s.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium text-gray-900">{s.operatingPointName}</td>
-                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      <tr key={s.id} className="hover:bg-[color:var(--surface-muted)]">
+                        <td className="px-4 py-3 font-medium text-[color:var(--text)]">{s.operatingPointName}</td>
+                        <td className="px-4 py-3 text-[color:var(--text-muted)] whitespace-nowrap">
                           {fmtDate(s.periodStart)} – {fmtDate(s.periodEnd)}
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-700">{fmtMoney(s.grossRevenueCents)}</td>
+                        <td className="px-4 py-3 text-right text-[color:var(--text-muted)]">{fmtMoney(s.grossRevenueCents)}</td>
                         <td className="px-4 py-3 text-right text-orange-600">
                           {fmtMoney(s.commissionCents)}
-                          <span className="text-xs text-gray-400 ml-1">({s.commissionPct}%)</span>
+                          <span className="text-xs text-[color:var(--text-soft)] ml-1">({s.commissionPct}%)</span>
                         </td>
                         <td className="px-4 py-3 text-right font-semibold text-green-700">
                           {fmtMoney(s.netRevenueCents)}
@@ -234,7 +232,7 @@ export default function FinancePage() {
                             <button
                               onClick={() => approve.mutate(s.id)}
                               disabled={approve.isPending}
-                              className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                              className="px-3 py-1 text-xs font-medium bg-brand text-white rounded-lg hover:bg-[color:var(--brand-strong)] disabled:opacity-50"
                             >
                               Aprovar
                             </button>
@@ -264,19 +262,19 @@ export default function FinancePage() {
           <div className="flex justify-end">
             <button
               onClick={() => setShowPolicyForm(true)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-[color:var(--brand-strong)]"
             >
               + Nova política
             </button>
           </div>
 
           {showPolicyForm && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+            <div className="bg-brand/10 border border-brand/30 rounded-xl p-4 space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <select
                   value={policyForm.operatingPointId}
                   onChange={e => setPolicyForm(f => ({ ...f, operatingPointId: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                   aria-label="Ponto de operação"
                 >
                   <option value="">Selecione o ponto</option>
@@ -287,7 +285,7 @@ export default function FinancePage() {
                 <select
                   value={policyForm.policyType}
                   onChange={e => setPolicyForm(f => ({ ...f, policyType: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                   aria-label="Tipo de política"
                 >
                   <option value="PERCENTAGE">Percentual</option>
@@ -302,7 +300,7 @@ export default function FinancePage() {
                     value={policyForm.percentage}
                     onChange={e => setPolicyForm(f => ({ ...f, percentage: e.target.value }))}
                     placeholder="Percentual"
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                   />
                 ) : (
                   <input
@@ -311,21 +309,21 @@ export default function FinancePage() {
                     value={policyForm.fixedAmountCents}
                     onChange={e => setPolicyForm(f => ({ ...f, fixedAmountCents: e.target.value }))}
                     placeholder="Valor fixo (centavos)"
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                   />
                 )}
                 <input
                   type="date"
                   value={policyForm.effectiveFrom}
                   onChange={e => setPolicyForm(f => ({ ...f, effectiveFrom: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                   aria-label="Vigência inicial"
                 />
                 <input
                   type="date"
                   value={policyForm.effectiveTo}
                   onChange={e => setPolicyForm(f => ({ ...f, effectiveTo: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-[color:var(--line)] rounded-lg px-3 py-2 text-sm"
                   aria-label="Vigência final"
                 />
               </div>
@@ -333,13 +331,13 @@ export default function FinancePage() {
                 <button
                   onClick={() => createPolicy.mutate()}
                   disabled={!policyForm.operatingPointId || createPolicy.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50"
+                  className="px-4 py-2 bg-brand text-white text-sm rounded-lg disabled:opacity-50"
                 >
                   {createPolicy.isPending ? 'Salvando...' : 'Salvar'}
                 </button>
                 <button
                   onClick={() => setShowPolicyForm(false)}
-                  className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                  className="px-3 py-2 text-[color:var(--text-muted)] hover:text-[color:var(--text-muted)]"
                 >
                   Cancelar
                 </button>
@@ -348,39 +346,39 @@ export default function FinancePage() {
           )}
 
           {policiesLoading ? (
-            <div className="text-center py-8 text-gray-400">Carregando políticas...</div>
+            <div className="text-center py-8 text-[color:var(--text-soft)]">Carregando políticas...</div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-[color:var(--surface)] rounded-xl border border-[color:var(--line)] overflow-hidden">
               <table className="w-full text-sm" role="table" aria-label="Políticas de comissão">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-[color:var(--surface-muted)] border-b border-[color:var(--line)]">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Ponto</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Tipo</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Valor</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">Vigência</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600">Versão</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Ponto</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Tipo</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Valor</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[color:var(--text-muted)]">Vigência</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[color:var(--text-muted)]">Versão</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-[color:var(--line)]">
                   {policies.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{p.operatingPointName}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.policyType}</td>
-                      <td className="px-4 py-3 text-gray-700">
+                    <tr key={p.id} className="hover:bg-[color:var(--surface-muted)]">
+                      <td className="px-4 py-3 font-medium text-[color:var(--text)]">{p.operatingPointName}</td>
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">{p.policyType}</td>
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">
                         {p.policyType === 'FIXED'
                           ? fmtMoney(p.fixedAmountCents ?? 0)
                           : `${p.percentage ?? 0}%`}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-[color:var(--text-muted)]">
                         {fmtDate(p.effectiveFrom)}
                         {p.effectiveTo ? ` – ${fmtDate(p.effectiveTo)}` : ' – vigente'}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600">v{p.versionNumber}</td>
+                      <td className="px-4 py-3 text-right text-[color:var(--text-muted)]">v{p.versionNumber}</td>
                     </tr>
                   ))}
                   {policies.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                      <td colSpan={5} className="px-4 py-8 text-center text-[color:var(--text-soft)]">
                         Nenhuma política cadastrada.
                       </td>
                     </tr>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { PageHeader } from '@/components/PageHeader';
 import toast from 'react-hot-toast';
 
 interface Campaign {
@@ -30,7 +31,7 @@ function fmtDate(iso: string | null) {
 }
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
-  DRAFT:  { label: 'Rascunho', className: 'bg-gray-100 text-gray-600' },
+  DRAFT:  { label: 'Rascunho', className: 'bg-[color:var(--surface-muted)] text-[color:var(--text-muted)]' },
   ACTIVE: { label: 'Ativa',    className: 'bg-green-100 text-green-700' },
   PAUSED: { label: 'Pausada',  className: 'bg-yellow-100 text-yellow-700' },
 };
@@ -110,12 +111,10 @@ export default function PromotionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Promoções</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Campanhas de jogada bônus aplicadas no crédito pós-pagamento
-          </p>
-        </div>
+        <PageHeader
+          title="Promoções"
+          description="Campanhas de jogada bônus aplicadas no crédito pós-pagamento"
+        />
         <button
           type="button"
           onClick={() => setShowForm(v => !v)}
@@ -126,10 +125,10 @@ export default function PromotionsPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white border rounded-xl p-5 space-y-4">
+        <div className="bg-[color:var(--surface)] border rounded-xl p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="block text-sm">
-              <span className="text-gray-700 font-medium">Nome</span>
+              <span className="text-[color:var(--text-muted)] font-medium">Nome</span>
               <input
                 className="mt-1 w-full border rounded-lg px-3 py-2"
                 value={form.name}
@@ -137,7 +136,7 @@ export default function PromotionsPage() {
               />
             </label>
             <label className="block text-sm">
-              <span className="text-gray-700 font-medium">Status</span>
+              <span className="text-[color:var(--text-muted)] font-medium">Status</span>
               <select
                 className="mt-1 w-full border rounded-lg px-3 py-2"
                 value={form.status}
@@ -149,7 +148,7 @@ export default function PromotionsPage() {
               </select>
             </label>
             <label className="block text-sm">
-              <span className="text-gray-700 font-medium">Início</span>
+              <span className="text-[color:var(--text-muted)] font-medium">Início</span>
               <input
                 type="datetime-local"
                 className="mt-1 w-full border rounded-lg px-3 py-2"
@@ -158,7 +157,7 @@ export default function PromotionsPage() {
               />
             </label>
             <label className="block text-sm">
-              <span className="text-gray-700 font-medium">Fim (opcional)</span>
+              <span className="text-[color:var(--text-muted)] font-medium">Fim (opcional)</span>
               <input
                 type="datetime-local"
                 className="mt-1 w-full border rounded-lg px-3 py-2"
@@ -167,7 +166,7 @@ export default function PromotionsPage() {
               />
             </label>
             <label className="block text-sm">
-              <span className="text-gray-700 font-medium">Máquina (vazio = todas)</span>
+              <span className="text-[color:var(--text-muted)] font-medium">Máquina (vazio = todas)</span>
               <select
                 className="mt-1 w-full border rounded-lg px-3 py-2"
                 value={form.machineId}
@@ -182,7 +181,7 @@ export default function PromotionsPage() {
               </select>
             </label>
             <label className="block text-sm">
-              <span className="text-gray-700 font-medium">Regra</span>
+              <span className="text-[color:var(--text-muted)] font-medium">Regra</span>
               <select
                 className="mt-1 w-full border rounded-lg px-3 py-2"
                 value={form.ruleType}
@@ -194,7 +193,7 @@ export default function PromotionsPage() {
             </label>
             {form.ruleType === 'EXTRA_BONUS' ? (
               <label className="block text-sm">
-                <span className="text-gray-700 font-medium">Jogadas bônus extras</span>
+                <span className="text-[color:var(--text-muted)] font-medium">Jogadas bônus extras</span>
                 <input
                   type="number"
                   min={1}
@@ -206,7 +205,7 @@ export default function PromotionsPage() {
             ) : (
               <>
                 <label className="block text-sm">
-                  <span className="text-gray-700 font-medium">Compre N</span>
+                  <span className="text-[color:var(--text-muted)] font-medium">Compre N</span>
                   <input
                     type="number"
                     min={1}
@@ -216,7 +215,7 @@ export default function PromotionsPage() {
                   />
                 </label>
                 <label className="block text-sm">
-                  <span className="text-gray-700 font-medium">Ganhe M</span>
+                  <span className="text-[color:var(--text-muted)] font-medium">Ganhe M</span>
                   <input
                     type="number"
                     min={1}
@@ -239,16 +238,16 @@ export default function PromotionsPage() {
         </div>
       )}
 
-      <div className="bg-white border rounded-xl overflow-hidden">
+      <div className="bg-[color:var(--surface)] border rounded-xl overflow-hidden">
         {isLoading ? (
-          <p className="p-6 text-gray-400 text-sm">Carregando...</p>
+          <p className="p-6 text-[color:var(--text-soft)] text-sm">Carregando...</p>
         ) : isError ? (
           <p className="p-6 text-red-500 text-sm">Falha ao carregar campanhas.</p>
         ) : campaigns.length === 0 ? (
-          <p className="p-6 text-gray-400 text-sm text-center">Nenhuma campanha cadastrada.</p>
+          <p className="p-6 text-[color:var(--text-soft)] text-sm text-center">Nenhuma campanha cadastrada.</p>
         ) : (
           <table className="w-full text-sm">
-            <thead className="text-xs text-gray-500 uppercase border-b bg-gray-50">
+            <thead className="text-xs text-[color:var(--text-muted)] uppercase border-b bg-[color:var(--surface-muted)]">
               <tr>
                 <th className="px-4 py-3 text-left">Nome</th>
                 <th className="px-4 py-3 text-left">Regra</th>
@@ -266,12 +265,12 @@ export default function PromotionsPage() {
                   : `+${c.extraBonusPlays} bônus`;
                 return (
                   <tr key={c.id} className="border-b last:border-0">
-                    <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-700">{ruleLabel}</td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td className="px-4 py-3 font-medium text-[color:var(--text)]">{c.name}</td>
+                    <td className="px-4 py-3 text-[color:var(--text-muted)]">{ruleLabel}</td>
+                    <td className="px-4 py-3 text-[color:var(--text-muted)]">
                       {fmtDate(c.startsAt)} → {fmtDate(c.endsAt)}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td className="px-4 py-3 text-[color:var(--text-muted)]">
                       {c.machineId ? c.machineId.slice(0, 8) + '…' : 'Todas'}
                     </td>
                     <td className="px-4 py-3">

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { machinesApi, Machine } from '@/lib/api';
+import { EmptyState } from '@/components/EmptyState';
+import { PageHeader } from '@/components/PageHeader';
 
 type StatusFilter = 'ALL' | Machine['status'];
 
@@ -93,7 +95,7 @@ export default function MachinesPage() {
     return (
       <div
         role="alert"
-        className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-900 p-6 text-rose-700 dark:text-rose-200"
+        className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-700"
       >
         Erro ao carregar máquinas. Verifique a conexão ou as permissões.
       </div>
@@ -102,20 +104,12 @@ export default function MachinesPage() {
 
   return (
     <div className="space-y-8 gh-fade-up">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">Frota</p>
-          <h1 className="font-display mt-1 text-3xl font-bold tracking-tight text-[color:var(--text)] md:text-4xl">
-            Máquinas
-          </h1>
-          <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-            Status da frota · atualização automática a cada 30s
-          </p>
-        </div>
-        <Link href="/dashboard/machines/new" className="gh-btn-primary">
-          Nova máquina
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="Frota"
+        title="Máquinas"
+        description="Status da frota · atualização automática a cada 30s"
+        actions={<Link href="/dashboard/machines/new" className="gh-btn-primary">Nova máquina</Link>}
+      />
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Resumo da frota">
         <div className="gh-metric" style={{ ['--metric-accent' as string]: 'var(--signal)' }}>
@@ -174,35 +168,28 @@ export default function MachinesPage() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center text-slate-400">
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] p-10 text-center text-[color:var(--text-soft)]">
           Carregando frota…
         </div>
       ) : data?.content.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
-          <p className="text-slate-700 dark:text-slate-200 font-medium">Nenhuma máquina cadastrada</p>
-          <p className="text-sm text-slate-400 mt-1">Cadastre a primeira máquina para monitorar a frota.</p>
-          <Link
-            href="/dashboard/machines/new"
-            className="gh-btn-primary mt-4"
-          >
-            Nova máquina
-          </Link>
-        </div>
+        <EmptyState
+          title="Nenhuma máquina cadastrada"
+          description="Cadastre a primeira máquina para monitorar a frota."
+          action={<Link href="/dashboard/machines/new" className="gh-btn-primary">Nova máquina</Link>}
+        />
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center text-slate-500">
-          Nenhuma máquina neste filtro/busca.
-        </div>
+        <EmptyState title="Nenhuma máquina neste filtro ou busca." />
       ) : (
         <>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-            <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
-              <thead className="bg-slate-50 dark:bg-slate-950/60">
+          <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)] overflow-hidden shadow-sm">
+            <table className="min-w-full divide-y divide-[color:var(--line)]">
+              <thead className="bg-[color:var(--surface-muted)]">
                 <tr>
                   {['Patrimônio', 'Nome', 'Status', 'Preço / jogada', 'Último sinal', 'Ações'].map(
                     (h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                        className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--text-muted)] uppercase tracking-wider"
                       >
                         {h}
                       </th>
@@ -210,32 +197,32 @@ export default function MachinesPage() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-[color:var(--line)]">
                 {filtered.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-                    <td className="px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">
-                      <Link href={`/dashboard/machines/${m.id}`} className="hover:text-blue-600">
+                  <tr key={m.id} className="hover:bg-[color:var(--surface-muted)]/80">
+                    <td className="px-4 py-3 text-sm font-mono text-[color:var(--text-muted)]">
+                      <Link href={`/dashboard/machines/${m.id}`} className="hover:text-brand">
                         {m.assetNumber}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                      <Link href={`/dashboard/machines/${m.id}`} className="hover:text-blue-600">
+                    <td className="px-4 py-3 text-sm font-medium text-[color:var(--text)]">
+                      <Link href={`/dashboard/machines/${m.id}`} className="hover:text-brand">
                         {m.name}
                       </Link>
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={m.status} />
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 tabular-nums">
+                    <td className="px-4 py-3 text-sm text-[color:var(--text-muted)] tabular-nums">
                       {fmtMoney(m.playPriceCents, m.currency)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-400 tabular-nums">
+                    <td className="px-4 py-3 text-sm text-[color:var(--text-soft)] tabular-nums">
                       {fmtSeen(m.lastSeenAt)}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <select
                         aria-label={`Alterar status de ${m.name}`}
-                        className="text-xs border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        className="text-xs border border-[color:var(--line)] rounded-lg px-2 py-1.5 bg-[color:var(--surface)] text-[color:var(--text-muted)] focus:ring-2 focus:ring-brand focus:outline-none"
                         defaultValue=""
                         onChange={(e) => {
                           if (e.target.value) {
@@ -261,7 +248,7 @@ export default function MachinesPage() {
 
           {data && data.totalPages > 1 ? (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500 tabular-nums">
+              <p className="text-sm text-[color:var(--text-muted)] tabular-nums">
                 {data.totalElements} máquinas · página {page + 1} de {data.totalPages}
               </p>
               <div className="flex gap-2">
@@ -269,7 +256,7 @@ export default function MachinesPage() {
                   type="button"
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={data.first}
-                  className="px-3 py-1.5 text-sm font-semibold border border-slate-200 dark:border-slate-700 rounded-lg disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="px-3 py-1.5 text-sm font-semibold border border-[color:var(--line)] rounded-lg disabled:opacity-40 hover:bg-[color:var(--surface-muted)]"
                   aria-label="Página anterior"
                 >
                   Anterior
@@ -278,7 +265,7 @@ export default function MachinesPage() {
                   type="button"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={data.last}
-                  className="px-3 py-1.5 text-sm font-semibold border border-slate-200 dark:border-slate-700 rounded-lg disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="px-3 py-1.5 text-sm font-semibold border border-[color:var(--line)] rounded-lg disabled:opacity-40 hover:bg-[color:var(--surface-muted)]"
                   aria-label="Próxima página"
                 >
                   Próxima
