@@ -112,9 +112,14 @@ npm run build
 
 ```bash
 cd mobile
-eas build --platform android --profile production
-eas build --platform ios --profile production
+npx eas login
+npx eas init
+npx eas build --platform android --profile production
 ```
+
+O perfil `production` gera AAB para o Google Play. Antes do build, configure no ambiente `production` do EAS valores públicos com URLs HTTPS alcançáveis pelo app: `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_KEYCLOAK_URL`, `EXPO_PUBLIC_KEYCLOAK_REALM` e `EXPO_PUBLIC_KEYCLOAK_CLIENT_ID`. O `eas init` grava o `projectId` real; não versionar IDs de contas externas, chaves de serviço ou credenciais da Play Console.
+
+Após o build, baixe o AAB no dashboard EAS e, no Play Console, crie ou selecione o app com pacote `com.gruahub.mobile`, complete ficha da loja, política de privacidade, Data safety, acesso de teste e classificação de conteúdo. Envie primeiro à faixa de teste interno; promova à produção somente após a revisão.
 
 ## Checklist de piloto
 

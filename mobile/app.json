@@ -3,6 +3,9 @@
     "name": "GruaHub",
     "slug": "gruahub",
     "version": "1.0.1",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -49,6 +52,9 @@
       },
       "package": "com.gruahub.mobile",
       "versionCode": 2,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",
@@ -69,10 +75,7 @@
     "extra": {
       "apiUrl": "http://localhost:8080",
       "keycloakIssuer": "http://localhost:8180/realms/gruahub",
-      "keycloakClientId": "gruahub-mobile",
-      "eas": {
-        "projectId": "gruahub-local-dev"
-      }
+      "keycloakClientId": "gruahub-mobile"
     }
   }
 }
