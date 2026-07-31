@@ -18,6 +18,7 @@ build/
 *.tsbuildinfo
 .expo/
 .expo-shared/
+mobile/android/
 
 # Env secrets — NEVER commit real secrets
 .env
@@ -55,3 +56,6 @@ __pycache__/
 .cursor/
 AGENTS.md
 PROMPT-EVOLUCAO.md
+
+# Android build artifacts
+*.apk

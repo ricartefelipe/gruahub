@@ -2,9 +2,22 @@
 
 ## Demo sem Play Store
 
-Use o Expo Go para demonstrar o app em um Android sem publicar na Play Store.
+Instale o APK de demonstração diretamente no Android:
 
-### Expo Go no Android
+1. Abra http://54.94.163.136/mobile.html no celular.
+2. Toque em **Baixar app Android**.
+3. Quando o Android solicitar, permita a instalação de apps desta fonte.
+4. Abra o arquivo baixado e toque em **Instalar**.
+
+O APK usa a API `http://54.94.163.136:8084` e o Keycloak `http://54.94.163.136:8182`.
+
+Para gerar uma nova versão localmente:
+
+```bash
+ANDROID_HOME=/caminho/para/android-sdk ./scripts/build-mobile-apk.sh
+```
+
+### Expo Go no Android (alternativa)
 
 1. Instale o **Expo Go** no aparelho.
 2. No terminal, configure o ambiente e inicie o Metro:
