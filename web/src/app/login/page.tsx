@@ -44,7 +44,7 @@ export default function LoginPage() {
     setPending(true);
     setFormError('');
     try {
-      const result = await signIn('totalrecall', {
+      const result = await signIn('keycloak-credentials', {
         email,
         password,
         redirect: false,
@@ -104,7 +104,7 @@ export default function LoginPage() {
             <div className="relative rounded-[1.7rem] border border-white/10 bg-[#0c1828]/90 p-7 shadow-soft backdrop-blur-md md:p-8">
               <p className="font-display text-xl font-semibold text-white">Entrar na operação</p>
               <p className="mt-2 text-sm text-slate-400">
-                Use o e-mail e a senha do perfil TotalRecall, ou o SSO Keycloak da demo.
+                Use a conta Keycloak da demo (e-mail/senha ou SSO).
               </p>
 
               <Suspense fallback={null}>
@@ -146,7 +146,7 @@ export default function LoginPage() {
                   disabled={pending}
                   className="gh-btn-primary w-full py-3.5 text-base"
                 >
-                  {pending ? 'Validando…' : 'Entrar com TotalRecall'}
+                  {pending ? 'Validando…' : 'Entrar'}
                 </button>
               </form>
 
