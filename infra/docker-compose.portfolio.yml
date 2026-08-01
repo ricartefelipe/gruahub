@@ -58,9 +58,9 @@ services:
     ports: !override
       - "9083:3000"
     environment:
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://54.94.163.136:9083}
+      NEXTAUTH_URL: ${PORTFOLIO_NEXTAUTH_URL:-https://gruahub.54.94.163.136.sslip.io}
       NEXT_PUBLIC_API_URL: /api/gh
       API_INTERNAL_URL: http://backend:8080
-      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://54.94.163.136:8182/realms/gruahub}
+      KEYCLOAK_ISSUER: ${PORTFOLIO_KEYCLOAK_ISSUER:-http://54.94.163.136:8182/realms/gruahub}
       KEYCLOAK_INTERNAL_ISSUER: http://keycloak:8080/realms/gruahub
     mem_limit: 384m

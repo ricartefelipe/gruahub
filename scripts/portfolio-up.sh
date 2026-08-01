@@ -13,9 +13,9 @@ if [[ ! -f .env ]]; then
   echo "Criado infra/.env a partir de .env.example"
 fi
 
-export NEXTAUTH_URL="${NEXTAUTH_URL:-$PUBLIC_ORIGIN}"
+export PORTFOLIO_NEXTAUTH_URL="${NEXTAUTH_URL:-$PUBLIC_ORIGIN}"
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api/gh}"
-export KEYCLOAK_ISSUER="${KEYCLOAK_ISSUER:-http://${PUBLIC_IP}:8182/realms/gruahub}"
+export PORTFOLIO_KEYCLOAK_ISSUER="${KEYCLOAK_ISSUER:-http://${PUBLIC_IP}:8182/realms/gruahub}"
 export GRUAHUB_CORS_ORIGINS="${GRUAHUB_CORS_ORIGINS:-$PUBLIC_ORIGIN,http://${PUBLIC_IP}:9083,http://localhost:9083,http://localhost:3000}"
 export API_INTERNAL_URL="${API_INTERNAL_URL:-http://backend:8080}"
 
