@@ -57,6 +57,7 @@
         "http://localhost:3001/*",
         "http://localhost:9083/*",
         "http://54.94.163.136:9083/*",
+        "https://gruahub.54.94.163.136.sslip.io/*",
         "https://localhost/*"
       ],
       "webOrigins": [
@@ -64,6 +65,7 @@
         "http://localhost:3001",
         "http://localhost:9083",
         "http://54.94.163.136:9083",
+        "https://gruahub.54.94.163.136.sslip.io",
         "https://localhost"
       ],
       "attributes": {

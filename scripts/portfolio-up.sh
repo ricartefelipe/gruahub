@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INFRA="$ROOT/infra"
 PUBLIC_IP="${PUBLIC_IP:-54.94.163.136}"
+PUBLIC_HOST="${PUBLIC_HOST:-gruahub.${PUBLIC_IP}.sslip.io}"
+PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-https://${PUBLIC_HOST}}"
 
 cd "$INFRA"
 if [[ ! -f .env ]]; then
@@ -11,10 +13,10 @@ if [[ ! -f .env ]]; then
   echo "Criado infra/.env a partir de .env.example"
 fi
 
-export NEXTAUTH_URL="${NEXTAUTH_URL:-http://${PUBLIC_IP}:9083}"
+export NEXTAUTH_URL="${NEXTAUTH_URL:-$PUBLIC_ORIGIN}"
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api/gh}"
 export KEYCLOAK_ISSUER="${KEYCLOAK_ISSUER:-http://${PUBLIC_IP}:8182/realms/gruahub}"
-export GRUAHUB_CORS_ORIGINS="http://${PUBLIC_IP}:9083,http://localhost:9083,http://localhost:3000"
+export GRUAHUB_CORS_ORIGINS="${GRUAHUB_CORS_ORIGINS:-$PUBLIC_ORIGIN,http://${PUBLIC_IP}:9083,http://localhost:9083,http://localhost:3000}"
 export API_INTERNAL_URL="${API_INTERNAL_URL:-http://backend:8080}"
 
 if [[ -f .env ]]; then
@@ -40,7 +42,7 @@ for _ in $(seq 1 90); do
 done
 
 echo
-echo "Web UI:   http://${PUBLIC_IP}:9083"
+echo "Web UI:   ${PUBLIC_ORIGIN}"
 echo "Swagger:  http://${PUBLIC_IP}:8084/q/swagger-ui"
 echo "Health:   http://${PUBLIC_IP}:8084/q/health"
 echo "Keycloak: http://${PUBLIC_IP}:8182"
