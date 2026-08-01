@@ -3,7 +3,6 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import KeycloakProvider from 'next-auth/providers/keycloak';
 import type { JWT } from 'next-auth/jwt';
 import type { Session } from 'next-auth';
-import { loginTotalRecall } from '@/lib/totalrecall';
 
 const publicIssuer = process.env.KEYCLOAK_ISSUER!;
 const internalIssuer =
@@ -79,8 +78,8 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
-      id: 'totalrecall',
-      name: 'TotalRecall',
+      id: 'keycloak-credentials',
+      name: 'Keycloak',
       credentials: {
         email: { label: 'E-mail', type: 'email' },
         password: { label: 'Senha', type: 'password' },
@@ -90,16 +89,13 @@ const handler = NextAuth({
         const password = String(credentials?.password ?? '');
         if (!email || !password) return null;
 
-        const tr = await loginTotalRecall(email, password, 'gruahub');
-        if (!tr?.valid) return null;
-
         const tokens = await keycloakPasswordGrant(email, password);
         if (!tokens?.access_token) return null;
 
         return {
-          id: tr.profile.id,
-          name: tr.profile.name,
-          email: tr.profile.email,
+          id: email,
+          name: email.split('@')[0] || email,
+          email,
           accessToken: tokens.access_token,
           refreshToken: tokens.refresh_token,
           expiresAt: Math.floor(Date.now() / 1000) + tokens.expires_in,
