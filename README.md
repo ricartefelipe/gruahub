@@ -31,12 +31,16 @@ cd infra && cp -n .env.example .env
 
 | Recurso | URL |
 |---|---|
-| Web | http://54.94.163.136:9083 |
+| Web (HTTPS) | https://gruahub.54.94.163.136.sslip.io/login |
+| Teste no celular | https://gruahub.54.94.163.136.sslip.io/mobile.html |
+| Web (HTTP legado) | http://54.94.163.136:9083 |
 | Swagger | http://54.94.163.136:8084/q/swagger-ui |
 | Health | http://54.94.163.136:8084/q/health |
 | Keycloak | http://54.94.163.136:8182 |
 
-Login demo: `gestor@diversao.demo` / `gruahub@2025`.
+Login demo: `gestor@diversao.demo` / `gruahub@2025` (gestor) ou `operador@diversao.demo` / `gruahub@2025` (campo no celular).
+
+No celular, use o **Chrome + HTTPS** (`mobile.html` → login). Não dependa de Play Store nem do APK HTTP experimental.
 
 A UI do portfólio chama a API via proxy same-origin (`/api/gh`) para evitar CORS no browser; o Swagger continua em `:8084`.
 

@@ -71,12 +71,25 @@ copiar a URL do adesivo.
 
 ---
 
-### Etapa 4 — Visita de campo no mobile
+### Etapa 4 — Operação de campo no celular (sem Play Store)
+
+Canal recomendado no piloto: **web HTTPS no Chrome**.
+
+1. No Android, abrir  
+   `https://gruahub.54.94.163.136.sslip.io/mobile.html`
+2. Toque em **Abrir login HTTPS**.
+3. **Entrar com SSO** → `operador@diversao.demo` / `gruahub@2025`
+4. Menu → **Rotas** e **Visitas**.
 
 O seed demo cria rota do dia (`CURRENT_DATE`) com 2 paradas.
+Para GPS/câmera/offline do app nativo, use Expo Go (`cd mobile && npx expo start --tunnel`) — ver `mobile/README.md`.
+Não use o APK HTTP experimental (cleartext bloqueado no Android).
+
+### Etapa 4b — Visita completa no Expo (opcional)
+
 O app chama `GET /api/v1/routes?date=YYYY-MM-DD` e usa `operatingPointId` na visita.
 
-Abrir Expo Go → escanear QR do `npx expo start`.
+Abrir Expo Go → escanear QR do `npx expo start --tunnel`.
 Login com `operador@diversao.demo` / `gruahub@2025`.
 
 Fluxo:
