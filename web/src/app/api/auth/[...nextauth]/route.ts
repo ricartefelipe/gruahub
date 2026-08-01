@@ -93,11 +93,7 @@ const handler = NextAuth({
         const tr = await loginTotalRecall(email, password, 'gruahub');
         if (!tr?.valid) return null;
 
-        const demoUser =
-          process.env.TOTALRECALL_DEMO_KC_USER?.trim() || 'gestor@diversao.demo';
-        const demoPass =
-          process.env.TOTALRECALL_DEMO_KC_PASSWORD?.trim() || 'gruahub@2025';
-        const tokens = await keycloakPasswordGrant(demoUser, demoPass);
+        const tokens = await keycloakPasswordGrant(email, password);
         if (!tokens?.access_token) return null;
 
         return {
