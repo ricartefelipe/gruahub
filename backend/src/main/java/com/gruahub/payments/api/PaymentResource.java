@@ -1,6 +1,7 @@
 package com.gruahub.payments.api;
 
 import com.gruahub.payments.application.PaymentInitiationService;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.shared.api.PageResponse;
 import jakarta.annotation.security.RolesAllowed;
@@ -106,8 +107,8 @@ public class PaymentResource {
             (UUID) r[0], (String) r[1], (String) r[2],
             r[3] != null ? ((Number) r[3]).longValue() : 0L,
             (String) r[4], (String) r[5], (UUID) r[6], (String) r[7], (String) r[8],
-            r[9] != null ? ((java.sql.Timestamp) r[9]).toInstant() : null,
-            r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null
+            r[9] != null ? NativeQueryValues.toInstant(r[9]) : null,
+            r[10] != null ? NativeQueryValues.toInstant(r[10]) : null
         )).toList();
         return PageResponse.of(content, page, lim, total);
     }
@@ -134,8 +135,8 @@ public class PaymentResource {
             (UUID) r[0], (String) r[1], (String) r[2],
             r[3] != null ? ((Number) r[3]).longValue() : 0L,
             (String) r[4], (String) r[5], (UUID) r[6], (String) r[7], (String) r[8],
-            r[9] != null ? ((java.sql.Timestamp) r[9]).toInstant() : null,
-            r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null
+            r[9] != null ? NativeQueryValues.toInstant(r[9]) : null,
+            r[10] != null ? NativeQueryValues.toInstant(r[10]) : null
         );
     }
 }
