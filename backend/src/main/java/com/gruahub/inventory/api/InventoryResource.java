@@ -210,6 +210,26 @@ public class InventoryResource {
                 .build();
         }
 
+        long machineCount = ((Number) em.createNativeQuery(
+            "SELECT COUNT(*) FROM machine WHERE id = :mid AND tenant_id = :tid"
+        )
+            .setParameter("mid", req.machineId())
+            .setParameter("tid", tenantId)
+            .getSingleResult()).longValue();
+        if (machineCount == 0) {
+            throw new BadRequestException("Machine not found in tenant");
+        }
+
+        long prizeCount = ((Number) em.createNativeQuery(
+            "SELECT COUNT(*) FROM prize WHERE id = :pid AND tenant_id = :tid"
+        )
+            .setParameter("pid", req.prizeId())
+            .setParameter("tid", tenantId)
+            .getSingleResult()).longValue();
+        if (prizeCount == 0) {
+            throw new BadRequestException("Prize not found in tenant");
+        }
+
         int delta = "PRIZE_GIVEN".equals(req.movementType())
             ? -Math.abs(req.quantityDelta())
             : Math.abs(req.quantityDelta());
@@ -222,6 +242,7 @@ public class InventoryResource {
             "  SET quantity = GREATEST(0, machine_stock_balance.quantity + :delta), " +
             "      updated_at = NOW(), " +
             "      version = machine_stock_balance.version + 1 " +
+            "  WHERE machine_stock_balance.tenant_id = :tid " +
             "RETURNING quantity"
         )
             .setParameter("newId", UUID.randomUUID())
@@ -230,6 +251,10 @@ public class InventoryResource {
             .setParameter("pid", req.prizeId())
             .setParameter("delta", delta)
             .unwrap(org.hibernate.query.Query.class).getSingleResultOrNull();
+
+        if (newQty == null) {
+            throw new BadRequestException("Stock balance conflict across tenants");
+        }
 
         int after  = newQty != null ? newQty.intValue() : Math.max(0, delta);
         // before ≈ after - delta (clamp 0); ±1 aceitável sob clamping concorrente.
