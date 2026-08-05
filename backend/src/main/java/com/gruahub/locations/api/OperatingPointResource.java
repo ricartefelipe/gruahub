@@ -86,7 +86,7 @@ public class OperatingPointResource {
 
         String sql = "SELECT op.id, op.establishment_id, e.name as est_name, " +
             "op.name, op.address_street, op.address_city, op.address_state, " +
-            "op.latitude, op.longitude, op.commission_pct, op.contract_type, " +
+            "op.latitude, op.longitude, op.default_commission_pct, op.contract_type, " +
             "op.status, op.priority_score " +
             "FROM operating_point op " +
             "JOIN establishment e ON e.id = op.establishment_id " +
@@ -116,7 +116,7 @@ public class OperatingPointResource {
         Object[] row = (Object[]) em.createNativeQuery(
             "SELECT op.id, op.establishment_id, e.name, " +
             "op.name, op.address_street, op.address_city, op.address_state, " +
-            "op.latitude, op.longitude, op.commission_pct, op.contract_type, " +
+            "op.latitude, op.longitude, op.default_commission_pct, op.contract_type, " +
             "op.status, op.priority_score " +
             "FROM operating_point op " +
             "JOIN establishment e ON e.id = op.establishment_id " +
@@ -139,19 +139,18 @@ public class OperatingPointResource {
         UUID tenantId = TenantContext.getTenantId();
         UUID id = UUID.randomUUID();
 
-        // Valida que o establishment pertence ao tenant
-        long estCount = (Long) em.createNativeQuery(
+        long estCount = ((Number) em.createNativeQuery(
             "SELECT COUNT(*) FROM establishment WHERE id = :eid AND tenant_id = :tid"
         )
             .setParameter("eid", req.establishmentId())
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResult()).longValue();
         if (estCount == 0) throw new BadRequestException("Establishment not found in tenant");
 
         em.createNativeQuery(
             "INSERT INTO operating_point " +
             "(id, tenant_id, establishment_id, name, address_street, address_city, address_state, " +
-            " address_zip, latitude, longitude, commission_pct, contract_type, status) " +
+            " address_postal_code, latitude, longitude, default_commission_pct, contract_type, status) " +
             "VALUES (:id, :tid, :eid, :name, :street, :city, :state, :zip, :lat, :lng, :comm, :ct, 'ACTIVE')"
         )
             .setParameter("id", id)
@@ -186,8 +185,8 @@ public class OperatingPointResource {
         UUID tenantId = TenantContext.getTenantId();
         int updated = em.createNativeQuery(
             "UPDATE operating_point SET name = :name, address_street = :street, " +
-            "address_city = :city, address_state = :state, address_zip = :zip, " +
-            "latitude = :lat, longitude = :lng, commission_pct = :comm, " +
+            "address_city = :city, address_state = :state, address_postal_code = :zip, " +
+            "latitude = :lat, longitude = :lng, default_commission_pct = :comm, " +
             "contract_type = :ct, updated_at = NOW() " +
             "WHERE id = :id AND tenant_id = :tid"
         )
