@@ -167,7 +167,7 @@ public class InventoryResource {
             "sm.movement_type, sm.quantity_delta, sm.quantity_before, sm.quantity_after, " +
             "sm.client_operation_id, sm.occurred_at, sm.notes " +
             "FROM stock_movement sm " +
-            "JOIN machine m ON m.id = sm.machine_id " +
+            "LEFT JOIN machine m ON m.id = sm.machine_id " +
             "JOIN prize p ON p.id = sm.prize_id " +
             where +
             "ORDER BY sm.occurred_at DESC LIMIT :lim OFFSET :off";
@@ -196,12 +196,12 @@ public class InventoryResource {
         UUID tenantId = TenantContext.getTenantId();
 
         // Idempotência offline-first
-        Long existing = (Long) em.createNativeQuery(
+        long existing = ((Number) em.createNativeQuery(
             "SELECT COUNT(*) FROM stock_movement WHERE client_operation_id = :coid AND tenant_id = :tid"
         )
             .setParameter("coid", req.clientOperationId().toString())
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResult()).longValue();
 
         if (existing > 0) {
             return Response.status(Response.Status.CONFLICT)
@@ -237,15 +237,16 @@ public class InventoryResource {
         UUID movId = UUID.randomUUID();
         em.createNativeQuery(
             "INSERT INTO stock_movement " +
-            "(id, tenant_id, machine_id, prize_id, movement_type, quantity_delta, " +
+            "(id, tenant_id, machine_id, prize_id, movement_type, quantity, quantity_delta, " +
             " quantity_before, quantity_after, client_operation_id, notes) " +
-            "VALUES (:id, :tid, :mid, :pid, :mt, :delta, :before, :after, :coid, :notes)"
+            "VALUES (:id, :tid, :mid, :pid, :mt, :qty, :delta, :before, :after, :coid, :notes)"
         )
             .setParameter("id", movId)
             .setParameter("tid", tenantId)
             .setParameter("mid", req.machineId())
             .setParameter("pid", req.prizeId())
             .setParameter("mt", req.movementType())
+            .setParameter("qty", Math.abs(delta))
             .setParameter("delta", delta)
             .setParameter("before", before)
             .setParameter("after", after)

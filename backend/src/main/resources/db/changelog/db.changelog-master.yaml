@@ -51,3 +51,5 @@ databaseChangeLog:
       file: db/changelog/024-fiscal-documents.yaml
   - include:
       file: db/changelog/025-attachments-device-tokens.yaml
+  - include:
+      file: db/changelog/026-stock-movement-api-alignment.yaml

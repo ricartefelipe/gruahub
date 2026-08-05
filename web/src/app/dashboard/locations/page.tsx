@@ -53,7 +53,6 @@ export default function LocationsPage() {
     queryKey: ['operating-points'],
     queryFn: () =>
       api.get('/operating-points?size=100').then(r => r.data?.content ?? []),
-    enabled: activeTab === 'points' || showNewPoint,
   });
 
   const createEst = useMutation({
