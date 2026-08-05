@@ -4,6 +4,7 @@ import com.gruahub.audit.application.AuditService;
 import com.gruahub.plays.application.CreditService;
 import com.gruahub.shared.api.PageResponse;
 import com.gruahub.shared.domain.JsonUtil;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
@@ -168,7 +169,7 @@ public class PlayResource {
         }
         Instant occurredAt = null;
         if (r[5] != null) {
-            occurredAt = ((java.sql.Timestamp) r[5]).toInstant();
+            occurredAt = NativeQueryValues.toInstant(r[5]);
         }
         return new PlayResponse(
             (UUID) r[0],

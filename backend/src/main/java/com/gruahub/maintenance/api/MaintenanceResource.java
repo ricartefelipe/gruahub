@@ -2,6 +2,7 @@ package com.gruahub.maintenance.api;
 
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.api.PageResponse;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -245,9 +246,9 @@ public class MaintenanceResource {
         return new TicketResponse(
             (UUID) r[0], (UUID) r[1], (String) r[2], (String) r[3], (String) r[4],
             (String) r[5], (String) r[6], (String) r[7], (String) r[8], (String) r[9],
-            r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null,
-            r[11] != null ? ((java.sql.Timestamp) r[11]).toInstant() : null,
-            r[12] != null ? ((java.sql.Timestamp) r[12]).toInstant() : null
+            r[10] != null ? NativeQueryValues.toInstant(r[10]) : null,
+            r[11] != null ? NativeQueryValues.toInstant(r[11]) : null,
+            r[12] != null ? NativeQueryValues.toInstant(r[12]) : null
         );
     }
 }

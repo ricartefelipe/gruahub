@@ -2,6 +2,7 @@ package com.gruahub.fieldops.api;
 
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.api.PageResponse;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -17,7 +18,6 @@ import org.jboss.logging.Logger;
 
 import java.net.URI;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -286,17 +286,10 @@ public class FieldVisitResource {
     }
 
     private static UUID toUuid(Object value) {
-        if (value == null) return null;
-        if (value instanceof UUID uuid) return uuid;
-        return UUID.fromString(value.toString());
+        return NativeQueryValues.toUuid(value);
     }
 
     private static Instant toInstant(Object value) {
-        if (value == null) return null;
-        if (value instanceof Instant instant) return instant;
-        if (value instanceof java.sql.Timestamp ts) return ts.toInstant();
-        if (value instanceof java.util.Date date) return date.toInstant();
-        if (value instanceof OffsetDateTime odt) return odt.toInstant();
-        throw new IllegalArgumentException("Unsupported temporal type: " + value.getClass());
+        return NativeQueryValues.toInstant(value);
     }
 }

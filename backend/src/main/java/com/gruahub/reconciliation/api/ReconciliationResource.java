@@ -2,6 +2,7 @@ package com.gruahub.reconciliation.api;
 
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.api.PageResponse;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -177,9 +178,9 @@ public class ReconciliationResource {
         return new ReconciliationCaseResponse(
             (UUID) r[0], (UUID) r[1], (UUID) r[2], (UUID) r[3],
             (String) r[4], (String) r[5],
-            r[6] != null ? ((java.sql.Timestamp) r[6]).toInstant() : null,
-            r[7] != null ? ((java.sql.Timestamp) r[7]).toInstant() : null,
-            r[8] != null ? ((java.sql.Timestamp) r[8]).toInstant() : null,
+            r[6] != null ? NativeQueryValues.toInstant(r[6]) : null,
+            r[7] != null ? NativeQueryValues.toInstant(r[7]) : null,
+            r[8] != null ? NativeQueryValues.toInstant(r[8]) : null,
             (String) r[9]
         );
     }

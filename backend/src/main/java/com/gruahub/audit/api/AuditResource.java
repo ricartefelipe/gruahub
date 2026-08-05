@@ -1,5 +1,6 @@
 package com.gruahub.audit.api;
 
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.shared.api.PageResponse;
 import jakarta.annotation.security.RolesAllowed;
@@ -81,7 +82,7 @@ public class AuditResource {
             (UUID) r[0], (UUID) r[1], (String) r[2], (String) r[3],
             (String) r[4], (String) r[5], (String) r[6], (String) r[7],
             (String) r[8], (String) r[9],
-            r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null
+            r[10] != null ? NativeQueryValues.toInstant(r[10]) : null
         )).toList();
         return PageResponse.of(content, page, lim, total);
     }
