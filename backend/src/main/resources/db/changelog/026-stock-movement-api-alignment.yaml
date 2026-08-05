@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-001-stock-movement-api-columns
+      author: gruahub
+      comment: Alinha stock_movement ao contrato REST (máquina + deltas)
+      changes:
+        - addColumn:
+            tableName: stock_movement
+            columns:
+              - column:
+                  name: machine_id
+                  type: uuid
+                  remarks: "Máquina afetada pela movimentação (API REST)"
+              - column:
+                  name: quantity_delta
+                  type: int
+                  remarks: "Variação sinalizada (+entrada / -saída)"
+              - column:
+                  name: quantity_before
+                  type: int
+                  remarks: "Saldo da máquina antes da movimentação"
+              - column:
+                  name: quantity_after
+                  type: int
+                  remarks: "Saldo da máquina após a movimentação"
+        - createIndex:
+            tableName: stock_movement
+            indexName: idx_stock_movement_machine_tenant
+            columns:
+              - column:
+                  name: machine_id
+              - column:
+                  name: tenant_id

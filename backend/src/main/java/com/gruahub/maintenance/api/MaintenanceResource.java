@@ -145,14 +145,13 @@ public class MaintenanceResource {
     ) {
         UUID tenantId = TenantContext.getTenantId();
 
-        // Idempotência offline-first
-        Long existing = (Long) em.createNativeQuery(
+        long existing = ((Number) em.createNativeQuery(
             "SELECT COUNT(*) FROM maintenance_ticket " +
             "WHERE client_operation_id = :coid AND tenant_id = :tid"
         )
             .setParameter("coid", req.clientOperationId().toString())
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResult()).longValue();
 
         if (existing > 0) {
             return Response.status(Response.Status.CONFLICT)
@@ -160,20 +159,24 @@ public class MaintenanceResource {
                 .build();
         }
 
-        Long machineCount = (Long) em.createNativeQuery(
+        long machineCount = ((Number) em.createNativeQuery(
             "SELECT COUNT(*) FROM machine WHERE id = :mid AND tenant_id = :tid"
         )
             .setParameter("mid", req.machineId())
             .setParameter("tid", tenantId)
-            .getSingleResult();
+            .getSingleResult()).longValue();
         if (machineCount == 0) throw new BadRequestException("Machine not found in tenant");
+
+        String symptom = req.symptomCode() != null && !req.symptomCode().isBlank()
+            ? req.symptomCode()
+            : req.title();
 
         UUID ticketId = UUID.randomUUID();
         em.createNativeQuery(
             "INSERT INTO maintenance_ticket " +
             "(id, tenant_id, client_operation_id, machine_id, title, description, " +
-            " priority, symptom_code, status) " +
-            "VALUES (:id, :tid, :coid, :mid, :title, :desc, :prio, :symptom, 'OPEN')"
+            " priority, symptom_code, symptom, status) " +
+            "VALUES (:id, :tid, :coid, :mid, :title, :desc, :prio, :symptomCode, :symptom, 'OPEN')"
         )
             .setParameter("id", ticketId)
             .setParameter("tid", tenantId)
@@ -182,7 +185,8 @@ public class MaintenanceResource {
             .setParameter("title", req.title())
             .setParameter("desc", req.description())
             .setParameter("prio", req.priority())
-            .setParameter("symptom", req.symptomCode())
+            .setParameter("symptomCode", req.symptomCode())
+            .setParameter("symptom", symptom)
             .executeUpdate();
 
         // Coloca máquina em MAINTENANCE se ticket for HIGH ou CRITICAL
