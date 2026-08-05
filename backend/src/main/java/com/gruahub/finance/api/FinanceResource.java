@@ -2,6 +2,7 @@ package com.gruahub.finance.api;
 
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.api.PageResponse;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -341,7 +342,7 @@ public class FinanceResource {
             r[7] != null ? (BigDecimal) r[7] : null,
             r[8] != null ? ((Number) r[8]).longValue() : 0L,
             r[9] != null ? ((Number) r[9]).longValue() : 0L,
-            r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null
+            r[10] != null ? NativeQueryValues.toInstant(r[10]) : null
         );
     }
 

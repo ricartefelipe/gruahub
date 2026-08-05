@@ -2,6 +2,7 @@ package com.gruahub.alerts.api;
 
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.api.PageResponse;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -215,8 +216,8 @@ public class AlertResource {
         return new AlertResponse(
             (UUID) r[0], (UUID) r[1], (String) r[2], (String) r[3],
             (String) r[4], (String) r[5], (String) r[6],
-            r[7] != null ? ((java.sql.Timestamp) r[7]).toInstant() : null,
-            r[8] != null ? ((java.sql.Timestamp) r[8]).toInstant() : null,
+            r[7] != null ? NativeQueryValues.toInstant(r[7]) : null,
+            r[8] != null ? NativeQueryValues.toInstant(r[8]) : null,
             (String) r[9]
         );
     }

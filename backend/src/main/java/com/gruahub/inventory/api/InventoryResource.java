@@ -2,6 +2,7 @@ package com.gruahub.inventory.api;
 
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.api.PageResponse;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -388,7 +389,7 @@ public class InventoryResource {
             r[4] != null ? ((Number) r[4]).longValue() : 0L,
             (String) r[5],
             r[6] != null && (Boolean) r[6],
-            r[7] != null ? ((java.sql.Timestamp) r[7]).toInstant() : null
+            r[7] != null ? NativeQueryValues.toInstant(r[7]) : null
         );
     }
 
@@ -398,7 +399,7 @@ public class InventoryResource {
             (String) r[5],
             ((Number) r[6]).intValue(), ((Number) r[7]).intValue(), ((Number) r[8]).intValue(),
             (String) r[9],
-            r[10] != null ? ((java.sql.Timestamp) r[10]).toInstant() : null,
+            r[10] != null ? NativeQueryValues.toInstant(r[10]) : null,
             (String) r[11]
         );
     }

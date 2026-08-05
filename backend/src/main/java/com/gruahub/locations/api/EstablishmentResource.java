@@ -2,6 +2,7 @@ package com.gruahub.locations.api;
 
 import com.gruahub.shared.domain.JsonUtil;
 import com.gruahub.shared.api.PageResponse;
+import com.gruahub.shared.domain.NativeQueryValues;
 import com.gruahub.shared.domain.TenantContext;
 import com.gruahub.audit.application.AuditService;
 import jakarta.annotation.security.RolesAllowed;
@@ -86,7 +87,7 @@ public class EstablishmentResource {
 
         var content = rows.stream().map(r -> new EstablishmentResponse(
             (UUID) r[0], (String) r[1], (String) r[2], (String) r[3],
-            r[4] != null ? ((java.sql.Timestamp) r[4]).toInstant() : null
+            NativeQueryValues.toInstant(r[4])
         )).toList();
         return PageResponse.of(content, page, lim, total);
     }
@@ -109,7 +110,7 @@ public class EstablishmentResource {
 
         return new EstablishmentResponse(
             (UUID) row[0], (String) row[1], (String) row[2], (String) row[3],
-            row[4] != null ? ((java.sql.Timestamp) row[4]).toInstant() : null
+            NativeQueryValues.toInstant(row[4])
         );
     }
 
