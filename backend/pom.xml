@@ -30,7 +30,7 @@
     <eclipse.paho.version>1.2.5</eclipse.paho.version>
     <openpdf.version>1.3.34</openpdf.version>
     <flying-saucer.version>9.4.0</flying-saucer.version>
-    <testcontainers.version>1.19.7</testcontainers.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
     <awaitility.version>4.2.1</awaitility.version>
     <assertj.version>3.25.3</assertj.version>
   </properties>
@@ -188,6 +188,19 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-test-security-oidc</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- O nucleo vem transitivamente pelo BOM do Quarkus em versao cujo cliente Docker (API 1.32)
+           o daemon atual recusa; a versao explicita alinha o nucleo ao modulo postgresql. -->
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

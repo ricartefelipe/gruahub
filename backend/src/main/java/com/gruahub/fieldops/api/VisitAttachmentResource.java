@@ -58,7 +58,8 @@ public class VisitAttachmentResource {
         String originalFilename,
         String contentType,
         long sizeBytes,
-        String clientOperationId
+        String clientOperationId,
+        String storageBackend
     ) {}
 
     @POST
@@ -123,13 +124,15 @@ public class VisitAttachmentResource {
             : "VISIT_EVIDENCE";
         String s3Key = tenantId + "/visits/" + visitId + "/" + attachmentId + "-" + sanitize(filename);
 
-        storage.put(s3Key, bytes, contentType);
+        // Primeiro o objeto, depois a referencia: se o armazenamento recusar, a requisicao falha
+        // (503) e nenhuma linha aponta para um objeto que nao existe.
+        ObjectStorageService.StoredObject stored = storage.put(s3Key, bytes, contentType);
 
         em.createNativeQuery(
             "INSERT INTO visit_attachment " +
             "(id, tenant_id, field_visit_id, machine_id, attachment_type, s3_key, " +
-            " original_filename, content_type, size_bytes, client_operation_id) " +
-            "VALUES (:id, :tid, :vid, :mid, :atype, :s3, :fname, :ctype, :size, :coid)"
+            " original_filename, content_type, size_bytes, client_operation_id, storage_backend) " +
+            "VALUES (:id, :tid, :vid, :mid, :atype, :s3, :fname, :ctype, :size, :coid, :backend)"
         )
             .setParameter("id", attachmentId)
             .setParameter("tid", tenantId)
@@ -141,6 +144,7 @@ public class VisitAttachmentResource {
             .setParameter("ctype", contentType)
             .setParameter("size", (long) bytes.length)
             .setParameter("coid", clientOpId)
+            .setParameter("backend", stored.backend().name())
             .executeUpdate();
 
         audit.record(
@@ -154,7 +158,8 @@ public class VisitAttachmentResource {
 
         return Response.status(Response.Status.CREATED)
             .entity(new AttachmentResponse(
-                attachmentId, visitId, attachmentType, s3Key, filename, contentType, bytes.length, clientOpId
+                attachmentId, visitId, attachmentType, s3Key, filename, contentType, bytes.length, clientOpId,
+                stored.backend().name()
             ))
             .build();
     }
@@ -166,7 +171,7 @@ public class VisitAttachmentResource {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery(
             "SELECT id, field_visit_id, attachment_type, s3_key, original_filename, content_type, " +
-            "size_bytes, client_operation_id " +
+            "size_bytes, client_operation_id, storage_backend " +
             "FROM visit_attachment WHERE tenant_id = :tid AND field_visit_id = :vid " +
             "ORDER BY created_at DESC"
         )
@@ -182,7 +187,9 @@ public class VisitAttachmentResource {
             (String) r[4],
             (String) r[5],
             r[6] != null ? ((Number) r[6]).longValue() : 0L,
-            (String) r[7]
+            (String) r[7],
+            // Linhas anteriores a coluna nao dizem onde ficaram: a chave e preservada como esta.
+            (String) r[8]
         )).toList();
     }
 

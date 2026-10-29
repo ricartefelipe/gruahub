@@ -118,7 +118,7 @@ A plataforma cobre o ciclo completo: **máquina online → pagamento → crédit
 | postgres | 16-alpine | `pg_isready` |
 | keycloak | 24.0.5 | `/realms/gruahub/.well-known/openid-configuration` |
 | emqx | 5.7 | `/api/v5/status` |
-| minio | latest | `/minio/health/live` |
+| objectstore (SeaweedFS) | 4.51 (por digest) | `/cluster/healthz` |
 | backend | local build | `/q/health` |
 | web | local build | `/api/health` |
 | machine-sim | local build | profile `simulators` |
