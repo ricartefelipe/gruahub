@@ -23,7 +23,7 @@ Documentação relacionada:
 | **Keycloak** | v24 | 8180 (demo) / `https://auth.localhost` (prod-like) |
 | **PostgreSQL** | v16 | 5432 |
 | **EMQX** | v5.7 (MQTT) | 1883 / 8083 |
-| **MinIO** | S3-compatible | 9000 |
+| **SeaweedFS** | S3-compatible | 9000 |
 
 Principais decisões:
 

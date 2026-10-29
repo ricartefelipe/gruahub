@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 027-001-visit-attachment-storage-backend
+      author: gruahub
+      comment: >-
+        Registra em qual backend cada anexo foi gravado (S3 ou LOCAL). Linhas anteriores ficam
+        nulas: a chave delas nao muda e o destino nao e reinterpretado.
+      changes:
+        - addColumn:
+            tableName: visit_attachment
+            columns:
+              - column:
+                  name: storage_backend
+                  type: varchar(16)

@@ -76,7 +76,7 @@
 
 | Aspecto | Evidência |
 |---------|-----------|
-| Serviços | postgres, keycloak, emqx, minio, backend, web; profile `simulators` |
+| Serviços | postgres, keycloak, emqx, objectstore, backend, web; profile `simulators` |
 | Secrets | Passwords/secrets **obrigatórios** via `infra/.env` (ver `.env.example`) |
 | Limitação | HTTP sem TLS; defaults de demo só no `.env.example` |
 

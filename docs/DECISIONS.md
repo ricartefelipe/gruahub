@@ -127,3 +127,32 @@
 **Decisão:** `PaymentProvider` como interface. `SandboxPaymentProvider` implementa o contrato completo com dados fictícios. Integração Mercado Pago/PagSeguro/Stone é implementada como adaptador separado quando houver credenciais reais e validação contra sandbox oficial.
 
 **Consequências:** Não afirmar integração real. Claramente identificado como sandbox em todos os logs e UIs.
+
+
+## Armazenamento de objetos: SeaweedFS no lugar do MinIO (out/2026)
+
+**Contexto:** a stack declarava `minio/minio:RELEASE.2024-05-10T01-41-38Z`. O `docker compose up`
+passou a falhar ao obter a imagem.
+
+**Causa, apurada em 2026-10-29:** distribuição, não referência nem rede. O repositório
+`minio/minio` **não existe mais** no Docker Hub (a API do registry responde `object not found`, e o
+pull responde `pull access denied`); `quay.io/minio/minio` responde `401 UNAUTHORIZED` e não lista
+tags; `registry.min.io`, `ghcr.io/minio/minio` e `public.ecr.aws/minio/minio` recusam; o binário em
+`dl.min.io` responde `410 Gone`. O namespace `minio` do Docker Hub segue existindo com outros 20
+repositórios (`mint`, `warp`, …), mas sem o servidor. Imagens oficiais sem relação com o MinIO são
+obtidas normalmente da mesma máquina, o que descarta rede e limite de taxa.
+
+**Decisão:** o componente passou a ser **SeaweedFS** (`chrislusf/seaweedfs:4.51`, fixado também por
+digest). O projeto é mantido e publica tags versionadas. `bitnami/minio` exige subscrição e
+`bitnamilegacy/minio` é catálogo congelado, então nenhum dos dois atende "distribuição mantida".
+
+**Compatibilidade verificada antes da troca:** o produto usa apenas `PutObject` pelo SDK S3 da AWS
+(`ObjectStorageService`), com `path-style-access` e credenciais estáticas — nenhuma API
+administrativa ou console do MinIO. Exercitado contra o serviço novo: criação de bucket,
+`PutObject`, `GetObject`, `ListObjects`, recusa de credencial inválida (`InvalidAccessKeyId`),
+recusa de acesso anônimo (`403`) e persistência dos objetos após `docker restart`.
+
+**Observação operacional:** sem o arquivo de identidades (`-s3.config`) o SeaweedFS serviria
+requisições anonimamente; o arquivo é gerado na subida a partir de `MINIO_ACCESS_KEY` e
+`MINIO_SECRET_KEY`. O alias de rede `minio` foi mantido para que as configurações existentes
+(`MINIO_HOST` e afins) continuem resolvendo sem alteração.
