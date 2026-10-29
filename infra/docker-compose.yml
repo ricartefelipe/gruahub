@@ -8,6 +8,9 @@ volumes:
   keycloak_data:
   emqx_data:
   emqx_log:
+  objectstore_data:
+  # Mantido declarado: se houver dados de uma instalacao anterior com MinIO, o volume
+  # continua existindo para extracao manual. O formato em disco nao e intercambiavel.
   minio_data:
   caddy_data:
   caddy_config:
@@ -120,45 +123,64 @@ services:
     entrypoint: ["/bin/sh", "/bootstrap-users.sh"]
     restart: "no"
 
-  minio:
-    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
-    container_name: gruahub-minio
+  # Armazenamento de objetos compativel com S3.
+  #
+  # A imagem `minio/minio` deixou de existir no Docker Hub (a consulta ao registry devolve
+  # "object not found", e o pull falha com "pull access denied"); `quay.io/minio/minio` responde
+  # 401 e o binario em `dl.min.io` responde 410. Nao ha distribuicao publica do servidor MinIO,
+  # entao o componente passou a ser o SeaweedFS, que e mantido, publica tags versionadas e atende
+  # o que o produto usa: `PutObject` pelo SDK S3 com acesso path-style e credenciais estaticas.
+  #
+  # O alias de rede `minio` e mantido para que `MINIO_HOST` e as demais configuracoes existentes
+  # continuem resolvendo sem alteracao.
+  objectstore:
+    image: chrislusf/seaweedfs:4.51@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8
+    container_name: gruahub-objectstore
     restart: unless-stopped
-    networks: [gruahub]
+    networks:
+      gruahub:
+        aliases: [minio]
     ports:
       - "9000:9000"
-      - "9001:9001"
-    command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+    # O S3 so aceita as credenciais declaradas: sem o arquivo de identidades o SeaweedFS serviria
+    # qualquer requisicao anonimamente. `-ip.bind=0.0.0.0` deixa o healthcheck falar por localhost.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        mkdir -p /etc/seaweedfs
+        cat > /etc/seaweedfs/s3.json <<EOF
+        {"identities":[{"name":"gruahub","credentials":[{"accessKey":"$${MINIO_ACCESS_KEY}","secretKey":"$${MINIO_SECRET_KEY}"}],"actions":["Read","Write","List","Tagging"]}]}
+        EOF
+        exec weed server -dir=/data -ip.bind=0.0.0.0 -s3 -s3.config=/etc/seaweedfs/s3.json -s3.port=9000
     volumes:
-      - minio_data:/data
+      - objectstore_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9333/cluster/healthz"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      start_period: 15s
 
-  minio-setup:
-    image: minio/mc:RELEASE.2024-05-09T17-04-24Z
-    container_name: gruahub-minio-setup
+  objectstore-setup:
+    image: chrislusf/seaweedfs:4.51@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8
+    container_name: gruahub-objectstore-setup
     networks: [gruahub]
     depends_on:
-      minio:
+      objectstore:
         condition: service_healthy
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET: ${MINIO_BUCKET:-gruahub}
-    entrypoint: >
-      /bin/sh -c "
-        mc alias set gruahub http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
-        mc mb --ignore-existing gruahub/$${MINIO_BUCKET} &&
-        mc anonymous set none gruahub/$${MINIO_BUCKET} &&
-        echo 'MinIO bucket created'
-      "
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        echo "s3.bucket.create -name $${MINIO_BUCKET}" | weed shell -master=objectstore:9333
+        echo "s3.bucket.list" | weed shell -master=objectstore:9333
+        echo "bucket $${MINIO_BUCKET} pronto"
     restart: "no"
 
   backend:
@@ -221,8 +243,10 @@ services:
         condition: service_healthy
       emqx-users:
         condition: service_completed_successfully
-      minio:
+      objectstore:
         condition: service_healthy
+      objectstore-setup:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/q/health/ready"]
       interval: 10s

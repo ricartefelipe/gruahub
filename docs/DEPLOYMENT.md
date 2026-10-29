@@ -21,7 +21,7 @@ cp infra/.env.example infra/.env
 
 ```bash
 cd infra
-docker compose up -d postgres keycloak emqx minio
+docker compose up -d postgres keycloak emqx objectstore objectstore-setup
 ```
 
 Aguardar health checks:
@@ -148,7 +148,7 @@ docker compose --profile tls up -d --build
 
 ### Prod-like (tráfego app + OIDC só via Caddy)
 
-Fecha publicação no host de **backend (8080)**, **web (3000)**, **Keycloak (8180)**, **Postgres (5432)**, **MinIO (9000/9001)** e dashboards EMQX. Mantém MQTT `1883`/`8883`. OIDC no browser: `https://auth.localhost`.
+Fecha publicação no host de **backend (8080)**, **web (3000)**, **Keycloak (8180)**, **Postgres (5432)**, **armazenamento de objetos (9000)** e dashboards EMQX. Mantém MQTT `1883`/`8883`. OIDC no browser: `https://auth.localhost`.
 
 ```bash
 cd infra
@@ -218,7 +218,7 @@ Se `BACKUP_S3_ENDPOINT` estiver vazio, o job só grava no volume. Com endpoint d
 
 ```bash
 cd infra
-docker compose --profile backup up -d --build postgres postgres-backup minio
+docker compose --profile backup up -d --build postgres postgres-backup objectstore
 docker compose --profile backup run --rm postgres-backup /scripts/pg-backup.sh
 docker compose --profile backup run --rm postgres-backup /scripts/pg-restore-drill.sh
 ```
