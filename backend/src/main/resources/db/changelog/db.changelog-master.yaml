@@ -53,3 +53,5 @@ databaseChangeLog:
       file: db/changelog/025-attachments-device-tokens.yaml
   - include:
       file: db/changelog/026-stock-movement-api-alignment.yaml
+  - include:
+      file: db/changelog/027-attachment-storage-backend.yaml
