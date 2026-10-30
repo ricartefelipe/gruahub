@@ -118,13 +118,13 @@ client.on('connect', () => {
   // Iniciar comportamento conforme cenário
   switch (SCENARIO) {
     case 'gap-sequence':
-      runGapSequenceScenario();
+      runGapSequenceScenario().catch(logScenarioFailure);
       break;
     case 'offline-recover':
-      runOfflineRecoverScenario();
+      runOfflineRecoverScenario().catch(logScenarioFailure);
       break;
     case 'motor-fault':
-      runMotorFaultScenario();
+      runMotorFaultScenario().catch(logScenarioFailure);
       break;
     // 'normal', 'duplicate-ack' — o duplicate-ack é acionado via handleGrantCredit
     default:
@@ -164,18 +164,26 @@ client.on('message', (topicStr: string, message: Buffer) => {
     console.log(`[Machine ${machineId.substring(0, 8)}] Command received: ${commandType}`, payload.payload);
 
     if (commandType === 'GRANT_CREDIT' || payload.type === 'GRANT_CREDIT') {
-      handleGrantCredit(state, payload);
+      handleGrantCredit(state, payload).catch(logCommandFailure);
     } else if (
       commandType === 'REBOOT' || payload.type === 'REBOOT' ||
       commandType === 'LOCK' || payload.type === 'LOCK' ||
       commandType === 'UNLOCK' || payload.type === 'UNLOCK'
     ) {
-      handleRemoteCommand(state, payload);
+      handleRemoteCommand(state, payload).catch(logCommandFailure);
     }
   } catch (e) {
     console.error('[GruaHub Simulator] Error processing command:', e);
   }
 });
+
+function logScenarioFailure(error: unknown): void {
+  console.error('[GruaHub Simulator] Scenario failed:', error);
+}
+
+function logCommandFailure(error: unknown): void {
+  console.error('[GruaHub Simulator] Command handler failed:', error);
+}
 
 // ================================================================
 // Handlers de comandos
@@ -192,7 +200,6 @@ async function handleRemoteCommand(state: MachineState, envelope: any): Promise<
     state.online = false;
     await delay(800);
     state.online = true;
-    state.firmwareVersion = state.firmwareVersion;
     sendHeartbeat(state);
   } else if (commandType === 'LOCK') {
     state.online = false;
