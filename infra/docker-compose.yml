@@ -274,6 +274,8 @@ services:
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      # Origem interna do backend para o proxy /api/gh (obrigatória na build de produção).
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://backend:8080}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8180/realms/gruahub}
       KEYCLOAK_INTERNAL_ISSUER: ${KEYCLOAK_INTERNAL_ISSUER:-http://keycloak:8080/realms/gruahub}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID_WEB:-gruahub-web}

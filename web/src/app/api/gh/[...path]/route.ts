@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { upstreamBase } from './upstream';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,17 +16,6 @@ const HOP_BY_HOP = new Set([
   'host',
   'content-length',
 ]);
-
-function upstreamBase(): string {
-  const raw =
-    process.env.API_INTERNAL_URL?.trim() ||
-    process.env.NEXT_PUBLIC_API_URL?.trim() ||
-    'http://localhost:8080';
-  if (raw.startsWith('/')) {
-    return 'http://backend:8080';
-  }
-  return raw.replace(/\/$/, '');
-}
 
 async function proxy(req: NextRequest, ctx: { params: { path: string[] } }) {
   const path = (ctx.params.path ?? []).join('/');

@@ -19,6 +19,18 @@ export PORTFOLIO_KEYCLOAK_ISSUER="${KEYCLOAK_ISSUER:-http://${PUBLIC_IP}:8182/re
 export GRUAHUB_CORS_ORIGINS="${GRUAHUB_CORS_ORIGINS:-$PUBLIC_ORIGIN,http://${PUBLIC_IP}:9083,http://localhost:9083,http://localhost:3000}"
 export API_INTERNAL_URL="${API_INTERNAL_URL:-http://backend:8080}"
 
+# Fronteira de confiança da demo pública: o login do Keycloak e a API só devem ser expostos
+# em texto claro se o operador aceitar isso explicitamente (PORTFOLIO_ALLOW_HTTP=true).
+# Sem TLS, as credenciais da demo trafegam em claro pela Internet até o host.
+API_PUBLIC_URL="${API_PUBLIC_URL:-http://${PUBLIC_IP}:8084}"
+KEYCLOAK_PUBLIC_URL="${PORTFOLIO_KEYCLOAK_ISSUER%/realms/*}"
+for exposed in "$PUBLIC_ORIGIN" "$API_PUBLIC_URL" "$PORTFOLIO_KEYCLOAK_ISSUER"; do
+  if [[ "$exposed" == http://* && "$exposed" != http://localhost* && "$exposed" != http://127.0.0.1* && "${PORTFOLIO_ALLOW_HTTP:-false}" != "true" ]]; then
+    echo "ABORTADO: '$exposed' expõe login/API em texto claro fora do host. Coloque o Keycloak e a API atrás da borda TLS (PUBLIC_ORIGIN/API_PUBLIC_URL/KEYCLOAK_ISSUER com https) ou aceite o risco explicitamente com PORTFOLIO_ALLOW_HTTP=true." >&2
+    exit 2
+  fi
+done
+
 if [[ -f .env ]]; then
   if grep -q '^GRUAHUB_CORS_ORIGINS=' .env; then
     sed -i.bak "s|^GRUAHUB_CORS_ORIGINS=.*|GRUAHUB_CORS_ORIGINS=${GRUAHUB_CORS_ORIGINS}|" .env
@@ -43,10 +55,13 @@ done
 
 echo
 echo "Web UI:   ${PUBLIC_ORIGIN}"
-echo "Swagger:  http://${PUBLIC_IP}:8084/q/swagger-ui"
-echo "Health:   http://${PUBLIC_IP}:8084/q/health"
-echo "Keycloak: http://${PUBLIC_IP}:8182"
+echo "Swagger:  ${API_PUBLIC_URL}/q/swagger-ui"
+echo "Health:   ${API_PUBLIC_URL}/q/health"
+echo "Keycloak: ${KEYCLOAK_PUBLIC_URL}"
 echo "Login:    gestor@diversao.demo / gruahub@2025"
+if [[ "${PORTFOLIO_ALLOW_HTTP:-false}" == "true" ]]; then
+  echo "AVISO:    exposição em texto claro aceita explicitamente (PORTFOLIO_ALLOW_HTTP=true)."
+fi
 if [[ "$ok" -eq 1 ]]; then
   echo "Status:   API healthy"
 else
