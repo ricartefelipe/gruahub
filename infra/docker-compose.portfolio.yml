@@ -24,7 +24,7 @@ services:
     ports: !override []
     mem_limit: 384m
 
-  minio:
+  objectstore:
     ports: !override []
     mem_limit: 256m
 

@@ -178,7 +178,13 @@ services:
     command:
       - |
         set -eu
-        echo "s3.bucket.create -name $${MINIO_BUCKET}" | weed shell -master=objectstore:9333
+        # Idempotente: numa segunda subida sobre o mesmo volume o bucket ja existe e "create" falharia,
+        # derrubando o backend que depende deste passo.
+        if echo "s3.bucket.list" | weed shell -master=objectstore:9333 | grep -q "^  $${MINIO_BUCKET}\b"; then
+          echo "bucket $${MINIO_BUCKET} ja existe"
+        else
+          echo "s3.bucket.create -name $${MINIO_BUCKET}" | weed shell -master=objectstore:9333
+        fi
         echo "s3.bucket.list" | weed shell -master=objectstore:9333
         echo "bucket $${MINIO_BUCKET} pronto"
     restart: "no"
