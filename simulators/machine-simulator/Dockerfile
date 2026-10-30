@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /build
 COPY package*.json tsconfig.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY src/ src/
 RUN npm run build
 
@@ -11,6 +11,6 @@ USER gruahub
 WORKDIR /app
 COPY --from=builder --chown=gruahub:gruahub /build/package*.json ./
 COPY --from=builder --chown=gruahub:gruahub /build/dist/ ./dist/
-RUN npm ci --omit=dev
+RUN npm ci --ignore-scripts --omit=dev
 STOPSIGNAL SIGTERM
 CMD ["node", "dist/index.js"]

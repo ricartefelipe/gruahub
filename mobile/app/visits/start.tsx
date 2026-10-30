@@ -36,7 +36,9 @@ export default function StartVisitScreen() {
         setLocation(result);
         setGpsLoading(false);
       }
-    })();
+    })().catch(() => {
+      if (!cancelled) setGpsLoading(false);
+    });
     return () => {
       cancelled = true;
     };

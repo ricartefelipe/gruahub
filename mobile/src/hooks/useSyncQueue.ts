@@ -11,7 +11,6 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { apiFetch, ApiError } from '../api/apiClient';
 import { uploadVisitAttachment } from '../api/uploadAttachment';
-import { isDeferredSyncOperation } from '../sync/deferredOperations';
 import { OPERATION_TYPES } from '../db/schema';
 
 const POLL_INTERVAL_MS = 60_000;
@@ -65,10 +64,6 @@ export function useSyncQueue() {
       console.log(`[SyncQueue] Sincronizando ${operations.length} operação(ões)…`);
 
       for (const op of operations) {
-        if (isDeferredSyncOperation(op.operationType)) {
-          continue;
-        }
-
         await markSyncing(op.id);
 
         try {
