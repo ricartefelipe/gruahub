@@ -18,10 +18,10 @@ has_job() {
 run_contracts() {
   log "contracts (MQTT + OpenAPI)"
   if ! command -v ajv >/dev/null 2>&1; then
-    npm install -g ajv-cli@5 ajv-formats >/dev/null
+    npm install -g --ignore-scripts ajv-cli@5.0.0 ajv-formats@3.0.1 >/dev/null
   fi
   if ! command -v redocly >/dev/null 2>&1; then
-    npm install -g @redocly/cli@1 >/dev/null
+    npm install -g --ignore-scripts @redocly/cli@1.34.22 >/dev/null
   fi
   ajv compile --spec=draft7 -c ajv-formats -s contracts/mqtt/schema-v1.json
   shopt -s nullglob
@@ -44,14 +44,14 @@ run_simulators() {
   log "simulators (tsc + build)"
   (
     cd simulators/machine-simulator
-    npm ci
-    npx tsc --noEmit
+    npm ci --ignore-scripts
+    npx --no-install tsc --noEmit
     npm run build
   )
   (
     cd simulators/payment-simulator
-    npm ci
-    npx tsc --noEmit
+    npm ci --ignore-scripts
+    npx --no-install tsc --noEmit
     npm run build
   )
   ok "simulators"
@@ -74,8 +74,8 @@ run_web() {
   log "web (tsc + lint + test + build)"
   (
     cd web
-    npm ci
-    npx tsc --noEmit
+    npm ci --ignore-scripts
+    npx --no-install tsc --noEmit
     npm run lint
     npm test -- --passWithNoTests --ci
     NEXTAUTH_SECRET=ci-secret-not-for-production \
@@ -93,7 +93,7 @@ run_mobile() {
   log "mobile (tests)"
   (
     cd mobile
-    npm ci
+    npm ci --ignore-scripts
     npm test -- --ci
   )
   ok "mobile"
