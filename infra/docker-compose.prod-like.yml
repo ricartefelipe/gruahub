@@ -7,7 +7,7 @@ services:
       - "1883:1883"
       - "8883:8883"
 
-  minio:
+  objectstore:
     ports: !reset []
 
   keycloak:
