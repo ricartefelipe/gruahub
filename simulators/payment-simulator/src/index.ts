@@ -28,7 +28,18 @@ import { v4 as uuidv4 } from 'uuid';
 // ================================================================
 // Configuração via variáveis de ambiente
 // ================================================================
-const BACKEND_URL  = process.env.BACKEND_URL   || 'http://localhost:8080';
+// Origem do backend validada uma vez: só http(s), sem caminho; as rotas são montadas a partir dela.
+const BACKEND_ORIGIN = new url.URL(process.env.BACKEND_URL || 'http://localhost:8080');
+if (!['http:', 'https:'].includes(BACKEND_ORIGIN.protocol)) {
+  throw new Error(`BACKEND_URL inválida: ${BACKEND_ORIGIN.protocol}`);
+}
+const BACKEND_URL = BACKEND_ORIGIN.origin;
+const SAFE_ID = /^[A-Za-z0-9_-]+$/;
+/** Identificador vindo da rede só entra num caminho de URL se tiver o formato esperado. */
+function safePathSegment(value: string): string {
+  if (!SAFE_ID.test(value)) throw new Error('identificador inválido para URL');
+  return value;
+}
 const TENANT_ID    = process.env.TENANT_ID     || '11111111-0000-0000-0000-000000000001';
 const MACHINE_ID   = process.env.MACHINE_ID    || '66666666-0000-0000-0000-000000000001';
 const AMOUNT_CENTS = parseInt(process.env.AMOUNT_CENTS || '200', 10);
@@ -156,7 +167,7 @@ async function fullFlow(label = 'full-flow'): Promise<void> {
   console.log(`[Payment Simulator][${label}] ✓ Transaction created: ${logSafe(transactionId)} (status=PENDING)`);
 
   const confirmResp = await httpPost(
-    `${BACKEND_URL}/api/v1/payments/sandbox/confirm/${transactionId}`,
+    `${BACKEND_URL}/api/v1/payments/sandbox/confirm/${safePathSegment(transactionId)}`,
     '{}',
     {
       'X-Tenant-Id': TENANT_ID,
@@ -238,7 +249,7 @@ async function testIdempotency(): Promise<void> {
   let okCount = 0;
   for (let i = 1; i <= 2; i++) {
     const resp = await httpPost(
-      `${BACKEND_URL}/api/v1/payments/sandbox/confirm/${transactionId}`,
+      `${BACKEND_URL}/api/v1/payments/sandbox/confirm/${safePathSegment(transactionId)}`,
       '{}',
       {
         'X-Tenant-Id': TENANT_ID,
