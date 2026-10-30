@@ -89,11 +89,11 @@ jobs:
 
       - name: Install dependencies
         working-directory: web
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Type check
         working-directory: web
-        run: npx tsc --noEmit
+        run: npx --no-install tsc --noEmit
 
       - name: Lint
         working-directory: web
@@ -140,11 +140,11 @@ jobs:
 
       - name: Install dependencies
         working-directory: mobile
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Type check
         working-directory: mobile
-        run: npx tsc --noEmit
+        run: npx --no-install tsc --noEmit
 
       - name: Run unit tests (17 offline-queue tests)
         working-directory: mobile
@@ -157,7 +157,7 @@ jobs:
           EXPO_PUBLIC_KEYCLOAK_URL: http://localhost:8180
           EXPO_PUBLIC_KEYCLOAK_REALM: gruahub
           EXPO_PUBLIC_KEYCLOAK_CLIENT_ID: gruahub-mobile
-        run: npx expo export --platform web --output-dir /tmp/expo-export 2>&1 | tail -5 || true
+        run: npx --no-install expo export --platform web --output-dir /tmp/expo-export 2>&1 | tail -5 || true
 
   # ─────────────────────────────────────────────────────────────
   # Simulators — TypeScript build + type check
@@ -177,15 +177,15 @@ jobs:
       - name: Build machine simulator
         working-directory: simulators/machine-simulator
         run: |
-          npm ci
-          npx tsc --noEmit
+          npm ci --ignore-scripts
+          npx --no-install tsc --noEmit
           npm run build
 
       - name: Build payment simulator
         working-directory: simulators/payment-simulator
         run: |
-          npm ci
-          npx tsc --noEmit
+          npm ci --ignore-scripts
+          npx --no-install tsc --noEmit
           npm run build
 
   # ─────────────────────────────────────────────────────────────
@@ -204,7 +204,7 @@ jobs:
           node-version: '20'
 
       - name: Install validators
-        run: npm install -g ajv-cli@5 ajv-formats @redocly/cli@1
+        run: npm install -g --ignore-scripts ajv-cli@5.0.0 ajv-formats@3.0.1 @redocly/cli@1.34.22
 
       - name: Compile MQTT schema
         run: |
@@ -297,11 +297,11 @@ jobs:
 
       - name: Install dependencies
         working-directory: web
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install Playwright Chromium
         working-directory: web
-        run: npx playwright install --with-deps chromium
+        run: npx --no-install playwright install --with-deps chromium
 
       - name: Production build
         working-directory: web
@@ -336,7 +336,7 @@ jobs:
           KEYCLOAK_CLIENT_ID: gruahub-web
           KEYCLOAK_CLIENT_SECRET: ci-placeholder
           KEYCLOAK_ISSUER: http://localhost:8180/realms/gruahub
-        run: npx playwright test --project=smoke
+        run: npx --no-install playwright test --project=smoke
 
       - name: Upload Playwright report
         if: failure()

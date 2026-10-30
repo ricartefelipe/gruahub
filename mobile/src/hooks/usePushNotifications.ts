@@ -76,7 +76,7 @@ export function usePushNotifications(): void {
       } catch (err) {
         console.info('[push] registro falhou:', err);
       }
-    })();
+    })().catch((error) => console.warn('[push] registro do token falhou', error));
 
     return () => {
       cancelled = true;

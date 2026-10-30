@@ -52,6 +52,11 @@ interface HttpResponse {
   json?: any;
 }
 
+/** Remove quebras de linha e caracteres de controle de textos vindos da rede antes de logar. */
+function logSafe(value: unknown): string {
+  return String(value).replace(/[\u0000-\u001f\u007f]+/g, ' ').slice(0, 500);
+}
+
 async function httpPost(urlStr: string, body: string, headers: Record<string, string>): Promise<HttpResponse> {
   return new Promise((resolve, reject) => {
     const parsed = new url.URL(urlStr);
@@ -143,12 +148,12 @@ async function fullFlow(label = 'full-flow'): Promise<void> {
   );
 
   if (initiateResp.status !== 200 || !initiateResp.json?.transactionId) {
-    console.error(`[Payment Simulator][${label}] ✗ Initiate failed: HTTP ${initiateResp.status} — ${initiateResp.body}`);
+    console.error(`[Payment Simulator][${label}] ✗ Initiate failed: HTTP ${initiateResp.status} — ${logSafe(initiateResp.body)}`);
     return;
   }
 
   const transactionId = initiateResp.json.transactionId as string;
-  console.log(`[Payment Simulator][${label}] ✓ Transaction created: ${transactionId} (status=PENDING)`);
+  console.log(`[Payment Simulator][${label}] ✓ Transaction created: ${logSafe(transactionId)} (status=PENDING)`);
 
   const confirmResp = await httpPost(
     `${BACKEND_URL}/api/v1/payments/sandbox/confirm/${transactionId}`,
@@ -161,10 +166,10 @@ async function fullFlow(label = 'full-flow'): Promise<void> {
   );
 
   if (confirmResp.status === 200) {
-    console.log(`[Payment Simulator][${label}] ✓ Payment confirmed: ${transactionId}`);
+    console.log(`[Payment Simulator][${label}] ✓ Payment confirmed: ${logSafe(transactionId)}`);
     console.log('  → Backend will create CreditGrant + publish MQTT command → machine will ACK + play');
   } else {
-    console.error(`[Payment Simulator][${label}] ✗ Confirm failed: HTTP ${confirmResp.status} — ${confirmResp.body}`);
+    console.error(`[Payment Simulator][${label}] ✗ Confirm failed: HTTP ${confirmResp.status} — ${logSafe(confirmResp.body)}`);
   }
 }
 
@@ -188,7 +193,7 @@ async function sendWebhookDirectly(eventType: 'confirmed' | 'failed' | 'expired'
 
   const signature = signPayload(webhookPayload, SANDBOX_SECRET);
   console.log(`\n[Payment Simulator][webhook-${eventType}] Sending signed webhook`);
-  console.log(`  Transaction: ${transactionId}`);
+  console.log(`  Transaction: ${logSafe(transactionId)}`);
   console.log(`  Signature:   ${signature.substring(0, 16)}...`);
 
   const resp = await httpPost(
@@ -197,7 +202,7 @@ async function sendWebhookDirectly(eventType: 'confirmed' | 'failed' | 'expired'
     { 'X-Signature': signature, 'X-Tenant-Id': TENANT_ID, 'Idempotency-Key': idempotencyKey }
   );
 
-  console.log(`[Payment Simulator][webhook-${eventType}] Response: HTTP ${resp.status} — ${resp.body}`);
+  console.log(`[Payment Simulator][webhook-${eventType}] Response: HTTP ${resp.status} — ${logSafe(resp.body)}`);
   if (resp.status === 200) {
     console.log(`[Payment Simulator][webhook-${eventType}] ✓ Webhook accepted`);
   } else {
@@ -228,7 +233,7 @@ async function testIdempotency(): Promise<void> {
   }
 
   const transactionId = initiateResp.json?.transactionId as string;
-  console.log(`[idempotency] Transaction created: ${transactionId}`);
+  console.log(`[idempotency] Transaction created: ${logSafe(transactionId)}`);
 
   let okCount = 0;
   for (let i = 1; i <= 2; i++) {
@@ -296,7 +301,7 @@ async function testDuplicateWebhook(): Promise<void> {
       webhookPayload,
       { 'X-Signature': signature, 'X-Tenant-Id': TENANT_ID, 'Idempotency-Key': idempotencyKey }
     );
-    console.log(`[duplicate-webhook] Attempt ${i}: HTTP ${resp.status} — ${resp.body}`);
+    console.log(`[duplicate-webhook] Attempt ${i}: HTTP ${resp.status} — ${logSafe(resp.body)}`);
     await delay(100);
   }
 
