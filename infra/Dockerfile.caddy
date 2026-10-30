@@ -6,3 +6,15 @@ RUN xcaddy build \
 FROM caddy:2.8-alpine
 
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+
+# Execução sem root: o binário recebe só a capacidade de abrir as portas 80/443; os
+# diretórios de certificados e configuração pertencem ao usuário caddy. Volumes criados
+# antes desta versão (de propriedade de root) precisam de migração: ver docs/DEPLOYMENT.md.
+RUN apk add --no-cache libcap \
+    && addgroup -S caddy \
+    && adduser -S -G caddy -h /data caddy \
+    && setcap cap_net_bind_service=+ep /usr/bin/caddy \
+    && mkdir -p /data /config \
+    && chown -R caddy:caddy /data /config
+
+USER caddy

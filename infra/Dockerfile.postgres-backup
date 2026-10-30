@@ -8,4 +8,12 @@ COPY scripts/pg-backup-loop.sh /scripts/pg-backup-loop.sh
 COPY scripts/pg-restore-drill.sh /scripts/pg-restore-drill.sh
 COPY scripts/load-secret-files.sh /scripts/load-secret-files.sh
 
-RUN chmod 755 /scripts/*.sh
+# Execução sem root: pg_dump/psql e mc não precisam de privilégio. O diretório de dumps
+# pertence ao usuário postgres (um volume nomeado novo herda essa propriedade); o mc grava
+# sua configuração em $HOME. Volumes antigos de root: ver docs/DEPLOYMENT.md.
+RUN chmod 755 /scripts/*.sh \
+    && mkdir -p /backups \
+    && chown postgres:postgres /backups
+
+ENV HOME=/var/lib/postgresql
+USER postgres

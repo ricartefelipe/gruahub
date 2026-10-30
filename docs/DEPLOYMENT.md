@@ -121,6 +121,14 @@ eas build --platform ios --profile production
 Antes de DNS público / Let's Encrypt / tráfego real, siga `docs/PILOT_CHECKLIST.md`
 (sandbox off, sem seed demo, safety guard, backup offsite, player public só se necessário).
 
+## Demo pública (portfolio) e texto claro
+
+`scripts/portfolio-up.sh` aborta quando `PUBLIC_ORIGIN` ou `KEYCLOAK_ISSUER` expõem o login ou a API por
+`http://` fora do host (as credenciais da demo trafegariam em claro pela Internet). Coloque o Keycloak e a API
+atrás da borda TLS do host (`https://…sslip.io`) ou aceite o risco explicitamente com `PORTFOLIO_ALLOW_HTTP=true`.
+O proxy `/api/gh` do web exige `API_INTERNAL_URL` na build de produção (rede interna do Compose); sem a variável
+a rota falha fechada.
+
 ## Docker Compose — profiles comerciais (prod-like)
 
 O compose principal expõe profiles opcionais. O modo **prod-like** usa ainda o overlay `docker-compose.prod-like.yml` (fecha exposição de app/admin no host).
@@ -188,6 +196,20 @@ Template: `infra/caddy/Caddyfile.public.example`.
 3. Trocar o volume do Caddyfile para o template público (ou copiar sobre `Caddyfile`) e remover `tls internal` / `local_certs`
 4. Alinhar issuer/OIDC: `KEYCLOAK_EDGE_ISSUER=https://auth.exemplo.com/realms/gruahub`, `NEXTAUTH_URL`/`NEXT_PUBLIC_API_URL`/`GRUAHUB_CORS_ORIGINS` no host público, `KC_HOSTNAME=auth.exemplo.com`
 5. Caddy emite/renova Let's Encrypt automaticamente na porta 80/443 — **não** é exercitado no CI (só `tls internal` local)
+
+### Caddy e backup sem root (desde a 1.0.4)
+
+As imagens `gruahub-caddy` e `postgres-backup` executam sem root: o Caddy roda como `caddy` com apenas
+`cap_net_bind_service` no binário (portas 80/443); o backup roda como `postgres` com `HOME=/var/lib/postgresql`
+(configuração do `mc`). Volumes nomeados **novos** já nascem com a propriedade certa. Instalações anteriores
+têm `caddy_data`, `caddy_config` e `postgres_backups` de propriedade de root; migre uma vez, com os serviços parados:
+
+```bash
+docker compose --profile prod-like run --rm --user root --entrypoint sh caddy -c 'chown -R caddy:caddy /data /config'
+docker compose --profile backup run --rm --user root --entrypoint sh postgres-backup -c 'chown -R postgres:postgres /backups'
+```
+
+Sem a migração o Caddy não consegue gravar certificados e o backup não grava dumps (falha fechada, sem corromper dados).
 
 ### Backup Postgres (local + offsite opcional)
 

@@ -1,6 +1,8 @@
 {
 	auto_https disable_redirects
 	local_certs
+	# A CA local não é instalada no trust store do contêiner: o processo não é root (ver Dockerfile.caddy).
+	skip_install_trust
 	order rate_limit before basicauth
 }
 
